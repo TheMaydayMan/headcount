@@ -1,0 +1,249 @@
+# Test-only action lists for the bot server. reset-bot.sh puts them under `lists:` in its actions.yml.
+# The suites that use them add the same lists themselves if they are missing.
+  passthrough:
+    - message: "PT pvp=%pvpmanager_pvp_status% hc=%headcount_unique%"
+  timed-test:
+    - type: potion
+      effect: slowness
+      duration: 10m
+      time: online
+      start-message: "<red>TIMED START"
+  ta-message:
+    - message: "TA-MESSAGE <player>"
+  ta-broadcast:
+    - type: broadcast
+      text: "TA-BROADCAST <player>"
+  ta-title:
+    - type: title
+      title: "TA-TITLE"
+      subtitle: "TA-SUB"
+  ta-actionbar:
+    - type: actionbar
+      text: "TA-ACTIONBAR"
+  ta-sound:
+    - type: sound
+      sound: entity.experience_orb.pickup
+  ta-particle:
+    - type: particle
+      particle: heart
+      count: 5
+  ta-bossbar:
+    - type: bossbar
+      text: "TA-BOSSBAR"
+      duration: 6s
+  ta-location:
+    - type: broadcast-location
+      text: "TA-LOC <player> <x> <y> <z> <world>"
+  ta-console:
+    - type: console
+      command: "say TA-CONSOLE <player>"
+  ta-pcmd:
+    - type: player-command
+      command: "hc points"
+  ta-give:
+    - type: give-item
+      material: DIAMOND
+      amount: 2
+      duration: 6s
+      take-back: true
+  ta-equip:
+    - type: equip
+      slot: head
+      material: CARVED_PUMPKIN
+      lock: true
+      duration: 6s
+  ta-heads:
+    - type: give-heads
+      owner: self
+      amount: 2
+  ta-loot:
+    - type: loot
+      table: minecraft:chests/simple_dungeon
+  ta-xp:
+    - type: experience
+      amount: 50
+  ta-points:
+    - type: points
+      amount: 7
+  ta-points-next:
+    - type: points
+      amount: 3
+      when: next-cycle
+  ta-money:
+    - type: money
+      amount: 100
+  ta-perm:
+    - type: permission
+      permission: hc.test.node
+      duration: 6s
+  ta-group:
+    - type: group
+      group: hctest
+      duration: 6s
+  ta-track:
+    - type: track
+      track: hctrack
+      direction: promote
+  ta-prefix:
+    - type: prefix
+      text: "[TAP]"
+      priority: 50
+      duration: 6s
+  ta-grant:
+    - type: grant-title
+      title: collector
+      equip: true
+  ta-force:
+    - type: force-title
+      title: dunce
+      duration: 6s
+  ta-strip:
+    - type: strip-title
+      which: all
+  ta-pvp:
+    - type: pvp
+      state: on
+      lock: true
+      duration: 6s
+  ta-potion:
+    - type: potion
+      effect: speed
+      amplifier: 1
+      duration: 6s
+  ta-attr:
+    - type: attribute
+      attribute: max_health
+      amount: -4
+      duration: 6s
+  ta-glow:
+    - type: glowing
+      duration: 6s
+  ta-fire:
+    - type: fire
+      ticks: 100
+  ta-lightning:
+    - type: lightning
+      damage: false
+  ta-freeze:
+    - type: freeze
+      ticks: 200
+  ta-hunger:
+    - type: hunger
+      food: -10
+  ta-gamemode:
+    - type: gamemode
+      mode: adventure
+      lock: true
+      duration: 6s
+  ta-teleport:
+    - type: teleport
+      to: world,40,-60,40
+      return: true
+      duration: 6s
+  ta-damage:
+    - type: damage
+      amount: 6
+  ta-heal:
+    - type: heal
+      amount: full
+  ta-feed:
+    - type: feed
+      amount: full
+  ta-launch:
+    - type: launch
+      power: 2
+  ta-clear:
+    - clear-effects
+  ta-deny:
+    - type: deny
+      deny: [chat, trade, shop, vault, commands]
+      commands: [spawn]
+      duration: 8s
+  ta-nextcycle:
+    - type: next-cycle
+      starting-heads: "+5"
+  ta-flag:
+    - type: flag
+      flag: ta-flag
+  ta-bonus:
+    - type: score-bonus
+      amount: 10
+  ta-run:
+    - type: run
+      list: ta-message
+  ta-random:
+    - type: random
+      choices:
+        - weight: 1
+          actions: ["message: TA-RANDOM-A"]
+        - weight: 1
+          actions: ["message: TA-RANDOM-B"]
+  ta-chance0:
+    - type: message
+      text: "TA-NEVER"
+      chance: 0
+  ta-cond:
+    - type: message
+      text: "TA-COND"
+      conditions:
+        points: ">=100000"
+  ta-delay:
+    - type: message
+      text: "TA-DELAY"
+      delay: 2s
+  ta-repeat:
+    - type: message
+      text: "TA-REPEAT"
+      duration: 5s
+      repeat: 2s
+  ta-warn:
+    - type: warn
+      reason: "TA warn"
+  ta-mute:
+    - type: mute
+      reason: "TA mute"
+      duration: 8s
+  ta-jail:
+    - type: jail
+      jail: hcjail
+      reason: "TA jail"
+      duration: 8s
+  ta-kick:
+    - type: kick
+      reason: "TA kick"
+  ta-ban:
+    - type: ban
+      reason: "TA ban"
+      duration: 10s
+  t-protect:
+    - type: head-protection
+      charges: 1
+      duration: cycle
+  t-extra:
+    - type: extra-heads
+      amount: 2
+      charges: 1
+      duration: cycle
+  t-bounty:
+    - type: bounty
+      points: 5
+      claims: 1
+      duration: cycle
+  to-shield:
+    - type: shield
+      charges: 1
+      duration: cycle
+  to-neg:
+    - type: score-bonus
+      amount: -10
+  to-roll:
+    - type: rollover
+      percent: 50
+  ts-score:
+    - type: score-bonus
+      amount: 25
+  t-take:
+    - type: take-item
+      material: COBBLESTONE
+      amount: 5
+      duration: 20s

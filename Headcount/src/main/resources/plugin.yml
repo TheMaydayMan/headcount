@@ -1,0 +1,163 @@
+name: Headcount
+version: '${version}'
+main: com.gradychastain.headcount.HeadcountPlugin
+api-version: '26.3'
+description: Collect player heads each cycle, score them, then spend points or take punishments.
+author: Grady Chastain
+website: https://github.com/gradychastain/Headcount
+load: POSTWORLD
+libraries:
+  - org.xerial:sqlite-jdbc:3.50.3.0
+softdepend:
+  - PvPManager
+  - PlaceholderAPI
+  - Vault
+  - LuckPerms
+  - Essentials
+  - LiteBans
+  - AdvancedBan
+  - LibertyBans
+  - DiscordSRV
+  - ItemsAdder
+  - Oraxen
+  - Nexo
+  - Geyser-Spigot
+  - floodgate
+
+commands:
+  headcount:
+    description: Open your head vault, or use a Headcount subcommand.
+    aliases: [hc]
+    usage: /<command> [shop|titles|points|score|top|history|sidebar|effects|help]
+  trade:
+    description: Trade heads and items with another player.
+    usage: /<command> <player>|accept|deny|cancel
+    permission: headcount.trade
+  hcadmin:
+    description: Headcount administration.
+    aliases: [hca]
+    usage: /<command> help
+    permission: headcount.admin
+
+permissions:
+  headcount.*:
+    description: Every Headcount permission, including admin and bypasses.
+    default: op
+    children:
+      headcount.player: true
+      headcount.admin: true
+  headcount.player:
+    description: Every regular player command.
+    default: true
+    children:
+      headcount.vault: true
+      headcount.shop: true
+      headcount.titles: true
+      headcount.points: true
+      headcount.score: true
+      headcount.top: true
+      headcount.history: true
+      headcount.sidebar: true
+      headcount.effects: true
+      headcount.help: true
+      headcount.trade: true
+  headcount.vault:
+    description: Open your head vault with /hc.
+    default: true
+  headcount.shop:
+    description: Open the shop with /hc shop.
+    default: true
+  headcount.titles:
+    description: Open the titles menu with /hc titles.
+    default: true
+  headcount.points:
+    description: Check your points with /hc points.
+    default: true
+  headcount.score:
+    description: Preview your score with /hc score.
+    default: true
+  headcount.top:
+    description: See the leaderboard with /hc top.
+    default: true
+  headcount.history:
+    description: View your past cycles with /hc history.
+    default: true
+  headcount.sidebar:
+    description: Toggle the Headcount sidebar with /hc sidebar.
+    default: true
+  headcount.effects:
+    description: List your active effects with /hc effects.
+    default: true
+  headcount.help:
+    description: Show help with /hc help.
+    default: true
+  headcount.trade:
+    description: Use /trade.
+    default: true
+  headcount.admin:
+    description: Every admin command.
+    default: op
+    children:
+      headcount.admin.cycle: true
+      headcount.admin.vault: true
+      headcount.admin.vault.edit: true
+      headcount.admin.heads: true
+      headcount.admin.points: true
+      headcount.admin.titles: true
+      headcount.admin.history: true
+      headcount.admin.effects: true
+      headcount.admin.reset: true
+      headcount.admin.trade: true
+      headcount.admin.audit: true
+      headcount.admin.reload: true
+      headcount.admin.debug: true
+      headcount.admin.run: true
+      headcount.admin.notify: true
+  headcount.admin.cycle:
+    description: Cycle info, force end/start, simulate, change end time.
+    default: op
+  headcount.admin.vault:
+    description: View any player's vault.
+    default: op
+  headcount.admin.vault.edit:
+    description: Edit any player's vault.
+    default: op
+  headcount.admin.heads:
+    description: Give economy heads.
+    default: op
+  headcount.admin.points:
+    description: Give, take or set points.
+    default: op
+  headcount.admin.titles:
+    description: Grant or revoke titles.
+    default: op
+  headcount.admin.history:
+    description: View any player's history.
+    default: op
+  headcount.admin.effects:
+    description: List or remove any player's active actions.
+    default: op
+  headcount.admin.reset:
+    description: Reset a player's Headcount data.
+    default: op
+  headcount.admin.trade:
+    description: Cancel any trade.
+    default: op
+  headcount.admin.audit:
+    description: Search the audit log.
+    default: op
+  headcount.admin.reload:
+    description: Reload configuration.
+    default: op
+  headcount.admin.debug:
+    description: Inspect statuses, flags, held heads and placeholders.
+    default: op
+  headcount.admin.run:
+    description: Run action lists and hooks on players (testing).
+    default: op
+  headcount.admin.notify:
+    description: Receive admin alerts (duplicate heads, errors).
+    default: op
+  headcount.bypass.*:
+    description: Bypass every status gate and trade restriction.
+    default: false

@@ -1,0 +1,193 @@
+# ============================================================================================
+#  Headcount - actions.yml
+#  Rewards, punishments, shop purchases and hooks all use one actions system. An action list is a YAML list;
+#  each entry is one action. Lists defined here under 'lists' can be used anywhere by name.
+#
+#  Writing an action (all four mean the same thing):
+#    - type: message
+#      text: "<green>Hello"
+#    - message: "<green>Hello"          (the type as the key, filling its main setting)
+#    - "message: <green>Hello"          (a one-line string)
+#    - my-list-name                     (a plain name runs that named list)
+#    - clear-effects                    (or a type that needs no settings, when no list has that name)
+#
+#  Common options (every action):
+#    duration:   instant (default) | 10m, 2h, 3d... | cycle (until the cycle ends; given at a cycle end, as outcomes
+#                are, it lasts through the next cycle) | cycles:N | death (until the
+#                player dies) | permanent | manual (until an admin removes it with /hca effects)
+#    time:       real (default) | online   - whether a timed duration counts real time or only time online
+#    stacking:   refresh (default) | extend | stack | ignore - what happens if the same action is already active
+#    key:        a name that marks actions as "the same" for stacking (default: the type and its main setting)
+#    chance:     0-100 (default 100)
+#    delay:      wait before running (not kept across restarts)
+#    repeat:     run again every X while active (needs a duration), e.g. lightning every 5m for 1h
+#    conditions: statuses: [..]  any-statuses: [..]  score: "..-1"  streak: ">=2"  rank: "1..3"  points: ">=10"
+#                unique: ">=5"  active: true  permission: node  expression: "unique > 5 && rank <= 3"
+#    start-message / end-message: MiniMessage shown when it starts and ends (<duration> <remaining>)
+#
+#  Timed actions are tracked and undone automatically when they end, even across restarts; for offline players
+#  they are applied or undone on the next join. Built-in types know how to undo themselves; console and
+#  player-command take 'revert-commands'.
+#
+#  Variables in action text: whatever the caller provides (<player>, <score>, <cycle>, <points>, ...) plus every
+#  %headcount_...% and PlaceholderAPI placeholder.
+#
+#  ACTION TYPES (settings in parentheses; full reference in docs/actions.md)
+#  Messages and effects
+#    message       (text [string or list], audience: player | all | world | nearby:<r> | permission:<node>)
+#    broadcast     (text, permission, console: true)
+#    title         (title, subtitle, fade-in, stay, fade-out, audience)
+#    actionbar     (text, audience)
+#    sound         (sound: entity.experience_orb.pickup, volume, pitch, source, audience)
+#    particle      (particle, count, offset, speed, height)
+#    bossbar       (text, color, overlay, progress, countdown-to: cycle-end | 60s | 2026-12-01T00:00, seconds)
+#                  variables <countdown> <countdown_clock> <seconds>; in global hooks it shows to everyone
+#    discord       (text, channel) through DiscordSRV
+#    broadcast-location (text with <player> <x> <y> <z> <world>, audience: all) - add repeat for repeated reports
+#  Commands
+#    console       (command or commands, revert-commands, require-online: false) - <player> <uuid> available
+#    player-command (command or commands, revert-commands)
+#  Items
+#    give-item     (material or item: {...full item definition}, amount, to: inventory | enderchest, take-back: true)
+#    take-item     (item definition to match: material, name-contains, lore-contains, custom, pdc; amount: N | all;
+#                  from: inventory | enderchest | both; return: true gives them back when a timed action ends)
+#    equip         (slot: head | chest | legs | feet | offhand, item, lock: true) - e.g. a dunce cap
+#    give-heads    (owner: self | <name> | <uuid>, amount, cycle: current | next, to: inventory | vault)
+#    loot          (table: minecraft:chests/simple_dungeon, luck)
+#    experience    (amount: +/- points, levels: false)
+#  Currency
+#    points        (amount: +/-, when: now | next-cycle, revert: true)
+#    money         (amount: +/-, revert: true) through Vault
+#  Permissions and ranks (LuckPerms or Vault; LuckPerms gets its own expiry for timed changes)
+#    permission    (permission, mode: add | remove, value: true)
+#    group         (group, mode: add | remove)
+#    primary-group (group)
+#    track         (track, direction: promote | demote) - LuckPerms only
+#    prefix/suffix (text, priority)
+#  Titles
+#    grant-title, revoke-title (title, equip: false)
+#    strip-title   (which: equipped | all)
+#    force-title   (title) - equipped and locked for the duration
+#  Moderation (integrations.yml moderation.provider; vanilla bans and Headcount's own mutes and jails as fallback)
+#    ban, mute, kick, warn, jail   (reason, jail: <jail name>) - a timed duration makes it temporary
+#  PvP (integrations.yml pvp.provider)
+#    pvp           (state: on | off, lock: true, restore: true)
+#  Buffs and debuffs (kept applied through death and milk while timed)
+#    potion        (effect, amplifier, seconds [for instant], ambient, particles, icon)
+#    attribute     (attribute: max_health | movement_speed | attack_damage | scale | jump_strength | gravity |
+#                  block_break_speed | ..., amount, operation: add_number | add_scalar | multiply_scalar_1)
+#    glowing, fire (ticks), lightning (damage: false), freeze (ticks), hunger (food: +/-, exhaustion per second)
+#    gamemode      (mode, lock: true)
+#    teleport      (to: spawn | bed | random | world,x,y,z[,yaw,pitch]; random: {world, radius, min-radius, center};
+#                  return: true sends them back when a timed teleport ends)
+#    heal, feed    (amount or full), damage (amount), launch (power, x, z), clear-effects
+#    deny          (deny: [break, place, chat, commands, items, fly, elytra, ender-pearl, worlds, trade, shop, vault,
+#                  interact, drop, pickup, attack], commands: [..], allowed-commands: [..], items: [..], worlds: [..],
+#                  message)
+#  Headcount
+#    next-cycle    (starting-heads: "+5" | "-3" | "=10", vault-size: "+9")
+#    rollover      (percent: 50 to set, or add: 10)
+#  (head-protection, extra-heads, bounty, shield, deny and force-title only work while active: give them a
+#  duration, such as cycle, 1d or permanent. /hca selftest flags one without.)
+#    head-protection (charges: 0 = unlimited) - your head does not drop when you are killed
+#    extra-heads   (amount, charges) - extra heads drop when you are killed
+#    bounty        (points, actions: [...] for the killer, claims: 1, announce: true)
+#    shield        (charges: 1) - blocks the next punishment outcome
+#    flag          (flag, mode: set | clear) - usable as a status (source: flag)
+#    score-bonus   (amount) - added to this cycle's final score
+#  Flow
+#    run           (list: <name>, or actions: [...])
+#    random        (choices: [{weight: 3, actions: [...]}, {weight: 1, list: other-list}])
+# ============================================================================================
+config-version: 1
+
+lists:
+  # ---------------------------------------------------------------- shared effects
+  celebrate:
+    - sound: "minecraft:entity.player.levelup"
+    - type: particle
+      particle: happy_villager
+      count: 30
+    - title: "<gold>Nice!"
+
+  dunce-cap:
+    - type: equip
+      slot: head
+      lock: true
+      duration: cycle
+      item:
+        material: CARVED_PUMPKIN
+        name: "<red>Dunce Cap"
+        lore: ["<gray>Earned with a negative score.", "<gray>Comes off when the cycle ends."]
+      start-message: "<red>You have to wear the dunce cap until the cycle ends."
+      end-message: "<green>The dunce cap is off."
+
+  # ---------------------------------------------------------------- punishments (used by outcomes.yml)
+  punish-mild:
+    - message: "<red>Your score was <score>. A small penalty applies for a day."
+    - type: potion
+      effect: slowness
+      amplifier: 0
+      duration: 1d
+      time: online
+      key: punish-slowness
+      end-message: "<green>Your penalty is over."
+
+  punish-medium:
+    - message: "<red>Your score was <score>. You are weakened for two days."
+    - type: potion
+      effect: weakness
+      amplifier: 0
+      duration: 2d
+      time: online
+    - type: attribute
+      attribute: max_health
+      amount: -4
+      duration: 2d
+      time: online
+      end-message: "<green>Your health is back to normal."
+
+  punish-severe:
+    - message: "<dark_red>Your score was <score>. You are marked for the whole cycle."
+    - dunce-cap
+    - type: glowing
+      duration: cycle
+    - type: bounty
+      points: 5
+      duration: cycle
+      claims: 1
+    - type: broadcast-location
+      duration: 1d
+      repeat: 30m
+      text: "<red><player></red> <gray>has a bounty and is at <yellow><x>, <y>, <z></yellow> in <world>."
+
+  # ---------------------------------------------------------------- rewards
+  reward-top:
+    - celebrate
+    - type: grant-title
+      title: champion
+    - points:
+        amount: 5
+        when: now
+
+  # A random reward, as an example of 'random'.
+  mystery-box:
+    - type: random
+      choices:
+        - weight: 5
+          actions:
+            - type: give-item
+              material: GOLDEN_APPLE
+              amount: 2
+        - weight: 3
+          actions:
+            - type: give-item
+              material: DIAMOND
+              amount: 3
+        - weight: 1
+          actions:
+            - type: give-heads
+              owner: self
+              amount: 3
+              cycle: next
+            - message: "<gold>Lucky! 3 extra heads of your own next cycle."

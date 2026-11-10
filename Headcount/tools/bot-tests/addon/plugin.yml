@@ -1,0 +1,11 @@
+name: HeadcountTestAddon
+version: 1.0.0
+main: hctest.TestAddon
+api-version: '26.3'
+depend: [Headcount]
+commands:
+  hcaddon:
+    permission: hcaddon.use
+permissions:
+  hcaddon.use:
+    default: op

@@ -1,0 +1,151 @@
+# ============================================================================================
+#  Headcount - statuses.yml
+#  Named player states and how to detect each one. Nothing here blocks anything by itself: other files use
+#  these names (vault, trade, conditions, deny lists...), and every status is also a placeholder,
+#  %headcount_status_<name>%, so other plugins can read it.
+#
+#  Each status has a 'source' plus that source's settings, and optionally:
+#    fallback:     another status to use when this source cannot answer (its plugin is missing)
+#    unavailable:  true/false to use instead when there is no fallback (default false)
+#    description:  a note for yourself
+#  In any list of statuses, "!name" means "not name".
+#
+#  Sources (full reference in docs/statuses.md):
+#    pvp              PvP plugin hook. check: pvp-enabled | pvp-disabled | combat-tagged | newbie | respawn-protected | override
+#    placeholder      placeholder: "%..%", operator: equals | not-equals | greater-than | less-than |
+#                     greater-or-equal | less-or-equal | contains | not-contains | starts-with | ends-with | regex,
+#                     value: "...", ignore-case: true. Works with any plugin's PlaceholderAPI placeholders.
+#    scoreboard-tag   tag: name
+#    permission       permission: node
+#    metadata         key: name (true when any value is truthy), optional value: text to match
+#    flag             flag: name (set by the flag action)
+#    pvp-damage       dealt or took damage from a player recently. direction: dealt | took | either, seconds: 15
+#    recent-damage    took any damage recently. seconds: 10
+#    mob-damage       took damage from a hostile mob recently. seconds: 10
+#    nearby-player    radius: 16, status: (optional, the other player must have it), min: 1, visible-only: true
+#    nearby-hostile   radius: 8, include-targeting: true, targeting-radius: 32
+#    targeted-by-mob  radius: 32
+#    health           below: 6, or range: "<6" / "..5", percent: false
+#    food             below: 6, or range
+#    on-fire, in-lava, in-water, gliding, flying, swimming, sneaking, sprinting, sleeping, dead, invisible, op, bedrock
+#    falling          distance: 4 (blocks fallen so far)
+#    riding           vehicles: [] (empty = any vehicle; else entity types like horse, boat, minecart)
+#    gamemode         modes: [creative, spectator]
+#    world            worlds: [world_nether]
+#    joined-recently  seconds: 30
+#    potion           effect: speed, min-amplifier: 0
+#    y-level          range: "<0" (or below: / above:)
+#    biome            biomes: [desert, minecraft:badlands]
+#    holding          materials: [DIAMOND_SWORD], hand: main | off | any
+#    world-time       from: 13000, to: 23000 (ticks; wraps past midnight)
+#    essentials       check: afk | vanished | god | jailed | muted (EssentialsX)
+#    muted            muted by the moderation plugin or by Headcount's own mute
+#    in-trade         in an open Headcount trade
+#    headcount        value: points | unique | total | rank | percentile | streak | score | ..., range: ">0"
+#    all-of / any-of  statuses: [a, b, "!c"]
+#    not              status: a
+#    always / never
+# ============================================================================================
+config-version: 1
+
+settings:
+  # How %headcount_status_<name>% reads.
+  placeholder-true: "true"
+  placeholder-false: "false"
+
+statuses:
+  # PvPManager's PvP toggle is on for this player. (PvPManager turns PvP on by default for everyone; players
+  # turn it off with /pvp. While it is on, the default vault and trade rules block them.)
+  in-pvp:
+    source: pvp
+    check: pvp-enabled
+    unavailable: false
+
+  # PvPManager's combat tag; without a PvP plugin, falls back to Headcount's own damage check.
+  combat-tagged:
+    source: pvp
+    check: combat-tagged
+    fallback: recent-pvp-damage
+
+  recent-pvp-damage:
+    source: pvp-damage
+    direction: either
+    seconds: 15
+
+  newbie-protected:
+    source: pvp
+    check: newbie
+    unavailable: false
+
+  creative-or-spectator:
+    source: gamemode
+    modes: [creative, spectator]
+
+  sleeping-or-dead:
+    source: any-of
+    statuses: [sleeping, dead]
+
+  sleeping:
+    source: sleeping
+
+  dead:
+    source: dead
+
+  # Vanished through any vanish plugin that sets the "vanished" metadata, or EssentialsX's /vanish.
+  vanished:
+    source: any-of
+    statuses: [vanished-metadata, vanished-essentials]
+
+  vanished-metadata:
+    source: metadata
+    key: vanished
+
+  vanished-essentials:
+    source: essentials
+    check: vanished
+    unavailable: false
+
+  afk:
+    source: essentials
+    check: afk
+    unavailable: false
+
+  bedrock-player:
+    source: bedrock
+
+  low-health:
+    source: health
+    below: 6
+
+  in-danger:
+    source: any-of
+    statuses: [combat-tagged, low-health, on-fire, in-lava, falling-far]
+
+  on-fire:
+    source: on-fire
+
+  in-lava:
+    source: in-lava
+
+  falling-far:
+    source: falling
+    distance: 4
+
+  # Examples you can adapt (uncomment to use):
+  #
+  # Any other PvP or combat plugin through PlaceholderAPI, e.g. a combat-log plugin exposing %combatlogx_in_combat%:
+  # combat-logged:
+  #   source: placeholder
+  #   placeholder: "%combatlogx_in_combat%"
+  #   operator: equals
+  #   value: "Yes"
+  #
+  # A region where vault access is not allowed, using a scoreboard tag your region plugin adds:
+  # in-arena:
+  #   source: scoreboard-tag
+  #   tag: arena
+  #
+  # Players a moderator flagged (set with: /hca flag <player> set under-review):
+  # under-review:
+  #   source: flag
+  #   flag: under-review

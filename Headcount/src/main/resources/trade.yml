@@ -1,0 +1,141 @@
+# ============================================================================================
+#  Headcount - trade.yml
+#  /trade <player> sends a request; the target accepts with /trade accept (or the chat link on Java),
+#  denies with /trade deny, and the sender withdraws with /trade cancel.
+#  Each player can have at most one active trade or pending request at a time, incoming or outgoing.
+# ============================================================================================
+config-version: 1
+
+request:
+  # How long a request waits before it expires.
+  timeout: 30s
+  # A target with this status (statuses.yml) is treated as offline, so vanished staff are never revealed.
+  vanished-status: vanished
+
+confirm:
+  # Once both players confirm, both sides lock and the trade happens after this countdown.
+  # Any change to either side clears both confirmations.
+  countdown: 3s
+
+cooldown:
+  # Time between trades for both players (bypass: headcount.bypass.trade.cooldown).
+  duration: 10s
+  # Also start the cooldown when a trade is cancelled.
+  after-cancel: false
+
+range:
+  # Maximum distance between the players in blocks, or -1 for no limit (bypass: headcount.bypass.trade.range).
+  blocks: -1
+  # Both players must be in the same world.
+  same-world: true
+
+allowed-types:
+  # "Heads" are economy heads of the current cycle; everything else (including expired heads) is an "item".
+  heads-for-heads: true
+  items-for-heads: true
+  items-for-items: true
+  # One side offers nothing (a gift).
+  gifts: true
+
+limits:
+  # Most item stacks one side may offer (heads not counted).
+  max-items: 24
+  # Most economy heads one side may offer.
+  max-heads: 24
+  # Only allow offering economy heads of your own head.
+  only-own-heads: false
+  # Materials that can never be traded.
+  blocked-items: []
+
+statuses:
+  # Statuses that stop a request being sent (checked on both players).
+  # Messages: gates.trade-send.<status> (you) and gates.trade-send-target.<status> (the other player).
+  # Bypass: headcount.bypass.trade-send.<status>.
+  block-request:
+    - in-pvp
+    - combat-tagged
+    - creative-or-spectator
+    - sleeping-or-dead
+  # Statuses that stop a request being accepted (checked on both players).
+  # Messages: gates.trade-accept.<status> / gates.trade-accept-target.<status>.
+  block-accept:
+    - in-pvp
+    - combat-tagged
+    - creative-or-spectator
+    - sleeping-or-dead
+  # Statuses that cancel an open trade (checked on both players, every cancel.check-interval).
+  # Bypass: headcount.bypass.trade-cancel.<status>.
+  cancel-open:
+    - in-pvp
+    - combat-tagged
+    - creative-or-spectator
+    - sleeping-or-dead
+
+cancel:
+  # An open trade is cancelled (everything returned to its owner) if either player closes the screen, disconnects,
+  # is kicked or banned, dies, changes world, leaves range, gets a cancel status, the cycle ends, or the server
+  # stops or reloads. These add more cases:
+  on-teleport: true
+  # Teleports shorter than this (in the same world) do not cancel.
+  teleport-min-distance: 0
+  on-gamemode-change: true
+  # How often open trades are checked for range, statuses and closed screens.
+  check-interval: 500ms
+
+# Save both players' inventories to disk right after a trade completes, and about a second after any item moves
+# into or out of an offer, so a crash can neither duplicate nor lose offered items.
+save-player-data-after-trade: true
+
+gui:
+  # Variables in all trade texts: <other> <seconds> <my_heads> <my_items> <their_heads> <their_items> <max_heads> <max_items>
+  title: "<dark_gray>Trade with <other>"
+  rows: 6
+  # Your offer (left) and the other player's offer (right). Both lists must be the same length.
+  own-slots: [0-3, 9-12, 18-21, 27-30, 36-39, 45-48]
+  other-slots: [5-8, 14-17, 23-26, 32-35, 41-44, 50-53]
+  filler:
+    material: BLACK_STAINED_GLASS_PANE
+    name: " "
+  filler-slots: empty
+  buttons:
+    info:
+      slot: 4
+      material: PLAYER_HEAD
+      head: viewer
+      name: "<yellow>Trading with <other>"
+      lore:
+        - "<gray>Your offer is on the left."
+        - "<gray>Heads: <white><my_heads>/<max_heads></white> · Items: <white><my_items>/<max_items>"
+        - "<gray>Their offer: <white><their_heads></white> heads, <white><their_items></white> items"
+    confirm:
+      slot: 13
+      unconfirmed:
+        material: LIME_DYE
+        name: "<green>Confirm trade"
+        lore: ["<gray>Both players must confirm.", "<gray>Any change clears both."]
+      confirmed:
+        material: LIME_CONCRETE
+        name: "<green><bold>You confirmed"
+        lore: ["<gray>Click to take it back."]
+    other-status:
+      slot: 22
+      unconfirmed:
+        material: GRAY_DYE
+        name: "<gray><other> has not confirmed"
+      confirmed:
+        material: LIME_CONCRETE
+        name: "<green><other> confirmed"
+    countdown:
+      slot: 31
+      idle:
+        material: GRAY_STAINED_GLASS_PANE
+        name: " "
+      running:
+        material: CLOCK
+        name: "<gold>Trading in <seconds>..."
+        lore: ["<gray>Both sides are locked.", "<gray>Click confirm to stop."]
+    cancel:
+      slot: 40
+      material: BARRIER
+      name: "<red>Cancel trade"
+      lore: ["<gray>Everything goes back to its owner."]

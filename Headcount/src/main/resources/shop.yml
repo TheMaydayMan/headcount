@@ -1,0 +1,322 @@
+# ============================================================================================
+#  Headcount - shop.yml
+#  /hc shop. Points are earned from a positive score at the end of a cycle and spent during the next one.
+#  Each tier unlocks at a threshold of the player's score from LAST cycle and is its own set of pages.
+#  Locked tiers can still be browsed: entries show their "locked" look and the banner shows the threshold.
+# ============================================================================================
+config-version: 1
+
+settings:
+  # Purchases at or above this price open a confirmation menu first (an entry can override with confirm: true/false).
+  confirm-at-price: 50
+  # The "last cycle score" used for players with no previous cycle (new or inactive last cycle).
+  new-player-score: 0
+  # When global stock refills: cycle (every cycle) | never
+  stock-reset: cycle
+
+gui:
+  # Variables: <tier> <tier_id> <tier_number> <tiers> <page> <pages> <points> <last_score> <threshold> <needed>
+  title: "<dark_gray>Shop » <tier> <dark_gray>(<points> pts)"
+  rows: 6
+  filler:
+    material: GRAY_STAINED_GLASS_PANE
+    name: " "
+  filler-slots: [0-9, 17, 18, 26, 27, 35, 36-53]
+  buttons:
+    previous-tier:
+      slot: 45
+      material: SPECTRAL_ARROW
+      name: "<yellow>« <target_tier>"
+    next-tier:
+      slot: 53
+      material: SPECTRAL_ARROW
+      name: "<yellow><target_tier> »"
+    previous-page:
+      slot: 48
+      material: ARROW
+      name: "<yellow>Previous page"
+      lore: ["<gray>Page <page> of <pages>"]
+    next-page:
+      slot: 50
+      material: ARROW
+      name: "<yellow>Next page"
+      lore: ["<gray>Page <page> of <pages>"]
+    info:
+      slot: 49
+      material: SUNFLOWER
+      name: "<gold><points> points"
+      lore:
+        - "<gray>Tier: <tier> <dark_gray>(<tier_number>/<tiers>)"
+        - "<gray>Your last cycle score: <white><last_score>"
+        - "<gray>Points come from a positive score."
+    close:
+      slot: 46
+      material: BARRIER
+      name: "<red>Close"
+    locked-banner:
+      slot: 4
+      material: IRON_BARS
+      name: "<red>Locked: <tier>"
+      lore:
+        - "<gray>Needs a last cycle score of <white><threshold></white> or more."
+        - "<gray>Yours was <white><last_score></white> (<white><needed></white> more needed)."
+
+# The confirmation menu for expensive purchases. The entry being bought is shown in the 'display' slot.
+confirm-gui:
+  title: "<dark_gray>Buy <name> for <price> points?"
+  rows: 3
+  filler: { material: GRAY_STAINED_GLASS_PANE, name: " " }
+  filler-slots: empty
+  buttons:
+    confirm:
+      slots: [10, 11, 12]
+      material: LIME_CONCRETE
+      name: "<green>Buy for <price> points"
+      lore: ["<gray>You have <points> points."]
+    cancel:
+      slots: [14, 15, 16]
+      material: RED_CONCRETE
+      name: "<red>Cancel"
+    display:
+      slot: 13
+
+# How entries look in each state, merged under every entry's own 'display' and 'display-states'.
+# States: affordable, too-expensive, sold-out, locked, and optionally limit-reached, cooldown, unavailable
+# (those three fall back to sold-out / too-expensive / too-expensive when not defined).
+# Variables: <name> <price> <points> <missing> <stock> <purchases_left> <limit> <bought> <cooldown> <tier> <threshold>
+default-states:
+  affordable:
+    lore:
+      - "<gray>Price: <gold><price> points"
+      - "<gray>Stock: <white><stock></white> · Left for you this cycle: <white><purchases_left>"
+      - ""
+      - "<green>Click to buy"
+  too-expensive:
+    lore:
+      - "<gray>Price: <red><price> points"
+      - "<red>You need <missing> more points."
+  sold-out:
+    material: BARRIER
+    lore:
+      - "<gray>Price: <gold><price> points"
+      - "<red>Sold out"
+  limit-reached:
+    lore:
+      - "<gray>Price: <gold><price> points"
+      - "<red>You already bought this <limit> time(s) this cycle."
+  cooldown:
+    lore:
+      - "<gray>Price: <gold><price> points"
+      - "<red>Available again in <cooldown>."
+  unavailable:
+    lore:
+      - "<gray>Price: <gold><price> points"
+      - "<red>You do not meet the requirements."
+  locked:
+    material: GRAY_DYE
+    glint: false
+    lore:
+      - "<dark_gray>Locked"
+      - "<gray>Needs a last cycle score of <white><threshold>"
+
+# Tiers in order. 'threshold: none' is always unlocked.
+# Entry settings:
+#   page, slot           where it goes (page starts at 1)
+#   price                in points
+#   display              item definition (material, name, lore, item-model, glint, enchants, custom ...)
+#   display-states       per-state overrides (affordable, too-expensive, sold-out, locked, limit-reached, cooldown, unavailable)
+#   actions              what a purchase does
+#   limit-per-cycle      purchases per player per cycle (0 = no limit)
+#   stock                global stock (-1 = unlimited)
+#   cooldown             time between purchases per player
+#   conditions           extra requirements (see actions.yml)
+#   requires             titles: [..], purchases: [entry or tier.entry, ever], purchases-this-cycle: [..], permissions: [..]
+#   confirm              force the confirmation menu on (true) or off (false)
+tiers:
+  common:
+    name: "<white>Common"
+    threshold: none
+    entries:
+      steak:
+        slot: 10
+        price: 2
+        display:
+          material: COOKED_BEEF
+          name: "<white>16 Steak"
+        actions:
+          - type: give-item
+            material: COOKED_BEEF
+            amount: 16
+      speed:
+        slot: 12
+        price: 3
+        limit-per-cycle: 5
+        display:
+          material: SUGAR
+          name: "<aqua>Speed for 30 minutes"
+        actions:
+          - type: potion
+            effect: speed
+            amplifier: 0
+            duration: 30m
+            stacking: extend
+            start-message: "<aqua>Speed for <duration>."
+            end-message: "<gray>Your speed boost wore off."
+      extra-heads:
+        slot: 14
+        price: 5
+        limit-per-cycle: 2
+        display:
+          material: PLAYER_HEAD
+          head: viewer
+          name: "<yellow>+3 starting heads next cycle"
+          lore: ["<gray>Heads that don't fit in your vault", "<gray>are given to you as items."]
+        actions:
+          - type: next-cycle
+            starting-heads: "+3"
+          - message: "<yellow>You will start next cycle with 3 more heads."
+      shield:
+        slot: 16
+        price: 8
+        limit-per-cycle: 1
+        display:
+          material: SHIELD
+          name: "<gold>Punishment shield"
+          lore: ["<gray>Blocks your next punishment."]
+        actions:
+          - type: shield
+            charges: 1
+            duration: cycles:2
+            start-message: "<gold>A shield protects you from your next punishment."
+
+  uncommon:
+    name: "<green>Uncommon"
+    threshold: 5
+    entries:
+      haste:
+        slot: 10
+        price: 6
+        display:
+          material: GOLDEN_PICKAXE
+          name: "<green>Haste II for 1 hour"
+        actions:
+          - type: potion
+            effect: haste
+            amplifier: 1
+            duration: 1h
+            time: online
+      head-protection:
+        slot: 12
+        price: 10
+        limit-per-cycle: 1
+        display:
+          material: TOTEM_OF_UNDYING
+          name: "<green>Head protection (1 day)"
+          lore: ["<gray>Your head does not drop when you are killed."]
+        actions:
+          - type: head-protection
+            duration: 1d
+      bigger-vault:
+        slot: 14
+        price: 12
+        limit-per-cycle: 1
+        display:
+          material: CHEST
+          name: "<green>+9 vault slots next cycle"
+        actions:
+          - type: next-cycle
+            vault-size: "+9"
+          - message: "<green>Your vault grows by 9 slots next cycle."
+      mystery:
+        slot: 16
+        price: 7
+        display:
+          material: ENDER_CHEST
+          name: "<green>Mystery box"
+        actions: mystery-box
+
+  rare:
+    name: "<blue>Rare"
+    threshold: 10
+    entries:
+      title-collector:
+        slot: 11
+        price: 20
+        limit-per-cycle: 1
+        display:
+          material: NAME_TAG
+          name: "<blue>Title: Collector"
+        requires:
+          permissions: []
+        actions:
+          - type: grant-title
+            title: collector
+            equip: true
+      rollover:
+        slot: 13
+        price: 15
+        limit-per-cycle: 1
+        display:
+          material: CLOCK
+          name: "<blue>Keep 50% of unspent points"
+          lore: ["<gray>At the end of this cycle."]
+        actions:
+          - type: rollover
+            percent: 50
+      diamonds:
+        slot: 15
+        price: 25
+        stock: 10
+        display:
+          material: DIAMOND_BLOCK
+          name: "<blue>Diamond block"
+          glint: true
+        actions:
+          - type: give-item
+            material: DIAMOND_BLOCK
+            amount: 1
+
+  legendary:
+    name: "<gold>Legendary"
+    threshold: 20
+    entries:
+      title-legend:
+        slot: 11
+        price: 60
+        display:
+          material: NETHER_STAR
+          name: "<gold>Title: Legend"
+          glint: true
+        requires:
+          titles: [collector]
+        actions:
+          - type: grant-title
+            title: legend
+            equip: true
+          - celebrate
+      flight:
+        slot: 13
+        price: 40
+        cooldown: 1d
+        display:
+          material: FEATHER
+          name: "<gold>Fly for 1 hour"
+        actions:
+          - type: permission
+            permission: essentials.fly
+            duration: 1h
+            time: online
+          - message: "<gold>You can use /fly for an hour of playtime."
+      next-cycle-heads:
+        slot: 15
+        price: 50
+        limit-per-cycle: 1
+        display:
+          material: SKELETON_SKULL
+          name: "<gold>5 of your heads in next cycle's vault"
+        actions:
+          - type: give-heads
+            owner: self
+            amount: 5
+            cycle: next
+            to: vault

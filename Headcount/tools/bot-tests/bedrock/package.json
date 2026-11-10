@@ -1,0 +1,8 @@
+{
+  "name": "headcount-bedrock-test",
+  "private": true,
+  "description": "Bedrock smoke test for Headcount through Geyser (see ../README.md)",
+  "dependencies": {
+    "bedrock-protocol": "3.61.0"
+  }
+}

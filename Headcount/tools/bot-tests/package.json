@@ -1,0 +1,8 @@
+{
+  "name": "headcount-bot-tests",
+  "private": true,
+  "description": "Bot-driven player tests for Headcount (see README.md)",
+  "dependencies": {
+    "mineflayer": "4.39.0"
+  }
+}

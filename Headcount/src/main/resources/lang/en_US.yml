@@ -1,0 +1,362 @@
+# Headcount - English messages (MiniMessage). An empty string ("") disables a message.
+# <prefix> is available everywhere. Variables are listed where they differ from the obvious ones.
+config-version: 1
+prefix: "<dark_gray>[<gold>Headcount</gold>]</dark_gray> "
+
+time: { days: "d", hours: "h", minutes: "m", seconds: "s" }
+streak:
+  positive: "<green><n> positive"
+  negative: "<red><n> negative"
+  none: "<gray>none"
+
+general:
+  no-permission: "<prefix><red>You don't have permission to do that."
+  players-only: "<prefix><red>Only players can do that."
+  loading: "<prefix><gray>Headcount is still starting up. Try again in a moment."
+  unknown-command: "<prefix><red>Unknown subcommand. <gray>See /<label> help."
+
+cycle:
+  not-started: "<prefix><gray>No cycle is running yet."
+  processing: "<prefix><gray>The cycle is ending right now. Try again in a moment."
+
+help:
+  header: "<gold><bold>Headcount</bold> <gray>commands"
+  admin-hint: "<gray>Admin commands: <yellow>/hca help"
+  player:
+    vault: "<yellow>/<label></yellow> <gray>- open your head vault"
+    shop: "<yellow>/<label> shop [tier]</yellow> <gray>- spend points"
+    titles: "<yellow>/<label> titles</yellow> <gray>- equip a title"
+    points: "<yellow>/<label> points</yellow> <gray>- your points"
+    score: "<yellow>/<label> score</yellow> <gray>- your score if the cycle ended now"
+    top: "<yellow>/<label> top [last]</yellow> <gray>- the leaderboard"
+    history: "<yellow>/<label> history</yellow> <gray>- your past cycles"
+    sidebar: "<yellow>/<label> sidebar</yellow> <gray>- toggle the sidebar"
+    effects: "<yellow>/<label> effects</yellow> <gray>- your active effects"
+    help: "<yellow>/<label> help</yellow> <gray>- this list"
+    trade: "<yellow>/trade \\<player> | accept | deny | cancel</yellow> <gray>- trade heads and items"
+
+# Status gates: gates.<gate>.<status>, falling back to gates.<gate>.default. <status> is the status name.
+gates:
+  vault-move:
+    default: "<prefix><red>You can't move heads right now (<status>)."
+    in-pvp: "<prefix><red>You can't move heads while your PvP is on. <gray>Turn it off with /pvp."
+    combat-tagged: "<prefix><red>You can't move heads while in combat."
+    creative-or-spectator: "<prefix><red>You can't move heads in creative or spectator mode."
+    sleeping-or-dead: "<prefix><red>You can't move heads right now."
+  vault-open:
+    default: "<prefix><red>You can't open your vault right now (<status>)."
+    in-pvp: "<prefix><red>You can't open your vault while your PvP is on."
+    combat-tagged: "<prefix><red>You can't open your vault while in combat."
+    creative-or-spectator: "<prefix><red>You can't open your vault in creative or spectator mode."
+    sleeping-or-dead: "<prefix><red>You can't open your vault right now."
+  trade-send:
+    default: "<prefix><red>You can't send a trade request right now (<status>)."
+    in-pvp: "<prefix><red>You can't trade while your PvP is on."
+    combat-tagged: "<prefix><red>You can't trade while in combat."
+    creative-or-spectator: "<prefix><red>You can't trade in creative or spectator mode."
+    sleeping-or-dead: "<prefix><red>You can't trade right now."
+  trade-send-target:
+    default: "<prefix><red><target> can't trade right now."
+  trade-accept:
+    default: "<prefix><red>You can't accept a trade right now (<status>)."
+    in-pvp: "<prefix><red>You can't accept a trade while your PvP is on."
+    combat-tagged: "<prefix><red>You can't accept a trade while in combat."
+    creative-or-spectator: "<prefix><red>You can't accept a trade in creative or spectator mode."
+    sleeping-or-dead: "<prefix><red>You can't accept a trade right now."
+  trade-accept-target:
+    default: "<prefix><red><target> can't trade right now."
+  trade-cancel:
+    default: "<prefix><red>The trade was cancelled (<status>)."
+
+vault:
+  view-only: "<prefix><gray>You can only look at this vault."
+  not-economy-head: "<prefix><red>Only economy heads of this cycle can go in your vault."
+  expired-head: "<prefix><red>That head is from cycle <cycle> and has expired."
+  duplicate-head: "<prefix><red>That head is a copy and can't be used."
+  full: "<prefix><red>Your vault is full."
+
+items:
+  inventory-full: "<prefix><yellow>Your inventory was full: <count> stack(s) were dropped at your feet."
+  delivered: "<prefix><green>You received <count> item(s) that were waiting for you."
+
+duplicates:
+  alert: "<prefix><red>Duplicate head (<kind>): <white><head></white> by <white><player></white>. <gray>/hca audit <head>"
+
+kills:
+  dropped: "<prefix><green>You took <victim>'s head!"
+  victim: "<prefix><red><killer> took your head."
+  already-claimed: "<prefix><gray>You already took <victim>'s head this cycle."
+  protected: "<prefix><gray><victim>'s head is protected."
+
+bounty:
+  placed: "<prefix><red>A bounty of <points> points is on <player>'s head!"
+  claimed: "<prefix><gold>You claimed the bounty on <victim>!"
+  claimed-broadcast: "<prefix><gold><killer> claimed the bounty on <victim>."
+
+points:
+  balance: "<prefix><gray>You have <gold><points></gold> points (<gold><points_next></gold> waiting for next cycle). <rollover>% of unspent points roll over."
+
+score:
+  preview: "<prefix><gray>If the cycle ended now: score <yellow><score></yellow> (<unique> unique, rank <rank> of <active>). <is_active> <dark_gray><time_left> left."
+  you-are-active: "<green>You are active."
+  you-are-not-active: "<red>You are not active yet."
+
+top:
+  header: "<gold>Top players, cycle <cycle>:"
+  header-last: "<gold>Last cycle (<cycle>):"
+  line: "<yellow><rank>.</yellow> <white><name></white> <gray>- <unique> unique"
+  line-last: "<yellow><rank>.</yellow> <white><name></white> <gray>- <unique> unique, score <score>"
+  empty: "<gray>Nobody yet."
+
+sidebar:
+  toggled-on: "<prefix><green>Sidebar on."
+  toggled-off: "<prefix><gray>Sidebar off."
+  disabled: "<prefix><gray>The sidebar is disabled on this server."
+
+effects:
+  none: "<prefix><gray>You have no active effects."
+  header: "<prefix><gray>Active effects (<count>):"
+  line: "<gray>- <white><description></white> <dark_gray>(<remaining>)"
+
+history:
+  empty: "<prefix><gray><player> has no past cycles yet."
+  no-outcomes: "<gray>none"
+
+hooks:
+  top-line: "<yellow><rank>.</yellow> <white><name></white> <gray>(<unique> unique, score <score>)"
+  top-empty: "<gray>Nobody was active."
+  no-outcomes: "<gray>none"
+  no-tier: "<gray>none"
+
+outcomes:
+  shield-used: "<prefix><gold>Your shield blocked <outcome>."
+  shielded-label: "<gray><outcome> (shielded)"
+
+placeholders:
+  not-started: "not started"
+  top-empty: "-"
+
+titles:
+  granted: "<prefix><green>New title: <title>"
+  equipped: "<prefix><green>Equipped <title>."
+  unequipped: "<prefix><gray>Title unequipped."
+  forced: "<prefix><red>Your title is locked right now."
+
+shop:
+  empty: "<prefix><gray>The shop is empty."
+  unlimited: "∞"
+  purchased: "<prefix><green>Bought <name> for <price> points. <gray>(<points> left)"
+  state:
+    too-expensive: "<prefix><red>You need <missing> more points."
+    sold-out: "<prefix><red>That is sold out."
+    limit-reached: "<prefix><red>You can't buy that again this cycle."
+    cooldown: "<prefix><red>Available again in <cooldown>."
+    unavailable: "<prefix><red>You don't meet the requirements."
+    locked: "<prefix><red>That tier needs a last cycle score of <threshold>."
+
+pvp:
+  locked: "<prefix><red>Your PvP is locked <state> right now."
+
+deny:
+  chat: "<prefix><red>You can't chat right now."
+  break: "<prefix><red>You can't break blocks right now."
+  place: "<prefix><red>You can't place blocks right now."
+  commands: "<prefix><red>You can't use that command right now."
+  items: "<prefix><red>You can't use that right now."
+  fly: "<prefix><red>You can't fly right now."
+  elytra: "<prefix><red>You can't use elytra right now."
+  ender-pearl: "<prefix><red>You can't use ender pearls right now."
+  worlds: "<prefix><red>You can't go there right now."
+  trade: "<prefix><red>You can't trade right now."
+  shop: "<prefix><red>You can't use the shop right now."
+  vault: "<prefix><red>You can't use your vault right now."
+  interact: "<prefix><red>You can't do that right now."
+  drop: "<prefix><red>You can't drop items right now."
+  pickup: ""
+  attack: "<prefix><red>You can't attack right now."
+
+moderation:
+  banned-kick: "<red>You have been banned.<newline><gray><reason>"
+  kicked: "<red>You have been kicked.<newline><gray><reason>"
+  warned: "<prefix><red>Warning: <reason>"
+  muted: "<prefix><red>You have been muted. <gray><reason>"
+  muted-chat: "<prefix><red>You are muted."
+  unmuted: "<prefix><green>You are no longer muted."
+  jailed: "<prefix><red>You have been jailed. <gray><reason>"
+  jailed-command: "<prefix><red>You can't use that command in jail."
+  released: "<prefix><green>You have been released."
+
+trade:
+  usage: "<prefix><gray>/<label> \\<player> | accept | deny | cancel"
+  opened: "<prefix><gray>Trading with <yellow><other></yellow>. Put your offer on the left."
+  locked: "<prefix><gray>Both sides are locked for the countdown."
+  offer-full: "<prefix><red>Your side is full."
+  item-not-allowed: "<prefix><red>That item can't be traded."
+  only-own-heads: "<prefix><red>You can only trade your own head."
+  too-many-heads: "<prefix><red>At most <max> heads per trade."
+  too-many-items: "<prefix><red>At most <max> item stacks per trade."
+  invalid: "<prefix><red>An offer breaks the trade limits."
+  empty: "<prefix><red>Both sides are empty."
+  type-gift: "<prefix><red>Gifts (one empty side) are not allowed."
+  type-heads-for-heads: "<prefix><red>Heads for heads trades are not allowed."
+  type-items-for-heads: "<prefix><red>Items for heads trades are not allowed."
+  type-items-for-items: "<prefix><red>Items for items trades are not allowed."
+  changed: "<prefix><yellow>An offer changed; both confirmations were cleared."
+  confirmed-other: "<prefix><green><other> confirmed."
+  unconfirmed-other: "<prefix><yellow><other> took back their confirmation."
+  countdown: "<gold>Trading in <seconds>..."
+  complete: "<prefix><green>Trade with <other> complete."
+  recovered: "<prefix><green><count> item(s) from an interrupted trade were returned to you."
+  request:
+    sent: "<prefix><gray>Trade request sent to <yellow><target></yellow>. It expires in <seconds>s."
+    received: "<prefix><yellow><player></yellow> <gray>wants to trade. <click:run_command:'/trade accept'><green>[Accept]</green></click> <click:run_command:'/trade deny'><red>[Deny]</red></click> <dark_gray>(/trade accept)"
+    received-bedrock: "<prefix><yellow><player></yellow> <gray>wants to trade. Type <green>/trade accept</green> or <red>/trade deny</red>."
+    offline: "<prefix><red><target> is not online."
+    self: "<prefix><red>You can't trade with yourself."
+    you-busy: "<prefix><red>You already have a trade or request open."
+    target-busy: "<prefix><red><target> is busy with another trade."
+    you-cooldown: "<prefix><red>You can trade again in <time>."
+    target-cooldown: "<prefix><red><target> can trade again in <time>."
+    other-world: "<prefix><red><target> is in another world."
+    out-of-range: "<prefix><red><target> is too far away (max <range> blocks)."
+    target-cannot: "<prefix><red><target> can't trade right now."
+    none: "<prefix><gray>You have no trade or request open."
+    none-incoming: "<prefix><gray>You have no trade request."
+    expired-sender: "<prefix><gray>Your trade request to <target> expired."
+    expired-target: "<prefix><gray>The trade request from <player> expired."
+    denied-target: "<prefix><gray>You denied <player>'s trade request."
+    denied-sender: "<prefix><red><target> denied your trade request."
+    cancelled-self: "<prefix><gray>Trade request cancelled."
+    cancelled-other: "<prefix><gray><player> cancelled the trade request."
+  cancelled:
+    generic: "<prefix><red>The trade was cancelled (<reason>). Your items were returned."
+    status: "<prefix><red>The trade was cancelled: <player> is <status>. Your items were returned."
+    cancelled-by: "<prefix><red><player> cancelled the trade. Your items were returned."
+    closed: "<prefix><red>The trade was cancelled because a screen was closed. Your items were returned."
+    disconnected: "<prefix><red>The trade was cancelled: someone disconnected. Your items were returned."
+    kicked: "<prefix><red>The trade was cancelled: someone was kicked. Your items were returned."
+    death: "<prefix><red>The trade was cancelled: someone died. Items were returned."
+    world: "<prefix><red>The trade was cancelled: someone changed worlds. Your items were returned."
+    range: "<prefix><red>The trade was cancelled: out of range. Your items were returned."
+    teleport: "<prefix><red>The trade was cancelled: someone teleported. Your items were returned."
+    gamemode: "<prefix><red>The trade was cancelled: a gamemode changed. Your items were returned."
+    changed: "<prefix><red>The trade was cancelled: an offer changed during the countdown."
+    shutdown: "<prefix><red>The trade was cancelled: the server is stopping. Your items were returned."
+    reload: "<prefix><red>The trade was cancelled: Headcount reloaded. Your items were returned."
+    cycle-end: "<prefix><red>The trade was cancelled: the cycle ended. Your items were returned."
+    admin: "<prefix><red>An admin cancelled the trade. Your items were returned."
+    denied: "<prefix><red>The trade was cancelled: someone can't trade right now. Your items were returned."
+
+admin:
+  unknown-player: "<prefix><red>No player named <player> has joined."
+  player-offline: "<prefix><red><player> is not online."
+  unknown-subcommand: "<prefix><red>Unknown subcommand. <gray>/<label> help"
+  error: "<prefix><red>That failed: <error>"
+  reloaded: "<prefix><green>Headcount reloaded."
+  help:
+    header: "<gold><bold>Headcount admin</bold>"
+    cycle: "<yellow>/hca cycle info|end confirm|start|simulate|setend \\<yyyy-MM-ddTHH:mm>|extend \\<duration>"
+    vault: "<yellow>/hca vault \\<player> [view]"
+    giveheads: "<yellow>/hca giveheads \\<player> \\<amount> [owner|self] [current|next] [inventory|vault]"
+    points: "<yellow>/hca points \\<player> give|take|set \\<amount> [next]"
+    title: "<yellow>/hca title \\<player> grant|revoke \\<title>"
+    history: "<yellow>/hca history \\<player>"
+    effects: "<yellow>/hca effects \\<player> [list|remove \\<id|all>]"
+    reset: "<yellow>/hca reset \\<player> vault|points|titles|streak|effects|history|all confirm"
+    trade: "<yellow>/hca trade cancel \\<player>"
+    audit: "<yellow>/hca audit \\<player|head-id|text...> [type:\\<type>] [page:\\<n>]"
+    reload: "<yellow>/hca reload"
+    status: "<yellow>/hca status \\<player> [status]"
+    flag: "<yellow>/hca flag \\<player> set|clear \\<flag>"
+    inspect: "<yellow>/hca inspect <gray>(held head)"
+    placeholders: "<yellow>/hca placeholders [player]"
+    integrations: "<yellow>/hca integrations"
+    selftest: "<yellow>/hca selftest <gray>(check every item, menu and message)"
+    run: "<yellow>/hca run \\<player> \\<action-list>"
+    hook: "<yellow>/hca hook \\<hook> [player]"
+  usage:
+    cycle: "<prefix><gray>/hca cycle info|end confirm|start|simulate|setend|extend"
+    cycle-setend: "<prefix><gray>/hca cycle setend 2026-12-01T00:00"
+    cycle-extend: "<prefix><gray>/hca cycle extend 1d (or -1d)"
+    vault: "<prefix><gray>/hca vault \\<player> [view]"
+    giveheads: "<prefix><gray>/hca giveheads \\<player> \\<amount> [owner|self] [current|next] [inventory|vault]"
+    points: "<prefix><gray>/hca points \\<player> give|take|set \\<amount> [next]"
+    title: "<prefix><gray>/hca title \\<player> grant|revoke \\<title>"
+    history: "<prefix><gray>/hca history \\<player>"
+    effects: "<prefix><gray>/hca effects \\<player> [list|remove \\<id|all>]"
+    reset: "<prefix><gray>/hca reset \\<player> vault|points|titles|streak|effects|history|all confirm"
+    trade: "<prefix><gray>/hca trade cancel \\<player>"
+    audit: "<prefix><gray>/hca audit \\<terms...> [type:\\<type>] [page:\\<n>]"
+    status: "<prefix><gray>/hca status \\<player> [status]"
+    flag: "<prefix><gray>/hca flag \\<player> set|clear \\<flag>"
+    placeholders: "<prefix><gray>/hca placeholders \\<player>"
+    run: "<prefix><gray>/hca run \\<player> \\<action-list>"
+    hook: "<prefix><gray>/hca hook <cycle-start|first-join|first-join-cycle|became-active|join|warning:\\<id>> [player]"
+  cycle:
+    none: "<prefix><gray>No cycle is running. The first starts <white><starts></white> (in <in>)."
+    info: "<prefix><gray>Cycle <white><cycle></white>: <start> → <end> (<time_left> left, <length> days, <zone>). Vault <vault_size>, starting heads <starting_heads>. Active <active> / <players>."
+    end-confirm: "<prefix><red>This ends the cycle now, scores everyone and resets every vault. <gray>Run /hca cycle end confirm"
+    ended: "<prefix><green>Cycle ended and the next one started."
+    started: "<prefix><green>Cycle started."
+    already-running: "<prefix><red>A cycle is already running. End it with /hca cycle end confirm."
+    cannot: "<prefix><red>That can't be done right now."
+    end-changed: "<prefix><green>The cycle now ends <end>."
+    simulate-header: "<prefix><gold>Simulated end of cycle <cycle> (nothing applied): <active> active, average <average>, <rewarded> rewarded, <punished> punished."
+    simulate-line: "<gray><rank>. <white><name></white> <unique> unique → score <yellow><score></yellow>, points <points>, outcomes: <outcomes>"
+  heads:
+    given: "<prefix><green>Gave <amount> of <owner>'s heads to <player> (<in_vault> into the vault)."
+    queued: "<prefix><green>Queued <amount> of <owner>'s heads for <player>'s vault next cycle."
+  points:
+    done: "<prefix><green><player> now has <points> points (<points_next> next cycle)."
+  title:
+    unknown: "<prefix><red>No title named <title>."
+    granted: "<prefix><green>Granted <title> to <player>."
+    revoked: "<prefix><green>Revoked <title> from <player>."
+  effects:
+    header: "<prefix><gray><player> has <count> active effect(s):"
+    line: "<gray>- <dark_gray>[<id>]</dark_gray> <white><description></white> <gray>(<remaining>, <state>, from <source>)"
+    removed: "<prefix><green>Removed effect <id>."
+    removed-all: "<prefix><green>Removed <count> effect(s) from <player>."
+    not-found: "<prefix><red>No effect starting with <id>."
+  reset:
+    confirm: "<prefix><red>This resets <what> for <player>. <gray>Add 'confirm' to the command."
+    done: "<prefix><green>Reset <what> for <player>."
+  trade:
+    cancelled: "<prefix><green>Cancelled <player>'s trade."
+    none: "<prefix><gray><player> has no trade or request."
+  audit:
+    searching: "<prefix><gray>Searching the audit log..."
+    none: "<prefix><gray>No matching audit lines."
+    header: "<prefix><gray>Audit (<terms>, type <type>, page <page>):"
+    line: "<gray><line>"
+    more: "<gray>More: add page:<next>"
+    bad-type: "<prefix><red>Unknown type. Types: <types>"
+  status:
+    header: "<prefix><gray>Statuses of <player>:"
+    line: "<gray>- <white><status></white>: <value> <dark_gray>(<source>)"
+    one: "<prefix><gray><player> <status>: <white><value>"
+    error: "<red>- <status> is disabled: <error>"
+  flag:
+    set: "<prefix><green>Set flag <flag> on <player>."
+    cleared: "<prefix><green>Cleared flag <flag> on <player>."
+  inspect:
+    not-economy: "<prefix><gray>That is not an economy head."
+    head: "<prefix><gray>Head <white><head></white>: owner <owner> (<owner_uuid>), cycle <cycle> (current: <current>), source <source>, made <created>, in a vault: <in_vault>, stack <amount>."
+  placeholders:
+    header: "<prefix><gray>Placeholders for <player>:"
+    line: "<gray>%headcount_<name>% = <white><value>"
+  integrations:
+    header: "<prefix><gray>Integrations:"
+    line: "<gray>- <white><category></white>: <provider>"
+  run:
+    done: "<prefix><green>Ran <list> on <player>."
+    unknown: "<prefix><red>No action list named <list> in actions.yml."
+  selftest:
+    header: "<prefix><gray>Self-test:"
+    group: "<green>✔ <group></green> <gray>(<count> checks)"
+    failure: "<red>✘ <detail>"
+    ok: "<prefix><green>All <passed> checks passed."
+    failed: "<prefix><red><failed> check(s) failed</red><gray>, <passed> passed. Details are in the console too."
+  hook:
+    done: "<prefix><green>Ran hook <hook>."
+    unknown: "<prefix><red>Unknown hook <hook> (or no cycle running / no player)."

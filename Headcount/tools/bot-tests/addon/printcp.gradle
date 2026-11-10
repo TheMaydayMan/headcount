@@ -1,0 +1,7 @@
+allprojects {
+    afterEvaluate {
+        tasks.register('printTestClasspath') {
+            doLast { println 'CP=' + sourceSets.test.compileClasspath.asPath }
+        }
+    }
+}

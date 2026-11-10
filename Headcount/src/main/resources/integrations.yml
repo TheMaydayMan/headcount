@@ -1,0 +1,108 @@
+# ============================================================================================
+#  Headcount - integrations.yml
+#  Which installed plugin handles what. Every integration is optional: Headcount works fully with none of
+#  them, using a built-in fallback where one exists. 'auto' picks the first installed plugin in the order shown.
+#  /hca integrations shows what was chosen.
+# ============================================================================================
+config-version: 1
+
+pvp:
+  # PvP state, combat tag and newbie protection for statuses, and the pvp action.
+  # auto | pvpmanager | none
+  # Any other PvP or combat plugin can still be used through PlaceholderAPI statuses (statuses.yml).
+  provider: auto
+  # PvPManager only lets players use /pvp with the permission pvpmanager.command.pvp, which is off by default,
+  # and players start with PvP on. Headcount's default rules block moving heads and trading while PvP is on, so
+  # with this on, every player may use /pvp (the permission's default becomes true; a player or group that is
+  # explicitly denied it in your permissions plugin stays denied). Set false to hand the permission out yourself.
+  let-players-toggle: true
+
+placeholderapi:
+  # Use other plugins' placeholders in Headcount's text, formula and statuses. auto | true | false
+  # (Headcount's own %headcount_...% placeholders always work in its own text, with or without PlaceholderAPI.)
+  enabled: auto
+  # Register the %headcount_...% expansion so other plugins can show Headcount's data.
+  register-expansion: true
+  # How formatted values (like %headcount_title%) are given to other plugins: legacy | minimessage | plain
+  expansion-format: legacy
+
+economy:
+  # Money for the money action. auto | vault | none
+  provider: auto
+
+permissions:
+  # Permission, group, track and prefix/suffix actions. auto (LuckPerms, then Vault) | luckperms | vault | none
+  provider: auto
+  luckperms:
+    # Give timed changes LuckPerms' own expiry too, so they end even if Headcount is removed.
+    use-expiry: true
+    # Optional "server" context for nodes Headcount adds (empty = global).
+    server-context: ""
+
+moderation:
+  # ban, mute, kick, warn and jail actions.
+  # auto (LiteBans, LibertyBans, AdvancedBan, EssentialsX) | litebans | libertybans | advancedban | essentials |
+  # commands | vanilla. Each punishment kind uses the first provider that supports it, then the vanilla fallback:
+  # vanilla bans, kicks and warnings (a message), and Headcount's own mutes and jails.
+  provider: auto
+  # Name shown as the punisher where the plugin supports it.
+  operator-name: Headcount
+  # Hide punishment broadcasts where the plugin supports it.
+  silent: false
+  # LiteBans' API cannot create punishments, so LiteBans is driven by its commands. <player> <uuid> <reason> <duration>
+  litebans-commands:
+    ban: "litebans:ban <player> <reason>"
+    tempban: "litebans:tempban <player> <duration> <reason>"
+    unban: "litebans:unban <player>"
+    mute: "litebans:mute <player> <reason>"
+    tempmute: "litebans:tempmute <player> <duration> <reason>"
+    unmute: "litebans:unmute <player>"
+    kick: "litebans:kick <player> <reason>"
+    warn: "litebans:warn <player> <reason>"
+  # Used when provider is "commands": drive any moderation plugin from templates. Leave a kind empty if unsupported.
+  # Variables: <player> <uuid> <reason> <duration> <jail>
+  commands:
+    ban: "ban <player> <reason>"
+    tempban: ""
+    unban: "pardon <player>"
+    mute: ""
+    tempmute: ""
+    unmute: ""
+    kick: "kick <player> <reason>"
+    warn: ""
+    jail: ""
+    tempjail: ""
+    unjail: ""
+  # Headcount's own jail, used when no plugin provides jails.
+  vanilla-jail:
+    # world,x,y,z[,yaw,pitch]. Must be set for jail actions to work without a jail plugin.
+    location: ""
+    # Jailed players further than this are pulled back.
+    radius: 8
+    # Where release sends them: previous | spawn
+    release-to: previous
+    # Commands jailed players may still use.
+    allowed-commands: [msg, tell, r, hc, headcount]
+  # Headcount's own mute (when no plugin provides mutes) blocks chat and these commands.
+  vanilla-mute:
+    blocked-commands: [msg, tell, w, r, me, say]
+
+discord:
+  # Discord messages for the discord action. auto | discordsrv | none
+  provider: auto
+  # DiscordSRV game channel name used when an action does not name one.
+  default-channel: global
+
+items:
+  # Custom item plugins for item definitions written as "custom: itemsadder:ns:id", "custom: oraxen:id",
+  # "custom: nexo:id". auto uses every installed one; or list some: [itemsadder, nexo]
+  providers: [auto]
+
+bedrock:
+  # Detect Bedrock players (Geyser). auto (Floodgate, then Geyser) | floodgate | geyser | none
+  # Bedrock players use /trade accept instead of the chat link; every menu and the sidebar work for them.
+  provider: auto
+
+essentials:
+  # Read EssentialsX afk/vanish/god/jail/mute state for the essentials status source. auto | false
+  enabled: auto

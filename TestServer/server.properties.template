@@ -1,0 +1,12 @@
+# Settings for the local Headcount test server. setup.sh copies this to server.properties when that file doesn't
+# exist yet; the server fills in every other setting with its default on first start.
+# Offline mode, so test clients can join under any name; no secure chat profiles, which offline mode can't have.
+online-mode=false
+enforce-secure-profile=false
+# Newer Paper builds turn the whitelist on by default.
+white-list=false
+# Lets non-op test players place heads at spawn.
+spawn-protection=0
+motd=Headcount test server
+view-distance=8
+simulation-distance=6

@@ -1,0 +1,23 @@
+# Headcount: Gradle caches and build output
+Headcount/.gradle/
+Headcount/build/
+
+# Bot tests: made by tools/bot-tests/setup.sh
+Headcount/tools/bot-tests/node_modules/
+Headcount/tools/bot-tests/work/
+Headcount/tools/bot-tests/bedrock/node_modules/
+
+# Test server: only the files that build it are tracked. setup.sh downloads the server and plugins, and the
+# server makes the rest (world, logs, plugin data, and a server.properties with a generated secret).
+TestServer/*
+!TestServer/README.md
+!TestServer/setup.sh
+!TestServer/start.sh
+!TestServer/server.properties.template
+
+# Editors and the OS
+.idea/
+*.iml
+.vscode/
+.DS_Store
+*.part

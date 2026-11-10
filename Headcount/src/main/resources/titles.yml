@@ -1,0 +1,77 @@
+# ============================================================================================
+#  Headcount - titles.yml
+#  Titles players can own (from the shop, outcomes or admins) and equip with /hc titles.
+#  The equipped title is %headcount_title% for chat and tab plugins, and can also be applied as a LuckPerms
+#  (or Vault) prefix or suffix. An action can force a title on a player for a while (force-title).
+# ============================================================================================
+config-version: 1
+
+settings:
+  # %headcount_title% when nothing is equipped.
+  none-text: ""
+  # How %headcount_title% wraps the title's display. <title> is the display text.
+  format: "<title> "
+  # Equip a player's first title automatically.
+  auto-equip-first: true
+  # Mirror the shown title into the permissions plugin as a prefix or suffix (legacy & colors are generated).
+  permission-prefix:
+    # Turning this on or off with /hca reload updates online players at once. Others are updated when they next
+    # join while it is on; a prefix left from before it was turned off can be removed with your permissions plugin.
+    enabled: false
+    # prefix | suffix
+    type: prefix
+    # Headcount owns every prefix (or suffix) at this priority; pick one nothing else uses.
+    priority: 100
+    format: "<title> "
+
+titles:
+  champion:
+    display: "<gold>[Champion]"
+    description:
+      - "<gray>Finished a cycle in the top 3."
+    icon: { material: GOLDEN_HELMET }
+  collector:
+    display: "<blue>[Collector]"
+    description:
+      - "<gray>Bought in the Rare shop tier."
+    icon: { material: CHEST }
+  legend:
+    display: "<gradient:gold:yellow>[Legend]</gradient>"
+    description:
+      - "<gray>The rarest title in the shop."
+    icon: { material: NETHER_STAR, glint: true }
+  dunce:
+    display: "<gray>[Dunce]"
+    description:
+      - "<gray>Given out by punishments."
+    icon: { material: CARVED_PUMPKIN }
+
+gui:
+  # <page>
+  title: "<dark_gray>Your Titles"
+  rows: 6
+  # Show titles the player does not own, as locked.
+  show-unowned: true
+  title-slots: [10-16, 19-25, 28-34]
+  # Look of each title (merged with the title's own 'icon'). States: owned, equipped, forced, locked.
+  # Variables: <title> <id> <description>
+  title-item:
+    material: NAME_TAG
+    name: "<title>"
+    owned:
+      lore: ["", "<yellow>Click to equip"]
+    equipped:
+      glint: true
+      lore: ["", "<green>Equipped", "<yellow>Click to unequip"]
+    forced:
+      glint: true
+      lore: ["", "<red>Forced on you for now"]
+    locked:
+      material: GRAY_DYE
+      lore: ["", "<dark_gray>You do not own this title"]
+  filler: { material: GRAY_STAINED_GLASS_PANE, name: " " }
+  filler-slots: [0-9, 17, 18, 26, 27, 35, 36-53]
+  buttons:
+    previous-page: { slot: 45, material: ARROW, name: "<yellow>Previous page", lore: ["<gray>Page <page> of <pages>"] }
+    next-page: { slot: 53, material: ARROW, name: "<yellow>Next page", lore: ["<gray>Page <page> of <pages>"] }
+    unequip: { slot: 49, material: BARRIER, name: "<red>Unequip title" }
