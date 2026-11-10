@@ -2,6 +2,10 @@
 # Starts the local Headcount test server with Java 25 (Paper 26.3 requires it).
 # Build the plugin first: (cd ../Headcount && ./gradlew build) copies the jar into plugins/.
 cd "$(dirname "$0")"
+if [ ! -f paper-26.3-246.jar ]; then
+  echo "The server isn't set up yet: run ./setup.sh first (it downloads Paper and the plugins)." >&2
+  exit 1
+fi
 # The first Java that is 25 or newer: the JDK installed for this project, then JAVA_HOME, then the PATH.
 JAVA=""
 for j in "$HOME/.jdks/jdk-25.0.5+8/bin/java" "${JAVA_HOME:+$JAVA_HOME/bin/java}" "$(command -v java)"; do
