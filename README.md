@@ -4,7 +4,7 @@
 
 This repository holds **Headcount**, a Paper plugin where player heads are the currency, and the files to set up the local test server it was developed and tested on. This README is the map: what is here, where each thing is, how to build and test, what has been verified, and what still needs a person.
 
-**Status (2026-11-10):** built from scratch with no compiler warnings; the test server boots with every free integration and no Headcount errors or warnings; `/hca selftest` passes all 781 checks on the default configs. About 355 checks played by bot clients pass, including two crash tests, plus a 7-check Bedrock test. 89 of the 90 items in the build checklist are verified. The one left needs things this machine doesn't have: a Discord bot token, and the paid item plugins (see [What isn't verified](#what-isnt-verified)).
+**Status (2026-11-10):** built from scratch with no compiler warnings; the test server boots with every free integration and no Headcount errors or warnings; `/hca selftest` passes all 781 checks on the default configs. About 355 checks played by bot clients pass, including two crash tests, plus a 7-check Bedrock test. 91 of the 92 items in the build checklist are verified. The one left needs things this machine doesn't have: a Discord bot token, and the paid item plugins (see [What isn't verified](#what-isnt-verified)).
 
 ## Headcount in one paragraph
 
@@ -41,15 +41,21 @@ Every player starts each cycle (30 days by default) with a vault full of copies 
 
 ## Getting started
 
-You need JDK 25 for the build (or Gradle downloads one), and Java 25 to run the server.
+**You need:** JDK 25 for the build (Gradle downloads one if it can't find it) and Java 25 to run the server; git, bash and curl. The scripts run on Linux and macOS; on Windows, use WSL (the build alone also works with `gradlew.bat`). The bot tests need Linux and Node.js 20 ([their README](Headcount/tools/bot-tests/README.md)).
 
 ```bash
+git clone https://github.com/TheMaydayMan/headcount.git
+cd headcount
 TestServer/setup.sh                    # downloads the server and plugins, asks you to accept the Minecraft EULA
 (cd Headcount && ./gradlew build)      # builds Headcount and copies it into TestServer/plugins/
 (cd TestServer && ./start.sh)          # port 25565, offline mode
 ```
 
-Join with any name, type `op <name>` in the server console, then `/hc` in game. `/hc help` and `/hca help` list the commands.
+Join with any name, type `op <name>` in the server console, then `/hc` in game. `/hc help` and `/hca help` list the commands. Headcount's settings are in `TestServer/plugins/Headcount/*.yml`: edit them, then run `/hca reload` and `/hca selftest`.
+
+**On your own server:** build as above, put `Headcount/build/libs/Headcount-1.0.0.jar` in the server's `plugins/` folder, and start it. [docs/installation.md](Headcount/docs/installation.md) has the requirements and the optional plugins.
+
+**After pulling changes:** rebuild (`./gradlew build`), and run `TestServer/setup.sh` again if it changed. Your server's configs and data are never touched by either.
 
 ## Where to find what
 
@@ -162,5 +168,5 @@ All of these were fixed and checked again. [DECISIONS.md](Headcount/DECISIONS.md
 ## Notes
 
 - Every path in the project is relative, so the repository folder can have any name.
-- The build ran from 2026-11-09 17:38 to 2026-11-10 05:23 MST, with two usage-limit pauses. This README and a last coherency pass followed from 08:53 to 09:36, and the repository was set up from 09:54 to 10:05. A machine restart at 02:15 wiped a temporary copy of the bot harness, which was rebuilt and now lives in the project. [PROGRESS_BAR.md](Headcount/PROGRESS_BAR.md) has the timeline.
+- The build ran from 2026-11-09 17:38 to 2026-11-10 05:23 MST, with two usage-limit pauses. This README and a last coherency pass followed from 08:53 to 09:36, and the repository was set up from 09:54 and first published at 10:12. A machine restart at 02:15 wiped a temporary copy of the bot harness, which was rebuilt and now lives in the project. [PROGRESS_BAR.md](Headcount/PROGRESS_BAR.md) has the timeline.
 - License: MIT, © 2026 Grady Chastain ([LICENSE](LICENSE)). The test server's downloads keep their own licenses, and the Minecraft server they fetch is under the [Minecraft EULA](https://aka.ms/MinecraftEULA).

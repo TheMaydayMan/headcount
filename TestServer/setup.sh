@@ -9,12 +9,16 @@ ACCEPT=""
 [ "$1" = "--accept-eula" ] && ACCEPT=1
 mkdir -p plugins
 
+sha256() {   # sha256sum on Linux, shasum on macOS
+  if command -v sha256sum >/dev/null; then sha256sum "$1" | cut -d' ' -f1; else shasum -a 256 "$1" | cut -d' ' -f1; fi
+}
+
 fetch() {   # fetch <url> <file> <sha256>
   local url=$1 file=$2 sum=$3
-  if [ -f "$file" ] && echo "$sum  $file" | sha256sum -c --quiet - 2>/dev/null; then echo "ok        $file"; return; fi
+  if [ -f "$file" ] && [ "$(sha256 "$file")" = "$sum" ]; then echo "ok        $file"; return; fi
   echo "download  $file"
   curl -sSfL -o "$file.part" "$url"
-  if ! echo "$sum  $file.part" | sha256sum -c --quiet - 2>/dev/null; then
+  if [ "$(sha256 "$file.part")" != "$sum" ]; then
     rm -f "$file.part"; echo "sha256 mismatch for $file (from $url)" >&2; exit 1
   fi
   mv "$file.part" "$file"

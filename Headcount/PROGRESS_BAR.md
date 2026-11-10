@@ -1,15 +1,15 @@
 # Headcount progress
 
-**Updated 2026-11-10 10:05 MST** (system clock) · **ETA ~2026-11-10 10:05 MST** (0m of work left)
+**Updated 2026-11-10 10:13 MST** (system clock) · **ETA ~2026-11-10 10:13 MST** (0m of work left)
 
-Now: Git repository ready; waiting for you to sign in to GitHub so it can be pushed
+Now: Done and published at https://github.com/TheMaydayMan/headcount
 
 ```
-Written   ████████████████████  90/90 items  100%
-Verified  ████████████████████  89/90 items  99%
+Written   ████████████████████  92/92 items  100%
+Verified  ████████████████████  91/92 items  99%
 ```
 
-Started 2026-11-09 17:38 MST · 16h 27m wall clock · 11h 25m active (pauses excluded)
+Started 2026-11-09 17:38 MST · 16h 35m wall clock · 11h 33m active (pauses excluded)
 
 | # | Section | Verified | Started | Written by | Verified at | Left (est.) |
 |---|---|---|---|---|---|---|
@@ -38,7 +38,7 @@ Started 2026-11-09 17:38 MST · 16h 27m wall clock · 11h 25m active (pauses exc
 | 21 | Docs | `██████████` 4/4 | 11-09 21:52 | 11-09 22:07 | 11-09 22:07 | — |
 | 22 | Final verification | `██████████` 2/2 | 11-09 22:07 | 11-10 04:33 | 11-10 05:23 | — |
 | 23 | Workspace README and coherency pass | `██████████` 4/4 | 11-10 08:53 | 11-10 09:36 | 11-10 09:36 | — |
-| 24 | Git repository | `██████████` 4/4 | 11-10 09:54 | 11-10 10:05 | 11-10 10:05 | — |
+| 24 | Git repository | `██████████` 6/6 | 11-10 09:54 | 11-10 10:05 | 11-10 10:13 | — |
 
 **Pauses**
 
