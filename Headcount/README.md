@@ -28,7 +28,7 @@ Nearly everything is configurable: values, limits, messages, menus, statuses, th
 
 ## Quick start
 
-1. Drop the jar in `plugins/` on a Paper 26.3 server running Java 25, and start it.
+1. Download the jar from the [latest release](https://github.com/TheMaydayMan/headcount/releases/latest), drop it in `plugins/` on a Paper 26.3 server running Java 25, and start it.
 2. The first cycle starts immediately. Players type `/hc` to see their vault and `/hc help` for everything else.
 3. Tune `plugins/Headcount/*.yml` (every option is commented), then run `/hca reload` and `/hca selftest`.
 

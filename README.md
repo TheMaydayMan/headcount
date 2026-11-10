@@ -53,7 +53,7 @@ TestServer/setup.sh                    # downloads the server and plugins, asks 
 
 Join with any name, type `op <name>` in the server console, then `/hc` in game. `/hc help` and `/hca help` list the commands. Headcount's settings are in `TestServer/plugins/Headcount/*.yml`: edit them, then run `/hca reload` and `/hca selftest`.
 
-**On your own server:** build as above, put `Headcount/build/libs/Headcount-1.0.0.jar` in the server's `plugins/` folder, and start it. [docs/installation.md](Headcount/docs/installation.md) has the requirements and the optional plugins.
+**On your own server:** download `Headcount-1.0.0.jar` from the [latest release](https://github.com/TheMaydayMan/headcount/releases/latest) (or build it as above; the jar lands in `Headcount/build/libs/`), put it in the server's `plugins/` folder, and start it. [docs/installation.md](Headcount/docs/installation.md) has the requirements and the optional plugins.
 
 **After pulling changes:** rebuild (`./gradlew build`), and run `TestServer/setup.sh` again if it changed. Your server's configs and data are never touched by either.
 

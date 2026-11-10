@@ -8,7 +8,7 @@
 
 ## Install
 
-1. Put `Headcount-<version>.jar` in `plugins/`.
+1. Download `Headcount-<version>.jar` from the [releases page](https://github.com/TheMaydayMan/headcount/releases/latest) (or [build it](#building-from-source)) and put it in `plugins/`.
 2. Start the server. Headcount downloads its SQLite driver through Paper's library loader, writes its config files to `plugins/Headcount/`, and starts the first cycle (`cycle.start-date: auto` starts immediately; set a date to start later).
 3. The console lists which plugin handles each integration, and any config problem the start-up check finds.
 4. Adjust the files (every option is commented, and listed in [config-reference.md](config-reference.md)), then run `/hca reload` and `/hca selftest`.
