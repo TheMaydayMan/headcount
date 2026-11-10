@@ -4,7 +4,7 @@
 
 This repository holds **Headcount**, a Paper plugin where player heads are the currency, and the files to set up the local test server it was developed and tested on. This README is the map: what is here, where each thing is, how to build and test, what has been verified, and what still needs a person.
 
-**Status (2026-11-10):** built from scratch with no compiler warnings; the test server boots with every free integration and no Headcount errors or warnings; `/hca selftest` passes all 781 checks on the default configs. About 355 checks played by bot clients pass, including two crash tests, plus a 7-check Bedrock test. 91 of the 92 items in the build checklist are verified. The one left needs things this machine doesn't have: a Discord bot token, and the paid item plugins (see [What isn't verified](#what-isnt-verified)).
+**Status (2026-11-10):** built from scratch with no compiler warnings; the test server boots with every free integration and no Headcount errors or warnings; `/hca selftest` passes all 781 checks on the default configs. About 355 checks played by bot clients pass, including two crash tests, plus a 7-check Bedrock test. 93 of the 94 items in the build checklist are verified. The one left needs things this machine doesn't have: a Discord bot token, and the paid item plugins (see [What isn't verified](#what-isnt-verified)).
 
 ## Headcount in one paragraph
 
@@ -168,5 +168,5 @@ All of these were fixed and checked again. [DECISIONS.md](Headcount/DECISIONS.md
 ## Notes
 
 - Every path in the project is relative, so the repository folder can have any name.
-- The build ran from 2026-11-09 17:38 to 2026-11-10 05:23 MST, with two usage-limit pauses. This README and a last coherency pass followed from 08:53 to 09:36, and the repository was set up from 09:54 and first published at 10:12. A machine restart at 02:15 wiped a temporary copy of the bot harness, which was rebuilt and now lives in the project. [PROGRESS_BAR.md](Headcount/PROGRESS_BAR.md) has the timeline.
+- The build ran from 2026-11-09 17:38 to 2026-11-10 05:23 MST, with two usage-limit pauses. This README and a last coherency pass followed from 08:53 to 09:36, the repository was set up from 09:54 and first published at 10:12, and release 1.0.0 was published at 10:18. A machine restart at 02:15 wiped a temporary copy of the bot harness, which was rebuilt and now lives in the project. [PROGRESS_BAR.md](Headcount/PROGRESS_BAR.md) has the timeline.
 - License: MIT, © 2026 Grady Chastain ([LICENSE](LICENSE)). The test server's downloads keep their own licenses, and the Minecraft server they fetch is under the [Minecraft EULA](https://aka.ms/MinecraftEULA).

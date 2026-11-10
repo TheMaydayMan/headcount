@@ -152,3 +152,7 @@ Nothing is ticked until it has been checked by compiling, a test, a server boot,
 - [x] Published at https://github.com/TheMaydayMan/headcount (verified 11-10 10:12, pushed at 10:12:44: the remote main is the local commit, the repository is public, GitHub detects the MIT license, and it holds all 230 files)
 - [x] The top-level README is enough on its own to clone, set up, build, run and update it, and to install Headcount on another server (verified: re-read as a newcomer; added the clone URL, the requirements and platforms, the own-server and after-a-pull steps; TestServer/setup.sh now also works without sha256sum (macOS `shasum`), tested with sha256sum, with only shasum, and with a corrupted jar, which was re-downloaded)
 
+## 25. Release 1.0.0 (asked 11-10)
+- [x] Install instructions point at the release (verified: the root README, the plugin README and docs/installation.md link to the latest release; every link in the docs resolves)
+- [x] Release v1.0.0 published with `Headcount-1.0.0.jar` and its sha256 (verified 11-10 10:18, published at 10:18:14: the annotated tag is on the main commit; it is a full release, not a draft or pre-release, and GitHub's latest; the downloaded jar passes `sha256sum -c`. The jar is built from that commit with 0 warnings and 17 unit tests passing, is byte-identical to the one checked at the final boot and the fresh-clone boot, and at 10:17 booted the test server with every integration, `/hca selftest` 781 checks passed, no Headcount warnings)
+
