@@ -1,6 +1,6 @@
 # Statuses
 
-`statuses.yml` defines **named player states** and how to detect each one. A status does nothing by itself; other files use statuses by name:
+`statuses.yml` defines named player states and how to detect each one. A status does nothing by itself. Other settings refer to statuses by name:
 
 - `config.yml` `vault.block-movement.statuses`: who can't move heads in or out of the vault
 - `trade.yml` `statuses.block-request`, `block-accept` and `cancel-open`
@@ -9,9 +9,9 @@
 
 In any list of statuses, `!name` means "not name".
 
-Every status is also a placeholder, `%headcount_status_<name>%`. It reads `true` or `false`, or whatever `settings.placeholder-true` and `settings.placeholder-false` are set to, so other plugins (scoreboards, menus, region plugins) can use it.
+Every status is also a placeholder, `%headcount_status_<name>%`, so other plugins such as scoreboards, menus and region plugins can use it. It reads `true` or `false`, or the text in `settings.placeholder-true` and `settings.placeholder-false`.
 
-Check a player's statuses live with `/hca status <player>`. `/hca selftest` reports any status that refers to a status that doesn't exist.
+`/hca status <player>` shows a player's statuses as they are right now. `/hca selftest` reports any reference to a status that doesn't exist.
 
 ## Defining a status
 
@@ -25,24 +25,24 @@ statuses:
     description: "..."     # optional note
 ```
 
-A source "can't answer" when its provider is `none`, when the plugin it needs is missing, or when a placeholder doesn't resolve. In that case Headcount uses `fallback` if set, otherwise `unavailable`.
+A source can't answer when its provider is `none`, when the plugin it needs is missing, or when a placeholder doesn't resolve. Headcount then uses the `fallback` status if there is one, and the `unavailable` value if not.
 
-Results are cached for one server tick, so checking the same status many times in a tick is cheap. A status that refers back to itself through combinations or fallbacks is found when the file loads: it is disabled and named in a warning and in `/hca selftest`. A loop that only appears while running (through `nearby-player`) is still stopped and treated as false.
+Results are cached for one server tick, so checking the same status many times in a tick is cheap. A status that refers back to itself through combinations or fallbacks is caught when the file loads. It is disabled and named in a warning and in `/hca selftest`. A loop that only shows up at runtime, through `nearby-player`, is still stopped and treated as false.
 
 ## Default statuses
 
 | Status | Meaning |
 |---|---|
-| `in-pvp` | The player's PvP is on, from the PvP provider in `integrations.yml` (Headcount's own `/pvp`, or PvPManager). With provider `none` it is never active. |
-| `combat-tagged` | In combat (the PvP provider's combat tag). With provider `none` it falls back to `recent-pvp-damage`. |
+| `in-pvp` | The player's PvP is on, according to the PvP provider in `integrations.yml` (Headcount's own `/pvp`, or PvPManager). Never active with provider `none`. |
+| `combat-tagged` | In combat, by the PvP provider's combat tag. Falls back to `recent-pvp-damage` with provider `none`. |
 | `recent-pvp-damage` | Dealt or took damage from a player in the last 15 seconds. |
 | `newbie-protected` | The PvP provider's new-player protection. |
 | `creative-or-spectator` | In creative or spectator mode. |
 | `sleeping-or-dead` | Sleeping or dead. |
 | `vanished` | Vanished through any plugin that sets the `vanished` metadata, or through EssentialsX when the player-state provider is `essentials`. |
-| `afk` | AFK, from the player-state provider: Headcount's own idle timer (`integrations.yml player-state.included.afk`, 5 minutes by default), or EssentialsX's `/afk`. |
+| `afk` | AFK, according to the player-state provider. That is either Headcount's own idle timer (`player-state.included.afk` in `integrations.yml`, 5 minutes by default) or EssentialsX's `/afk`. |
 | `bedrock-player` | Joined through Geyser. |
-| `low-health`, `on-fire`, `in-lava`, `falling-far`, `in-danger` | Examples built from the built-in checks. |
+| `low-health`, `on-fire`, `in-lava`, `falling-far`, `in-danger` | Examples made from the built-in checks. |
 
 ## Sources
 
@@ -50,10 +50,10 @@ Results are cached for one server tick, so checking the same status many times i
 
 | Source | Settings | True when |
 |---|---|---|
-| `pvp` | `check`: `pvp-enabled`, `pvp-disabled`, `combat-tagged`, `newbie`, `respawn-protected`, `override` | The PvP provider chosen in `integrations.yml` (Headcount's included PvP, or PvPManager) reports that state. With provider `none` it can't answer. |
-| `player-state` | `check`: `afk`, `vanished`, `god`, `jailed`, `muted` | The player-state provider reports that state. `included`: AFK from Headcount's idle timer, vanished from the `vanished` metadata, god from the invulnerable flag, jailed and muted from Headcount's own jail and mute (or the moderation plugin). `essentials`: EssentialsX. `essentials` is still accepted as the source's old name. |
+| `pvp` | `check`: `pvp-enabled`, `pvp-disabled`, `combat-tagged`, `newbie`, `respawn-protected`, `override` | The PvP provider chosen in `integrations.yml` reports that state. With provider `none` it can't answer. |
+| `player-state` | `check`: `afk`, `vanished`, `god`, `jailed`, `muted` | The player-state provider reports that state. With `included`, AFK comes from Headcount's idle timer, vanished from the `vanished` metadata, god from the invulnerable flag, and jailed and muted from Headcount's own jail and mute or the moderation plugin. With `essentials`, EssentialsX answers. The source's old name, `essentials`, still works. |
 | `muted` | none | The moderation plugin reports a mute, or Headcount's own mute is active. |
-| `bedrock` | none | The player joined through Geyser (Floodgate or Geyser is asked). |
+| `bedrock` | none | The player joined through Geyser, as reported by Floodgate or Geyser. |
 
 ### Any plugin, through placeholders
 
@@ -61,9 +61,9 @@ Results are cached for one server tick, so checking the same status many times i
 |---|---|
 | `placeholder` | `placeholder: "%plugin_value%"`, `operator`, `value`, `ignore-case: true` |
 
-The operators are `equals`, `not-equals`, `greater-than`, `less-than`, `greater-or-equal`, `less-or-equal`, `contains`, `not-contains`, `starts-with`, `ends-with` and `regex`. The short forms `=`, `!=`, `>`, `<`, `>=` and `<=` also work. When both sides are numbers they are compared as numbers.
+`operator` is one of `equals`, `not-equals`, `greater-than`, `less-than`, `greater-or-equal`, `less-or-equal`, `contains`, `not-contains`, `starts-with`, `ends-with` or `regex`. The short forms `=`, `!=`, `>`, `<`, `>=` and `<=` also work. When both sides are numbers, they are compared as numbers.
 
-This is how any PvP, combat-log, region or minigame plugin with PlaceholderAPI placeholders becomes a Headcount status. `%headcount_...%` placeholders work here even without PlaceholderAPI.
+Any plugin with PlaceholderAPI placeholders can become a Headcount status this way. This example uses CombatLogX. `%headcount_...%` placeholders work here even without PlaceholderAPI.
 
 ```yaml
   combat-logged:
@@ -81,7 +81,7 @@ This is how any PvP, combat-log, region or minigame plugin with PlaceholderAPI p
 | `permission` | `permission` | The player has the permission. |
 | `metadata` | `key`, optional `value` | Any metadata value under `key` is truthy, or equals `value`. Vanish plugins commonly set `vanished`. |
 | `flag` | `flag` | A Headcount flag is set (by the `flag` action or `/hca flag`). |
-| `headcount` | `value` (any formula variable, or `score`), `range` | That live value is in range, e.g. `value: points`, `range: ">=10"`. |
+| `headcount` | `value` (any formula variable, or `score`), `range` | That live value is in range, for example `value: points` with `range: ">=10"`. |
 | `in-trade` | none | The player is in an open Headcount trade. |
 
 ### Built-in checks
@@ -99,7 +99,7 @@ This is how any PvP, combat-log, region or minigame plugin with PlaceholderAPI p
 | `on-fire` | none | Burning. |
 | `in-lava`, `in-water` | none | In lava or water. |
 | `falling` | `distance: 4` | Fallen more than this many blocks so far (not flying or gliding). |
-| `gliding`, `flying`, `swimming`, `sneaking`, `sprinting`, `sleeping`, `dead`, `invisible`, `op` | none | Self-explanatory. |
+| `gliding`, `flying`, `swimming`, `sneaking`, `sprinting`, `sleeping`, `dead`, `invisible`, `op` | none | The player is in that state. |
 | `riding` | `vehicles: []` | In any vehicle, or one of the listed entity types (`horse`, `boat`, `minecart`, ...). |
 | `gamemode` | `modes: [creative, spectator]` | In one of the gamemodes. |
 | `world` | `worlds: [world_nether]` | In one of the worlds. |
@@ -117,7 +117,7 @@ This is how any PvP, combat-log, region or minigame plugin with PlaceholderAPI p
 | `all-of` | `statuses: [a, b, "!c"]` | All listed statuses match. |
 | `any-of` | `statuses: [a, b]` | Any listed status matches. |
 | `not` | `status: a` | `a` is not active. |
-| `always`, `never` | none | Always true or always false (handy for switching a gate off without editing every list). |
+| `always`, `never` | none | Always true or always false. Useful for switching a gate off without editing every list that uses it. |
 
 ## Adding your own sources
 
