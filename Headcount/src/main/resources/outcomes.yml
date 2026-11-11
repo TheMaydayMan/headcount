@@ -1,33 +1,32 @@
 # ============================================================================================
 #  Headcount - outcomes.yml
-#  What happens to each ACTIVE player at the end of a cycle, based on their score. (Inactive players get no
-#  score and no outcomes.)
+#  What happens to each active player at the end of a cycle, based on their score. Inactive players get no
+#  score, so no outcomes either.
 #
 #  Each rule has:
-#    score:       a range, e.g. "..-1" (-1 or lower), "-4..-1", "10.." (10 or more), "5", ">=3", "<0"
-#    conditions:  optional extra requirements (streak, rank, statuses, expression ... see actions.yml)
-#    actions:     an action list (or the name of one from actions.yml)
-#    display:     how the rule is named in reports and history
-#    punishment:  true if a shield should block it (default: true when the whole score range is below 0)
+#    score:       a range, e.g. "..-1" for -1 or lower, "-4..-1", "10.." for 10 or more, "5", ">=3", "<0"
+#    conditions:  optional extra requirements such as streak, rank or statuses, as in actions.yml
+#    actions:     an action list, or the name of one from actions.yml
+#    display:     the rule's name in reports and history
+#    punishment:  true if a shield should block it. Defaults to true when the whole score range is below 0.
 #    group:       rules compete within their group (default: punishments or rewards)
-#    priority:    optional; higher wins in most-extreme mode (default: how far the range is from 0)
-#    enabled:     false to switch a rule off
+#    priority:    higher wins in most-extreme mode (default: how far the range is from 0)
+#    enabled:     false switches the rule off
 #
 #  Variables in outcome actions: <player> <score> <unique> <total> <own> <rank> <percentile> <streak>
 #  <points_earned> <points> <rolled_over> <cycle> <tier> <playtime> <kills> <deaths> <trades> <outcome>
 #
-#  Where text lives: this file holds text you design (menu titles, item names and lore, and the messages inside
-#  action lists). Everything Headcount itself says (command replies, errors, confirmations, help, effect
-#  descriptions) is in lang/en_US.yml.
+#  This file holds the rule names and messages you write. Headcount's own messages (command replies, errors,
+#  help) are in lang/en_US.yml.
 # ============================================================================================
 config-version: 1
 
-# all: a player gets every rule their score matches.
-# most-extreme: only the most extreme matching rule in each group (a -12 gets "severe", not all three).
+# Which matching rules a player gets. With all, they get every rule their score matches. With most-extreme,
+# they get only the most extreme match in each group, so a score of -12 gets the severe penalty and not all three.
 mode: most-extreme
 
 rules:
-  # ---------------------------------------------------------------- punishments (mild by default)
+  # ---------------------------------------------------------------- punishments
   penalty-1:
     display: "<yellow>Minor penalty"
     score: "..-1"
@@ -43,7 +42,7 @@ rules:
     score: "..-10"
     actions: punish-severe
 
-  # Repeated failure: a ban for three negative cycles in a row. Disabled by default; enable with care.
+  # Bans a player for a day after three negative cycles in a row. Off by default.
   ban-repeat-offenders:
     enabled: false
     display: "<dark_red>Temporary ban"
@@ -56,7 +55,7 @@ rules:
         reason: "Three negative Headcount cycles in a row"
         duration: 1d
 
-  # A permanent ban for extreme scores. Disabled by default.
+  # Bans a player permanently for a score of -25 or lower. Off by default.
   ban-extreme:
     enabled: false
     display: "<dark_red>Banned"
@@ -83,6 +82,6 @@ rules:
     conditions:
       streak: ">=3"
     actions:
-      - message: "<aqua><streak> good cycles in a row! +3 starting heads next cycle."
+      - message: "<aqua><streak> good cycles in a row. You start next cycle with 3 extra heads."
       - type: next-cycle
         starting-heads: "+3"

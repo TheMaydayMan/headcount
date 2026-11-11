@@ -1,38 +1,38 @@
 # ============================================================================================
 #  Headcount - actions.yml
-#  Rewards, punishments, shop purchases and hooks all use one actions system. An action list is a YAML list;
-#  each entry is one action. Lists defined here under 'lists' can be used anywhere by name.
+#  Rewards, punishments, shop purchases and hooks all run action lists. An action list is a YAML list with one
+#  action per entry. A list defined here under 'lists' can be used anywhere by its name.
 #
-#  Writing an action (all four mean the same thing):
+#  These three entries do the same thing:
 #    - type: message
 #      text: "<green>Hello"
-#    - message: "<green>Hello"          (the type as the key, filling its main setting)
-#    - "message: <green>Hello"          (a one-line string)
-#    - my-list-name                     (a plain name runs that named list)
-#    - clear-effects                    (or a type that needs no settings, when no list has that name)
+#    - message: "<green>Hello"          the type as the key, filling its main setting
+#    - "message: <green>Hello"          a one-line string
+#  A bare name runs the list with that name, or a type that needs no settings if no list is called that:
+#    - my-list-name
+#    - clear-effects
 #
-#  Common options (every action):
-#    duration:   instant (default) | 10m, 2h, 3d... | cycle (until the cycle ends; given at a cycle end, as outcomes
-#                are, it lasts through the next cycle) | cycles:N | death (until the
-#                player dies) | permanent | manual (until an admin removes it with /hca effects)
-#    time:       real (default) | online   - whether a timed duration counts real time or only time online
-#    stacking:   refresh (default) | extend | stack | ignore - what happens if the same action is already active
-#    key:        a name that marks actions as "the same" for stacking (default: the type and its main setting)
+#  Options every action takes:
+#    duration:   instant (default), 10m / 2h / 3d, cycle, cycles:N, death, permanent or manual.
+#                cycle lasts until the cycle ends. Given at a cycle end, like an outcome, it lasts through the
+#                next cycle. death lasts until the player dies, manual until an admin removes it with /hca effects.
+#    time:       real (default) or online - whether a timed duration counts real time or only time online
+#    stacking:   refresh (default), extend, stack or ignore - what happens if the same action is already active
+#    key:        a name that marks actions as the same for stacking (default: the type and its main setting)
 #    chance:     0-100 (default 100)
-#    delay:      wait before running (not kept across restarts)
-#    repeat:     run again every X while active (needs a duration), e.g. lightning every 5m for 1h
+#    delay:      wait before running (lost on restart)
+#    repeat:     run again every X while active, e.g. lightning every 5m for 1h. Needs a duration.
 #    conditions: statuses: [..]  any-statuses: [..]  score: "..-1"  streak: ">=2"  rank: "1..3"  points: ">=10"
 #                unique: ">=5"  active: true  permission: node  expression: "unique > 5 && rank <= 3"
-#    start-message / end-message: MiniMessage shown when it starts and ends (<duration> <remaining>)
+#    start-message / end-message: MiniMessage shown when it starts and ends, with <duration> and <remaining>
 #
-#  Timed actions are tracked and undone automatically when they end, even across restarts; for offline players
-#  they are applied or undone on the next join. Built-in types know how to undo themselves; console and
-#  player-command take 'revert-commands'.
+#  Timed actions are undone when they end, even across restarts. Offline players get them applied or undone
+#  when they next join. Built-in types undo themselves; console and player-command take 'revert-commands'.
 #
-#  Variables in action text: whatever the caller provides (<player>, <score>, <cycle>, <points>, ...) plus every
-#  %headcount_...% and PlaceholderAPI placeholder.
+#  Action text can use whatever variables the caller provides (<player>, <score>, <cycle>, <points> and so on),
+#  plus any %headcount_...% or PlaceholderAPI placeholder.
 #
-#  ACTION TYPES (settings in parentheses; full reference in docs/actions.md)
+#  Action types, with their settings in parentheses. The full reference is docs/actions.md.
 #  Messages and effects
 #    message       (text [string or list], audience: player | all | world | nearby:<r> | permission:<node>)
 #    broadcast     (text, permission, console: true)
@@ -58,8 +58,8 @@
 #  Currency
 #    points        (amount: +/-, when: now | next-cycle, revert: true)
 #    money         (amount: +/-, revert: true) through Vault (integrations.yml economy)
-#  Permissions and ranks (integrations.yml permissions.provider: included does permission nodes only; LuckPerms
-#  or Vault do all of these, and LuckPerms gets its own expiry for timed changes)
+#  Permissions and ranks. The included permissions provider (integrations.yml) handles permission nodes only.
+#  LuckPerms or Vault handle all of these, and LuckPerms expires timed changes itself.
 #    permission    (permission, mode: add | remove, value: true)
 #    group         (group, mode: add | remove)
 #    primary-group (group)
@@ -69,8 +69,8 @@
 #    grant-title, revoke-title (title, equip: false)
 #    strip-title   (which: equipped | all)
 #    force-title   (title) - equipped and locked for the duration
-#  Moderation (integrations.yml moderation.provider: included uses vanilla bans and Headcount's own mutes and
-#  jails, or hand any kind to a moderation plugin)
+#  Moderation. The included provider uses vanilla bans and Headcount's own mutes and jails. integrations.yml can
+#  hand any of them to a moderation plugin instead.
 #    ban, mute, kick, warn, jail   (reason, jail: <jail name>) - a timed duration makes it temporary
 #  PvP (integrations.yml pvp.provider: included or PvPManager)
 #    pvp           (state: on | off, lock: true [can't /pvp while active], restore: true [back to before when it ends])
@@ -89,8 +89,8 @@
 #  Headcount
 #    next-cycle    (starting-heads: "+5" | "-3" | "=10", vault-size: "+9")
 #    rollover      (percent: 50 to set, or add: 10)
-#  (head-protection, extra-heads, bounty, shield, deny and force-title only work while active: give them a
-#  duration, such as cycle, 1d or permanent. /hca selftest flags one without.)
+#  head-protection, extra-heads, bounty, shield, deny and force-title only work while active, so give them a
+#  duration such as cycle, 1d or permanent. /hca selftest warns about one without.
 #    head-protection (charges: 0 = unlimited) - your head does not drop when you are killed
 #    extra-heads   (amount, charges) - extra heads drop when you are killed
 #    bounty        (points, actions: [...] for the killer, claims: 1, announce: true)
@@ -101,9 +101,8 @@
 #    run           (list: <name>, or actions: [...])
 #    random        (choices: [{weight: 3, actions: [...]}, {weight: 1, list: other-list}])
 #
-#  Where text lives: this file holds text you design (menu titles, item names and lore, and the messages inside
-#  action lists). Everything Headcount itself says (command replies, errors, confirmations, help, effect
-#  descriptions) is in lang/en_US.yml.
+#  This file holds the messages you write into action lists. Headcount's own messages (command replies, errors,
+#  help) are in lang/en_US.yml.
 # ============================================================================================
 config-version: 2
 
@@ -130,7 +129,7 @@ lists:
 
   # ---------------------------------------------------------------- punishments (used by outcomes.yml)
   punish-mild:
-    - message: "<red>Your score was <score>. A small penalty applies for a day."
+    - message: "<red>Your score was <score>. You are slowed for a day of playtime."
     - type: potion
       effect: slowness
       amplifier: 0
@@ -140,7 +139,7 @@ lists:
       end-message: "<green>Your penalty is over."
 
   punish-medium:
-    - message: "<red>Your score was <score>. You are weakened for two days."
+    - message: "<red>Your score was <score>. You are weakened and lose 2 hearts for two days of playtime."
     - type: potion
       effect: weakness
       amplifier: 0
@@ -154,7 +153,7 @@ lists:
       end-message: "<green>Your health is back to normal."
 
   punish-severe:
-    - message: "<dark_red>Your score was <score>. You are marked for the whole cycle."
+    - message: "<dark_red>Your score was <score>. Until the cycle ends you wear the dunce cap, glow, and have a bounty on you."
     - dunce-cap
     - type: glowing
       duration: cycle
@@ -176,7 +175,7 @@ lists:
         amount: 5
         when: now
 
-  # A random reward, as an example of 'random'.
+  # An example of the random type: one of three rewards, picked by weight.
   mystery-box:
     - type: random
       choices:
@@ -196,4 +195,4 @@ lists:
               owner: self
               amount: 3
               cycle: next
-            - message: "<gold>Lucky! 3 extra heads of your own next cycle."
+            - message: "<gold>Lucky draw: 3 extra heads of your own next cycle."
