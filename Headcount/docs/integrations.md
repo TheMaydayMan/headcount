@@ -58,7 +58,7 @@ With `pvp.provider: pvpmanager`, PvPManager does everything and the `included` s
 
 `moderation.kinds` gives single kinds their own provider. For example, `provider: libertybans` with `kinds: { jail: essentials }` sends jails to EssentialsX and everything else to LibertyBans. When a plugin can't do a kind, that kind goes to `included`. LibertyBans and LiteBans have no jail, for example. LiteBans is driven through its commands (`litebans-commands`), because its API can't create punishments. The `commands` provider can drive any plugin through the templates under `moderation.commands`.
 
-Headcount's own jail needs `moderation.included-jail.location`. Jailed players are held within its `radius` and can only use `allowed-commands`. Headcount's own mute blocks chat and the commands in `included-mute.blocked-commands`.
+The included jail needs `moderation.included-jail.location`. Jailed players are held within its `radius` and can only use `allowed-commands`. The included mute blocks chat and the commands in `included-mute.blocked-commands`.
 
 ## Bedrock (Geyser and Floodgate)
 
@@ -68,4 +68,4 @@ Bedrock players get trade requests that tell them to type `/trade accept` or `/t
 
 ## CoreProtect
 
-CoreProtect logs the world side: placed heads, chests and drops. It can't see virtual inventories, so vaults and trades only show up in Headcount's own audit log.
+CoreProtect logs the world side: placed heads, chests and drops. It can't see virtual inventories, so vaults and trades only show up in Headcount's audit log.

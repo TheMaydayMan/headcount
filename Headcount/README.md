@@ -15,9 +15,9 @@ Admins can also start the current cycle over with `/hca reset cycle`, or wipe ev
 
 ## Features
 
-Economy heads carry their owner, cycle and a unique ID in the item's data, so heads from vanilla, `/give` or other plugins never count. A placed head keeps its data when the block drops. Creative copies can't go in a vault and are flagged as duplicates. The vault and the trade menu handle every kind of click and drag, and trade offers survive a crash. Trades use a double chest with confirmations and a locked countdown.
+Economy heads carry their owner, cycle and a unique ID in the item's data, so heads from vanilla, `/give` or other plugins never count. A placed head keeps its data when the block drops. Creative copies can't go in a vault and are flagged as duplicates. The vault and the trade menu allow only the moves their rules allow, and trade offers survive a crash. Trades use a double chest with confirmations and a locked countdown.
 
-Statuses are named player states, like "in PvP" or "near hostile mobs". They can come from the PvP plugin, PlaceholderAPI placeholders, scoreboard tags, permissions, metadata or Headcount's own built-in checks, and can be combined with all-of, any-of and not. A status can block vault movement or trading, with its own message and bypass permission.
+Statuses are named player states, like "in PvP" or "near hostile mobs". They can come from the PvP plugin, PlaceholderAPI placeholders, scoreboard tags, permissions, metadata or built-in checks, and can be combined with all-of, any-of and not. A status can block vault movement or trading, with its own message and bypass permission.
 
 Actions are what rewards, punishments, the shop and hooks actually do: messages, boss bars, commands, items, points, money, LuckPerms ranks, titles, moderation, potions, teleports, bounties and more. Any action can have a duration, stacking, a chance, a delay, repeats and conditions. Timed actions undo themselves when they run out, even across restarts and for offline players.
 
@@ -29,7 +29,7 @@ The included PvP gives players a `/pvp` toggle (off by default), protection for 
 
 Each job (PvP, permissions, moderation, player states, placeholders) is set to `included`, a supported plugin, or `none`. The supported plugins are PvPManager, PlaceholderAPI, Vault, LuckPerms, LiteBans, LibertyBans, AdvancedBan, EssentialsX, DiscordSRV, ItemsAdder, Oraxen, Nexo, Geyser and Floodgate. None of them are required.
 
-Headcount Studio is a local app that opens in your browser. It has visual editors for every config, a live view of the server with an RCON console, guides, recipes and a reference. See [tools/studio](tools/studio/README.md).
+Headcount Studio is a local app for setting all of this up without writing YAML. It can also watch a running server and send it commands over RCON. See [tools/studio](tools/studio/README.md).
 
 Plugins can use the API and its events, and add their own status sources and action types.
 
@@ -67,7 +67,7 @@ The [changelog](CHANGELOG.md) lists what changed in each version. [DECISIONS.md]
 ./gradlew build
 ```
 
-The build needs JDK 25. Gradle uses one that's installed (it also looks in `~/.jdks`) or downloads one, and Gradle itself runs on JDK 17 or newer. It compiles against every integration's API, including the paid plugins, runs the unit tests, and puts `Headcount-<version>.jar` in `build/libs/`. When `../TestServer/plugins` exists, it copies the jar there too, and it rebuilds Headcount Studio's reference catalog with Python 3. The [test server README](../TestServer/README.md) explains how to set up that server.
+This puts `Headcount-<version>.jar` in `build/libs/`. It needs JDK 25, which Gradle finds (it also looks in `~/.jdks`) or downloads. The build compiles against every integration's API, the paid plugins included, and runs the unit tests. If `../TestServer/plugins` exists, the jar is copied there too ([test server README](../TestServer/README.md)). [Installation](docs/installation.md#building-from-source) has the rest.
 
 If you change a comment in a bundled config file, run `python3 tools/gen-config-docs.py` to regenerate the config reference.
 

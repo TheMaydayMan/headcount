@@ -8,7 +8,7 @@ Otherwise an economy head works like any player head. You can wear it, place it,
 
 ### Cycle runs and resets
 
-Each run of a cycle has a hidden run ID alongside the cycle number players see. `/hca reset cycle` keeps the number and starts a new run, and `/hca reset hard` starts again at cycle 1. Either way, every head made before the reset stops counting. Each reset either deletes those heads wherever Headcount finds them (`delete-heads`) or leaves them as defunct heads that the vault refuses (`keep-heads`). Without either option, `reset.delete-old-heads` decides.
+Each run of a cycle has a hidden run ID alongside the cycle number players see. `/hca reset cycle` keeps the number and starts a new run, and `/hca reset hard` starts again at cycle 1. Either way, every head made before the reset stops counting. You choose per reset what happens to them: `delete-heads` removes them wherever Headcount finds them, and `keep-heads` leaves them as defunct heads that the vault refuses. Without either option, `reset.delete-old-heads` decides.
 
 `/hca inspect` tells current, expired and defunct heads apart and shows the run. [commands.md](commands.md#resets) has the details of both resets, including where deleted heads are cleaned up.
 
@@ -54,7 +54,7 @@ In `trade.yml` you set which kinds of trade are allowed (heads for heads, items 
 
 A trade is cancelled and everything goes back to its owner if either player leaves the trade screen, the server, the world or the range, dies, teleports, changes gamemode, or gets a cancel status or a deny-trading action. Trades are also cancelled when the cycle ends and when the server stops or reloads.
 
-Offers are saved as they change, and the owner's inventory is saved to disk within about a second of each change, so after a crash an offer comes back exactly once, on the owner's next join. Items that don't fit in an inventory are dropped at the player's feet with a warning, and items owed to a dead player are given back after respawning.
+Offers and the owner's inventory are saved the same way as vault changes, so after a crash an offer comes back exactly once, on the owner's next join. Items that don't fit in an inventory are dropped at the player's feet with a warning, and items owed to a dead player are given back after respawning.
 
 ## Audit log
 

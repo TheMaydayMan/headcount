@@ -21,17 +21,17 @@ python3 Headcount/tools/studio/server.py                                    # th
 python3 Headcount/tools/studio/server.py --dir /path/to/server/plugins/Headcount
 ```
 
-The first launch downloads Minecraft's textures and font from Mojang for the in-game previews. Without them, items show as coloured squares.
+The first launch downloads Minecraft's textures and font from Mojang for the in-game previews. Without them, items show as colored squares.
 
 ## Finding your way
 
-The sidebar has five parts.
+The sidebar has five groups of pages.
 
-- Overview sums up your setup in a paragraph, and lists problems and unsaved changes.
-- Set up has a page for each part of the game: the cycle, vaults and heads, scoring, outcomes, the shop, titles, trading, statuses, integrations, hooks, the sidebar, menus, messages and general settings. Each shows what players will see as you change it.
-- Live server appears when the folder has a database. This cycle shows the countdown and lets you move the end, simulate it, end it or start it over. Players ranks everyone and opens each player's vault as a chest, with their effects, titles, purchases and past cycles. Past cycles, Effects, the Audit log (which can follow one head from start to finish) and a Console are there too.
-- Help explains a cycle using your own settings, with a glossary. Recipes are ready-made setups from the docs that you can apply after seeing exactly what they change. Why is it blocked? works out which status stops a player. Reference covers commands, permissions, placeholders, actions, status sources, the formula, text formatting and every setting. Docs has the plugin's documentation.
-- Files has the problems Studio finds as you edit, each file as raw text, and backups, with import and export of your whole setup as a .zip.
+- **Overview** sums up your setup in a paragraph, and lists problems and unsaved changes.
+- **Set up** has a page for each part of the game: the cycle, vaults and heads, scoring, outcomes, the shop, titles, trading, statuses, integrations, hooks, the sidebar, menus, messages and general settings. Each shows what players will see as you change it.
+- **Live server** appears when the folder has a database. **This cycle** shows the countdown and lets you move the end, simulate it, end it or start it over. **Players** ranks everyone, and each player's page shows their vault as a chest, with their effects, titles, purchases and past cycles. **Past cycles**, **Effects**, **Audit log** (which can follow one head from start to finish) and **Console** are there too.
+- **Help** starts with **How it works**, which explains a cycle using your own settings, with a glossary. **Recipes** are ready-made setups from the docs that you can apply after seeing exactly what they change. **Why is it blocked?** works out which status stops a player. **Reference** covers commands, permissions, placeholders, actions, status sources, the formula, text formatting and every setting, and **Docs** has the plugin's documentation.
+- **Files** has **Problems**, which lists what Studio finds as you edit, **Raw files** for each file as text, and **Backups**, which also imports and exports your whole setup as a .zip.
 
 Ctrl+K searches settings, pages, commands, placeholders, players and docs. Ctrl+Z and Ctrl+Shift+Z undo and redo across files.
 
@@ -51,7 +51,7 @@ Studio listens on `127.0.0.1:8765` and refuses requests from other websites. A s
 
 ## What you still do elsewhere
 
-Building and installing the plugin, starting the server, `server.properties`, other plugins' own configs, and translations other than `lang/en_US.yml`. Restoring the database from a hard-reset backup means copying `headcount.db` back while the server is stopped.
+Studio doesn't build or install the plugin, start the server, or edit `server.properties`, other plugins' configs, or translations other than `lang/en_US.yml`. Restoring the database from a hard-reset backup means copying `headcount.db` back while the server is stopped.
 
 ## Files
 

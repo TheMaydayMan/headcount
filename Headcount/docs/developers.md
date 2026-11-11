@@ -173,10 +173,10 @@ static final class SpeedBoostType implements ActionType {
 | `maintain(ctx)` | none | Called about once a second while active and the player is online, and on join and respawn. Use it to keep an effect applied through death or milk. |
 | `repeat(ctx)` | `apply` | Called on each `repeat:` interval. |
 | `stateful()` | false | The effect exists only while tracked (like deny lists or shields). `duration: permanent` then keeps it tracked forever instead of applying it once. |
-| `stackKey()` | null | Identifies "the same action" for stacking, e.g. the effect it applies. |
+| `stackKey()` | null | Identifies "the same action" for stacking, such as the effect it applies. |
 | `describe(ctx)` | the type | One line for `/hc effects`. May be MiniMessage (the built-in types take theirs from `effects.describe.*` in the language file). |
 
-`ActionContext` gives you `player()` (null if offline), `playerId()`, `offlinePlayer()`, `variables()`, `render(template)` (MiniMessage with variables and placeholders), `format(template)` (plain text for commands), `data()` (a persisted map for revert state; use strings, numbers, booleans, lists and maps), `source()` (e.g. `outcome:penalty-1`), `instanceId()`, `duration()` and `timed()`.
+`ActionContext` gives you `player()` (null if offline), `playerId()`, `offlinePlayer()`, `variables()`, `render(template)` (MiniMessage with variables and placeholders), `format(template)` (plain text for commands), `data()` (a persisted map for revert state; use strings, numbers, booleans, lists and maps), `source()` (such as `outcome:penalty-1`), `instanceId()`, `duration()` and `timed()`.
 
 ### When to register
 

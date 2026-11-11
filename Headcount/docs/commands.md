@@ -40,7 +40,7 @@ The admin command is `/hcadmin`, also available as `/hca` or `/hc admin`. `headc
 | `/hca effects <player> [list\|remove <id\|all>]` | `headcount.admin.effects` | Lists a player's active effects, or removes one or all of them. |
 | `/hca reset <player> vault\|points\|titles\|streak\|effects\|history\|all confirm` | `headcount.admin.reset` | Resets part of a player's data. |
 | `/hca reset cycle [delete-heads\|keep-heads] confirm` | `headcount.admin.reset` and `headcount.admin.reset.cycle` | Starts the current cycle over from now, keeping its number (see [Resets](#resets)). |
-| `/hca reset hard [delete-heads\|keep-heads]`, then `/hca reset hard <code>` for each confirmation | `headcount.admin.reset` and `headcount.admin.reset.hard` (op only, not part of `headcount.admin`. The console always has it.) | Deletes all Headcount data and starts over from cycle 1 (see [Resets](#resets)). |
+| `/hca reset hard [delete-heads\|keep-heads]`, then `/hca reset hard <code>` for each confirmation | `headcount.admin.reset` and `headcount.admin.reset.hard` (op only and not part of `headcount.admin`; the console always has it) | Deletes all Headcount data and starts over from cycle 1 (see [Resets](#resets)). |
 | `/hca trade cancel <player>` | `headcount.admin.trade` | Cancels a trade or request and returns everything. |
 | `/hca audit <player\|head-id\|text...> [type:<type>] [page:<n>]` | `headcount.admin.audit` | Searches the audit log, newest first. Player names also match their UUID. |
 | `/hca reload` | `headcount.admin.reload` | Reloads every config and language file. Open trades are cancelled and menus closed first. |
@@ -57,7 +57,7 @@ Players with `headcount.admin.notify` get duplicate-head alerts.
 
 ## Resets
 
-Both resets make every head made so far worthless. Each run of a cycle stamps a hidden run ID on its heads, and a reset starts a new run. Add `delete-heads` or `keep-heads` to choose what happens to the old heads. Without either, `reset.delete-old-heads` in `config.yml` decides, and its default is to delete them.
+Both resets make every head made so far worthless, because a reset starts a new run and older heads carry the old run ID ([heads.md](heads.md#cycle-runs-and-resets)). Add `delete-heads` or `keep-heads` to choose what happens to the old heads. Without either, `reset.delete-old-heads` in `config.yml` decides, and its default is to delete them.
 
 With `delete-heads`, Headcount deletes old heads wherever it finds them. Online players lose them from their inventories, ender chests and cursor right away, and offline players lose them when they next join. Containers are cleaned when opened, including shulkers and bundles inside them. A head is also deleted when it is picked up or dropped, so breaking a placed old head drops nothing. Queued deliveries and recovered trade offers are cleaned too. Each deletion goes in the audit log as `type:head_delete`.
 

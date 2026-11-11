@@ -16,11 +16,11 @@ Restart the server after installing it instead of using `/reload`. The database 
 - The bundled head lore shows the cycle number in gold on current heads and in gray on expired and defunct ones.
 
 ### Integrations
-- Every job is set to `included`, a plugin, or `none`. The `auto` setting is gone, but old configs still load: `auto` picks the installed plugin and logs a warning. If a chosen plugin is missing, Headcount falls back and logs a warning.
+- Every job is set to `included`, a plugin, or `none`. The `auto` setting is gone, but old configs still load, with `auto` picking the installed plugin. If a chosen plugin is missing, Headcount falls back. Both cases log a warning.
 - Headcount now has its own PvP, which is the new default. It adds `/pvp [on|off|status]` and `/pvp <player> [on|off]`, and includes:
   - a toggle that's off by default, with a cooldown, a reset on join, and worlds where it's forced;
   - protection for new players and after respawning;
-  - blocked hits while PvP is off, including projectiles, potions, fire, TNT and pets;
+  - blocked hits when either player has PvP off, including projectiles, potions, fire, TNT and pets;
   - a combat tag that can block commands, teleports, flight, elytra, pearls and turning PvP off;
   - combat-log kills that credit the last attacker, with extra actions and a broadcast;
   - a channel and sound for each message, and a live countdown in the action bar or a boss bar.

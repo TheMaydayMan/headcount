@@ -2,7 +2,7 @@
 
 Player tests for Headcount, played by [mineflayer](https://github.com/PrismarineJS/mineflayer) bots on a copy of the test server. They cover what console checks and unit tests can't: clicking in menus, trading, killing, buying, joining and leaving, and the timing of hooks and timed actions. Each suite prints `PASS` or `FAIL` for each check, then a summary.
 
-mineflayer speaks Minecraft 26.1, so the bot server runs ViaVersion and ViaBackwards to let 26.1 clients join Paper 26.3. ViaBackwards rejects this mineflayer version's routine movement packets, so the bots don't send any (`lib.js` drops them): they stand where the server puts them, and the tests teleport them instead.
+mineflayer speaks Minecraft 26.1, so the bot server runs ViaVersion and ViaBackwards to let 26.1 clients join Paper 26.3. ViaBackwards rejects this mineflayer version's routine movement packets, so `lib.js` drops them. The bots stand where the server puts them, and the tests teleport them instead.
 
 ## Setup (once)
 
@@ -35,7 +35,7 @@ To run one suite: `./reset-bot.sh`, then `node tests-<name>.js`. Several take a 
 
 | Suite | What it covers |
 |---|---|
-| tests-vault | join hooks, vault set-up, the PvP gate, every click type in the vault, refused items, audit |
+| tests-vault | join hooks, vault set-up, the PvP gate, click types in the vault, refused items, audit |
 | tests-play | trading, mirror protection, kills, statuses, placeholders, shop, sidebar, titles, a live cycle end, expiry, history |
 | tests-more | PlaceholderAPI in Headcount text, player commands, tab completion, trade request rules, confirmation menu, admin vault view, placed heads (break, TNT), offline delivery and the hook order on rejoin |
 | tests-final | all join hooks for a non-op player, permissions, drag, offhand and double click, piston and water on placed heads, old-cycle heads, audit rotation |
@@ -48,7 +48,7 @@ To run one suite: `./reset-bot.sh`, then `node tests-<name>.js`. Several take a 
 | tests-status, tests-status2 | every status source a bot can drive, combinations, loops, the status placeholder |
 | tests-score | formula variables, PlaceholderAPI numbers, rounding, bonuses, activity and playtime |
 | tests-moderation | AdvancedBan, command templates and the vanilla fallback |
-| tests-api | every API method, an addon status source and action type, every event, changing and cancelling them |
+| tests-api | the API methods, an addon status source and action type, and the events, including changing and cancelling them |
 | crash-offer, crash-take | kill -9 with a trade offer open or a take-item active: the items come back exactly once |
 
 ## Bedrock (bedrock/)

@@ -51,8 +51,8 @@ Results are cached for one server tick, so checking the same status many times i
 | Source | Settings | True when |
 |---|---|---|
 | `pvp` | `check`: `pvp-enabled`, `pvp-disabled`, `combat-tagged`, `newbie`, `respawn-protected`, `override` | The PvP provider chosen in `integrations.yml` reports that state. With provider `none` it can't answer. |
-| `player-state` | `check`: `afk`, `vanished`, `god`, `jailed`, `muted` | The player-state provider reports that state. With `included`, AFK comes from Headcount's idle timer, vanished from the `vanished` metadata, god from the invulnerable flag, and jailed and muted from Headcount's own jail and mute or the moderation plugin. With `essentials`, EssentialsX answers. The source's old name, `essentials`, still works. |
-| `muted` | none | The moderation plugin reports a mute, or Headcount's own mute is active. |
+| `player-state` | `check`: `afk`, `vanished`, `god`, `jailed`, `muted` | The player-state provider reports that state. With `included`, AFK comes from Headcount's idle timer, vanished from the `vanished` metadata, god from the invulnerable flag, and jailed and muted from the included jail and mute or the moderation plugin. With `essentials`, EssentialsX answers. The source's old name, `essentials`, still works. |
+| `muted` | none | The moderation plugin reports a mute, or the included mute is active. |
 | `bedrock` | none | The player joined through Geyser, as reported by Floodgate or Geyser. |
 
 ### Any plugin, through placeholders

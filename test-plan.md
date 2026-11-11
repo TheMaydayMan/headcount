@@ -14,7 +14,7 @@ Tick boxes as you go, and write anything odd under **Notes** at the end of each 
 
 Commands that start with `/` are typed in game. Lines marked *console* go in the server terminal or in Studio's **Console** page.
 
-**Studio** marks a step done in Headcount Studio. Keep it open on a second screen or a laptop all night. It handles config edits (with a diff before every save), ending the cycle with its "End in 10m/30m/1h" buttons, and looking up who has what in the audit trail, so you can keep playing. When a step gives both a command and a Studio way, use whichever is faster. The plan says when the two have to agree.
+**Studio** marks a step done in Headcount Studio, and bold names like **This cycle** or **Raw files** are pages in its sidebar. Keep it open on a second screen or a laptop all night. It handles config edits (with a diff before every save), ending the cycle with its **End soon** buttons, and looking up who has what in the audit trail, so you can keep playing. When a step gives both a command and a Studio way, use whichever is faster. The plan says when the two have to agree.
 
 Each part has a rough time. The whole night is about **3.5 to 4 hours**: three short cycles of 40 to 50 minutes, plus setup and wrap-up.
 
@@ -22,17 +22,17 @@ To restart, type `restart` in the console (or Studio's Console). The server come
 
 ### How many players is best
 
-5 or 6 is ideal. 4 to 8 works well with Studio running. 9 or 10 is where it really gets worse.
+5 or 6 is ideal. 4 to 8 works well with Studio running. 9 or 10 is noticeably harder.
 
 Scores only mean something from 5 players up. With 4 or fewer, the formula subtracts 1, so a player who never trades scores 0 and gets no reward or penalty. At 5 to 8 that player scores -1, so penalties happen on their own and the hoarder role matters.
 
-The top 3 is only a real cut from 4 players up. With 2 or 3, everyone with a positive score is in the top three and gets the +5 points and the Champion title, so the reward never looks different from the default.
+The top 3 is only a real cut from 4 players up. With 2 or 3, everyone with a positive score is in the top three and gets the +5 points and the Champion title, so the top-3 reward never sets anyone apart.
 
 5 players gives two trade pairs plus a ring of three, and PvP teams of 2 against 3. 6 gives two even teams of 3. Several people are also needed for the diamonds' shared stock of 10, bounties with more than one hunter, and a leaderboard worth ranking.
 
-7 or 8 scores exactly like 5 or 6 (`ceil(N/4)` is still 2), and the trade-cancel and moderation cases get spread over more people, which helps. The cost is the host's attention. Without Studio you'd spend the night typing `/hca` commands and reading chat. The Studio dashboard, leaderboard and cycle buttons take most of that away, but have a second op watch chat and the console anyway.
+7 or 8 scores exactly like 5 or 6 (`ceil(N/4)` is still 2), and the trade-cancel and moderation cases get spread over more people, which helps. The cost is the host's attention. Without Studio you'd spend the night typing `/hca` commands and reading chat. Studio's **This cycle** and **Players** pages take most of that away, but have a second op watch chat and the console anyway.
 
-9 or 10 is a real step down. A positive score needs **4** unique heads and the non-trader scores -2, so in 40-minute cycles some players won't get there. "Everyone does X" steps take twice as long, there's more to confirm than one host can keep up with, and chat moves fast enough that raw tags and wrong messages get missed. If you have 9 or 10, make the cycles 50 to 60 minutes and split into two groups of trade partners, each with its own checker (you, and a second op on Studio).
+At 9 or 10, a positive score needs **4** unique heads and the non-trader scores -2, so in 40-minute cycles some players won't get there. "Everyone does X" steps take twice as long, there's more to confirm than one host can keep up with, and chat moves fast enough that raw tags and wrong messages get missed. If you have 9 or 10, make the cycles 50 to 60 minutes and split into two groups of trade partners, each with its own checker (you, and a second op on Studio).
 
 With 2 or 3 players the plan still covers everything. Use `/hca run <player> test-minus-10` (and `/hca points ... give`) for the score cases that won't happen naturally.
 
@@ -71,9 +71,9 @@ The default score is `unique - ceil(active / 4)`. Your own head counts as 1 uniq
   - custom items: none installed
 - [ ] **Studio:** double-click `Headcount Studio/Headcount Studio.desktop`. If it won't launch, right-click it and choose **Allow Launching**.
   - [ ] It opens in the browser on **Overview**, which describes the setup in plain words and shows no problems.
-  - [ ] The **live** and **RCON** lights in the top bar are on.
-- [ ] **Studio → Console:** `list` shows the server's answer, and `hca selftest` matches the terminal.
-- [ ] **Studio → This cycle:** the cycle countdown matches `/hca cycle info`.
+  - [ ] The server light at the bottom of the sidebar is on and reads **RCON on**.
+- [ ] In **Console**, `list` shows the server's answer, and `hca selftest` matches the terminal.
+- [ ] The countdown on **This cycle** matches `/hca cycle info`.
 - [ ] Join as yourself. *console* `op <you>` if needed.
 - [ ] A couple of quick Studio checks:
   - [ ] **Ctrl+K**, type `score-colors`: it jumps to that option.
@@ -85,39 +85,39 @@ The default score is `unique - ceil(active / 4)`. Your own head counts as 1 uniq
 - [ ] **Hard reset permission:** `/lp user <you> permission set headcount.admin.reset.hard false`, then `/hca reset hard`: "no permission". Unset it with `/lp user <you> permission unset headcount.admin.reset.hard`, and as op you have it again.
 - [ ] **Wrong code:** `/hca reset hard`, then type a different 4-digit number: "Wrong code ... cancelled".
 - [ ] **Expired code:**
-  1. **Studio → General:** set the confirm timeout to `5s`.
-  2. **Review and save:** the diff is exactly one changed line. Save, then press **Reload the server** in the message that appears.
+  1. On **General**, set the confirm timeout to `5s`.
+  2. **Review and save:** the diff is exactly one changed line. Save, then press **Reload Headcount** in the message that appears.
   3. Run `/hca reset hard`, wait 6 seconds, then type the code: "expired".
   4. In Studio, Ctrl+Z undoes the timeout change. Save and reload again.
 - [ ] **Confirmation count:** set confirmations to `2` in Studio, save and reload. The flow now asks twice, and the second time says "Last confirmation". Set it back to 3.
-- [ ] **Studio → Backups:** each save above left a backup. Compare one with the current file, and the diff is that one line.
-- [ ] **Real hard reset, keeping heads, from Studio's Console.** Take 2 heads out of your vault first. Then type `hca reset hard keep-heads` in **Studio → Console**, and Studio asks before sending it. The codes show up in the console, so type `hca reset hard <code>` three times. Then check:
+- [ ] **Backups** has a backup from each save above. Comparing one with the current file shows only that line.
+- [ ] **Real hard reset, keeping heads, from Studio's Console.** Take 2 heads out of your vault first. Then type `hca reset hard keep-heads` in Studio's **Console**, and Studio asks before sending it. The codes show up in the console, so type `hca reset hard <code>` three times. Then check:
   - [ ] The warning listed the counts (players, cycles, heads, points...) and said "kept as defunct heads".
   - [ ] You get the first-join welcome again and a new vault with 27 heads, and `/hca cycle info` says cycle 1 with a new run ID.
   - [ ] The 2 heads in your inventory now say **(defunct)** with a gray cycle number, and the vault refuses them ("defunct").
-  - [ ] `plugins/Headcount/backups/hard-reset-<time>/` holds `headcount.db` and an `audit/` folder. The live `audit/` folder only has new lines, and **Studio → Audit log** shows only new events.
+  - [ ] `plugins/Headcount/backups/hard-reset-<time>/` holds `headcount.db` and an `audit/` folder. The live `audit/` folder only has new lines, and Studio's **Audit log** shows only new events.
   - [ ] You count as a new player again, so newbie protection runs for 10 minutes: `/hca status <you>` shows `newbie-protected`.
 - [ ] **Hard reset, deleting heads:** take 2 heads out again and put 1 in a chest. Then run `/hca reset hard delete-heads` in game, with the 3 codes.
   - [ ] The heads in your inventory vanish.
   - [ ] Open the chest, and that head vanishes too.
   - [ ] `/hca audit type:head_delete` shows `reason=reset`.
-  - [ ] In **Studio → Audit log**, click one of those head IDs. The **head tracer** shows it was made at the earlier cycle start and deleted after the reset.
+  - [ ] In **Audit log**, click one of those head IDs. Its **Follow a head** page shows it was made at the earlier cycle start and deleted after the reset.
 - [ ] If you still have a defunct head from the keep-heads reset, throw it on the ground. It should stay, since that reset kept them.
 
 ### 0.3 Config for a short night (Studio)
 
-Make these changes in Studio's **Set up** pages. Save them all at once with **Review and save** (check the diff), then press **Reload the server** in the message that appears and run `/hca selftest`.
+Make these changes in Studio's **Set up** pages. Save them all at once with **Review and save** (check the diff), then press **Reload Headcount** in the message that appears and run `/hca selftest`.
 
-- [ ] **Cycle → time zone:** try each of these. After each one, save and reload, then compare the zone and end time in `/hca cycle info` with Studio's timeline.
+- [ ] On **Cycle**, set the time zone to each of these in turn. After each one, save and reload, then compare the zone and end time in `/hca cycle info` with Studio's timeline.
   - [ ] `MST` (shows UTC-07:00)
   - [ ] `gmt-7`
   - [ ] `UTC+5:30`
   - [ ] `america/denver`
   - [ ] `nonsense`: Studio's Problems page flags it, and the console warns and falls back to UTC
 
-  Finish on `America/Denver`. Studio's "End in 10m" buttons assume the server's zone matches your computer's, so don't use them while it's set to anything else.
+  Finish on `America/Denver`. Studio's **End soon** buttons assume the server's zone matches your computer's, so don't use them while it's set to anything else.
 - [ ] **Cycle:** `activity.min-playtime: 5m`, so "active" means something tonight.
-- [ ] **Vault & heads:**
+- [ ] On **Vault and heads**:
   - [ ] **Title:** make sure it contains `<score>`, for example `"<dark_gray><owner>'s Head Vault <gray>(<unique> unique, score <score>)"`. Studio's preview shows a sample score in color. Try `<score:aqua:dark_red:yellow>` and keep whichever you like.
   - [ ] **Head lore:** the cycle number should be gold on current heads and gray on expired and defunct ones (the 1.1 defaults). The tooltip preview shows all three.
 - [ ] **Integrations**, set for tonight's tests:
@@ -125,15 +125,15 @@ Make these changes in Studio's **Set up** pages. Save them all at once with **Re
   - [ ] `player-state.included.afk.after: 1m`, so AFK is quick to test.
   - [ ] `moderation.included-jail.location`: pick a spot for a small jail, read its coordinates from F3, and enter `world,<x>,<y>,<z>`.
   - [ ] Look over the **PvP message previews**, which show how each PvP message will look in chat, the action bar or a title.
-- [ ] **Hooks → action lists:** add these two lists as cards in the action builder, not as YAML, so the builder gets tested.
+- [ ] On **Hooks**, add these two action lists as cards in the action builder, not as YAML, so the builder gets tested.
   - [ ] `test-minus-10`:
     - a `score-bonus` of `-10`, duration `cycle`
     - a `message`: `<red>Test: -10 score this cycle`
   - [ ] `test-mod`:
     - a `mute`, reason `Test mute`, duration `1m`
-  - [ ] Open **Raw files → actions.yml**: the lists are there, and the comments around them are untouched.
+  - [ ] Open actions.yml in **Raw files**. The lists are there, and the comments around them are untouched.
 - [ ] **Review and save** shows every change above, across all the files. Save, reload, and run `/hca selftest`: all pass.
-- [ ] Start the first cycle fresh with `/hca reset cycle delete-heads confirm`. Then **Studio → This cycle → In an hour** (or `/hca cycle setend <today>T<now + 50 min>`), and check it with `/hca cycle info`.
+- [ ] Start the first cycle fresh with `/hca reset cycle delete-heads confirm`. Then press **In an hour** on **This cycle** (or `/hca cycle setend <today>T<now + 50 min>`), and check it with `/hca cycle info`.
 
 **Notes:**
 
@@ -141,7 +141,7 @@ Make these changes in Studio's **Set up** pages. Save them all at once with **Re
 
 ## Part 1: Arrivals (about 15 min)
 
-**Everyone:** join one at a time, Bedrock players last. Each one shows up in the online list on **Studio → This cycle**.
+**Everyone:** join one at a time, Bedrock players last. Each one shows up in the online list on Studio's **This cycle** page.
 
 - [ ] About a second after joining, each new player gets two lines, in this order:
   1. the **first-join** welcome
@@ -159,7 +159,7 @@ Make these changes in Studio's **Set up** pages. Save them all at once with **Re
   - [ ] `/hc titles`: the menu, with locked titles
 - [ ] **Host:** `/hca placeholders P1` shows sensible values for every `%headcount_*%` placeholder. `/papi parse P1 %headcount_unique% %headcount_time_left% %headcount_title%` works too.
 - [ ] **Host:** `/hca status P1` shows every status, with `in-pvp` false and `newbie-protected` true.
-- [ ] **Studio → Players → P1:** their vault chest matches what P1 sees in game.
+- [ ] P1's page in Studio (from **Players**) shows the same vault P1 sees in game.
 - [ ] Watch for raw tags (`<cycle>`, `<green>`, ...) in any message so far, and note where each one showed up.
 
 **Notes:**
@@ -182,7 +182,7 @@ Normal survival: build a small base, gather, chat. The tasks below get dropped i
 - [ ] Double-click to collect.
 - [ ] Drag dirt over vault slots, and try to put in dirt, a vanilla head (`/give @s player_head`, ops only) or a sword. Each is refused with its own message.
 - [ ] One player turns PvP on with `/pvp on`, and gets a message that their new-player protection has ended. They try to move a head and it's blocked ("in-pvp"), with a message. They run `/pvp off` right away and get "wait Ns" (10s cooldown). Wait it out, then turn it off.
-- [ ] **Studio → Why is it blocked?**, for that player while their PvP was on, names `in-pvp` and the vault rule.
+- [ ] While their PvP was on, **Why is it blocked?** for that player names `in-pvp` and the vault rule.
 - [ ] **Host:** `/hca vault P1` while P1 has their vault open. You both see each other's moves as they happen, and the title updates for both of you. `/hca vault P1 view` is view-only.
 
 ### 2.2 Trades (pairs, 10 min)
@@ -214,7 +214,7 @@ Pair up as trade partners.
   - [ ] a `/vanish`ed player (the host vanishes)
   - [ ] someone already trading
   - [ ] a request left alone for 30 seconds expires, and both players are told
-- [ ] **Host:** `/hca audit P1 type:trade_complete` lists the trade with head IDs, and **Studio → Audit log** filtered to P1 shows the same lines. Trace one traded head: it was made, moved out of the vault, traded, and put in the new owner's vault.
+- [ ] **Host:** `/hca audit P1 type:trade_complete` lists the trade with head IDs, and Studio's **Audit log** filtered to P1 shows the same lines. Trace one traded head: it was made, moved out of the vault, traded, and put in the new owner's vault.
 
 ### 2.3 PvP and kills (teams, 15 min)
 
@@ -254,7 +254,7 @@ Split into T teams and find somewhere flat. **Everyone:** `/pvp on`, except one 
   - [ ] push it with a piston
   - [ ] wash it out with water
 
-  Every time, the same economy head drops (same ID in `/hca inspect`), and **Studio's head tracer** shows each place and break.
+  Every time, the same economy head drops (same ID in `/hca inspect`), and Studio's **Follow a head** page for it shows each place and break.
 - [ ] **Host**, in creative: middle-click clone a head in your inventory, then close the inventory. Ops with `headcount.admin.notify` get a "duplicate head" alert, and the vault refuses the copy ("copy").
 - [ ] `/hca inspect` with a head in hand shows owner, cycle, **run ID** and current: yes.
 
@@ -279,8 +279,8 @@ Check `/hca status <player>` while players are:
 About 15 minutes before the end, remind the hoarder not to trade or kill.
 
 - [ ] Check the activity rule: anyone with under 5 minutes of playtime is inactive (`/hc score` says not active yet). Make sure everyone has played longer than that.
-- [ ] **Host:** `/hca cycle simulate` lists every score and the outcome each would get. Compare it with the N table. **Studio → Players** should show the same scores and outcomes.
-- [ ] **Studio → This cycle:** set the end 12 minutes from now (or use `/hca cycle setend`). The countdown follows.
+- [ ] **Host:** `/hca cycle simulate` lists every score and the outcome each would get. Compare it with the N table. Studio's **Players** page should show the same scores and outcomes.
+- [ ] Set the end 12 minutes from now on **This cycle** (or with `/hca cycle setend`). The countdown follows.
 - [ ] The **10-minute** warning arrives in chat.
 - [ ] At **1 minute**, a title shows, plus a **boss bar** reading "Cycle 1 ends in 0:59" with the real number (no raw `<cycle>`).
 - [ ] A player who rejoins in the last minute also gets the boss bar.
@@ -291,7 +291,7 @@ About 15 minutes before the end, remind the hoarder not to trade or kill.
   - [ ] cycle 2 starts
 - [ ] Heads left in inventories now say **expired**, with a gray cycle number, and the vault refuses them.
 - [ ] Points: a positive score gives that many points, with **+5 for the top 3** (the `reward-top` list). If the hoarder is negative, they get "Minor penalty" slowness, and `/hc effects` shows it with time left (only online time counts).
-- [ ] `/hc history`, `/hc top last`, `/hca history <player>` and **Studio → History** all match.
+- [ ] `/hc history`, `/hc top last`, `/hca history <player>` and Studio's **Past cycles** page all match.
 - [ ] Have one player log out just before the end. When they rejoin, their report and outcome actions arrive before the first-join-cycle line.
 
 **Notes:**
@@ -304,7 +304,7 @@ About 15 minutes before the end, remind the hoarder not to trade or kill.
 
 ### 3.1 Shop (10 min)
 
-Players with points from cycle 1 go shopping. The host gives the others some with `/hca points P3 give 20` or the **Give points** button on their Studio player page. Give a few players enough for the higher tiers.
+Players with points from cycle 1 go shopping. The host gives the others some with `/hca points P3 give 20` or the **Points** button on their Studio player page. Give a few players enough for the higher tiers.
 
 - [ ] `/hc shop` opens on the highest tier you unlocked with last cycle's score:
   - Common: always
@@ -332,12 +332,12 @@ Players with points from cycle 1 go shopping. The host gives the others some wit
 - [ ] Anything priced 50 or more asks for confirmation. Cancel works, and spam-clicking confirm buys it only once.
 - [ ] No item can be taken out of the shop, titles, history or confirmation menus, whatever you click, drag or press.
 - [ ] On Bedrock, the shop and confirmations work.
-- [ ] **Studio → Shop:** the chest grid matches the in-game shop page by page, and each buyer's Studio player page lists what they bought.
+- [ ] The chest grid on Studio's **Shop** page matches the in-game shop page by page, and each buyer's Studio player page lists what they bought.
 
 ### 3.2 Titles, permissions and prefixes (5 min)
 
 - [ ] **Host:** `/hca title P1 grant champion`. It equips itself, and `/hc titles` shows it equipped. Unequipping and re-equipping work.
-- [ ] **Prefixes need LuckPerms.** With `permissions.provider: included` and `permission-prefix.enabled: true` in titles.yml, no prefix appears, and the console warns that prefixes need LuckPerms or Vault. Now set `permissions.provider: luckperms` in **Studio → Integrations**, save and reload. The title shows as a prefix in chat and in `/lp user P1 meta info`. Turn `permission-prefix` off and reload, and the prefix goes away.
+- [ ] **Prefixes need LuckPerms.** With `permissions.provider: included` and `permission-prefix.enabled: true` in titles.yml, no prefix appears, and the console warns that prefixes need LuckPerms or Vault. Now set `permissions.provider: luckperms` on **Integrations**, save and reload. The title shows as a prefix in chat and in `/lp user P1 meta info`. Turn `permission-prefix` off and reload, and the prefix goes away.
 - [ ] `%headcount_title%` works in `/papi parse`.
 - [ ] **Included permissions:** set `permissions.provider` back to `included` and reload. Add a list in the action builder with one `permission` action for `headcount.bypass.trade.cooldown`, duration `10m`. Then:
   - [ ] Run it on P2. P2 can now trade twice in a row with no cooldown.
@@ -357,7 +357,7 @@ Players with points from cycle 1 go shopping. The host gives the others some wit
 Then:
 
 - [ ] `/hc effects` on those players lists each timed effect with time left, in readable words. `/hca effects P2` shows the same with IDs. `/hca effects P2 remove <id>` ends one right away, and `remove all` clears them.
-- [ ] **Studio → Effects** lists every running effect for everyone. Its ✕ button removes one, after asking.
+- [ ] Studio's **Effects** page lists every running effect for everyone. Its ✕ button removes one, after asking.
 - [ ] `/hca hook first-join P1`, `/hca hook first-join-cycle P1` and `/hca hook warning:1m` replay those hooks.
 - [ ] **Moderation, included** (Headcount's own), on a willing player:
   - [ ] `/hca run P test-mod` mutes them for 1 minute. Chat and `/msg` are blocked, and `/hca status` shows `muted`. It lifts on its own.
@@ -369,7 +369,7 @@ Then:
 
 ### 3.4 Restart survival (5 min)
 
-- [ ] With timed effects running (slowness, dunce cap...), `restart`. Studio's lights go off, then come back once the server is up (reload the Studio tab if they don't).
+- [ ] With timed effects running (slowness, dunce cap...), `restart`. Studio's server light goes off, then comes back once the server is up (reload the Studio tab if it doesn't).
 - [ ] Everyone rejoins. `/hc effects` still lists everything, and the effects are still applied. Milk removes a potion effect, and it comes back within a second.
 - [ ] Have someone hold a trade offer open during the restart. After they rejoin, their items come back exactly once.
 - [ ] Everyone's PvP setting survived the restart (`/pvp status`).
@@ -380,9 +380,9 @@ Then:
 Warn everyone first, since their vaults get refilled.
 
 - [ ] Two players each take 2 heads out of their vault. One keeps them in their inventory, and the other puts them in a chest.
-- [ ] **Host:** `/hca reset cycle keep-heads` gives a confirm message that mentions "kept as defunct heads". Then run `/hca reset cycle keep-heads confirm` (or Studio's **Reset cycle (keep heads)** button).
-  - [ ] Everyone gets the "Cycle 2 was reset" message, a refilled vault, and the first-join-cycle line again.
-  - [ ] It's still cycle 2. `/hca cycle info` and the Studio dashboard show a new run ID and an end time 30 days out (shorten it again with `setend`).
+- [ ] **Host:** `/hca reset cycle keep-heads` gives a confirm message that mentions "kept as defunct heads". Then run `/hca reset cycle keep-heads confirm` (or **Keep old heads** under "Start it over" on **This cycle**).
+  - [ ] Everyone gets the "An admin restarted cycle 2" message, a refilled vault, and the first-join-cycle line again.
+  - [ ] It's still cycle 2. `/hca cycle info` shows a new run ID, and it and **This cycle** show an end time 30 days out (shorten it again with `setend`).
   - [ ] The heads that were taken out are **(defunct)**, gray, and refused by the vault. Points, titles and effects haven't changed.
   - [ ] Shop limits for "this cycle" reset, so Speed can be bought 5 more times. Kill claims reset too, so the same killer and victim drop a head again.
 - [ ] Take heads out again, then `/hca reset cycle delete-heads confirm`. Heads in inventories vanish at once. Opening the chest removes the ones in it, including any inside a shulker box or bundle. A player who was offline loses theirs when they join.
@@ -403,7 +403,7 @@ Back to PvP for a round. Everyone `/pvp on`.
 
 - [ ] **Host:** `/hca run <hoarder> test-minus-10`, so their score is -10 or lower. `/hca cycle simulate` and Studio's Players table both show it.
 - [ ] One player who bought a **shield** should also be negative. Check the simulate output.
-- [ ] `/hca cycle end confirm` (or Studio's **End now**, which asks first):
+- [ ] `/hca cycle end confirm` (or **End the cycle** on **This cycle**, which asks first):
   - [ ] The -10 player gets "Severe penalty": the dunce cap, glowing, and location broadcasts.
   - [ ] The shielded player's penalty is blocked ("shield used").
   - [ ] Punishments with "cycle" length last through cycle 3.
@@ -417,10 +417,10 @@ Back to PvP for a round. Everyone `/pvp on`.
 
 ## Part 4: Cycle 3, "Config chaos" (about 45 min)
 
-**Host:** set the end 40 minutes from now. This round, you change the rules **in Studio** while everyone plays. For each change, use **Review and save** and check the diff is only what you meant, press **Reload the server**, then see whether it shows up in game.
+**Host:** set the end 40 minutes from now. This round, you change the rules **in Studio** while everyone plays. For each change, use **Review and save** and check the diff is only what you meant, press **Reload Headcount**, then see whether it shows up in game.
 
 - [ ] **Scoring:** in the scoring lab, change the formula to `unique * 2 - ceil(active / 4)`. The lab's chart and sample scores update as you type. After saving, `/hc score` and the vault title's score match the lab. Change it back.
-- [ ] **Vault & heads → score colors:** set positive to `gold`, and the vault title changes color.
+- [ ] On **Vault and heads**, set the positive score color to `gold`. The vault title changes color.
 - [ ] `vault.block-movement.block-opening: true`: a player with PvP on can't even open their vault. Set it back to false.
 - [ ] **Trading:** try each of these with one trade:
   - [ ] `range.blocks: 10`: players 20 blocks apart can't trade, and walking apart mid-trade cancels it
@@ -443,9 +443,9 @@ Back to PvP for a round. Everyone `/pvp on`.
   - [ ] `combat-log.actions`: add a `points` action of `-5`. The next combat logger loses 5 points (check their Studio player page).
 - [ ] **AFK:** set `afk.announce: everyone`, and everyone sees "<name> is now AFK".
 - [ ] **Placeholders off:** set `placeholders.provider: none`. The sidebar's `%headcount_rank%` line now shows the placeholder as plain text. Set it back to `placeholderapi`.
-- [ ] **A recipe:** in **Learn → Recipes**, apply one (for example "A punishment that locks PvP on"). Studio shows the diff first. Save and reload, then undo it.
+- [ ] **A recipe:** on **Recipes** (under Help), apply one (for example "A punishment that locks PvP on"). Studio shows the diff first. Save and reload, then undo it.
 - [ ] **A conflict:** with an unsaved Studio change to config.yml, edit `config.yml` in a text editor and save it there. When you save in Studio, it warns that the file changed on disk instead of overwriting it.
-- [ ] **A mistake:** in **Raw files → shop.yml**, give one entry the same `slot` as another in its tier. The **Problems** page flags it before you save. Undo it. Studio doesn't check materials, but `/hca selftest` does: type `DIAMOND_BLOK` in an entry, save and reload, and the selftest names it. Fix it.
+- [ ] **A mistake:** open shop.yml in **Raw files** and give one entry the same `slot` as another in its tier. The **Problems** page flags it before you save. Undo it. Studio doesn't check materials, but `/hca selftest` does: type `DIAMOND_BLOK` in an entry, save and reload, and the selftest names it. Fix it.
 - [ ] Turn on `ban-repeat-offenders` in outcomes, with a 1-minute ban for the test.
 - [ ] Bedrock check (if you have one): vault, a trade with a Java player, shop, sidebar.
 - [ ] **Optional, PvPManager:**
@@ -464,11 +464,11 @@ Back to PvP for a round. Everyone `/pvp on`.
 
 ## Part 5: Wrap-up (about 15 min)
 
-- [ ] **Host:** `/hca audit <player>`, `/hca audit <head id>` and `/hca audit <player> type:vault_in page:2` all find the right lines. **Studio → Audit log** finds the same ones, including in the older `.gz` files.
+- [ ] **Host:** `/hca audit <player>`, `/hca audit <head id>` and `/hca audit <player> type:vault_in page:2` all find the right lines. Studio's **Audit log** finds the same ones, including in the older `.gz` files.
 - [ ] Run `/hca reset <player> vault|points|titles|streak|effects|history|all confirm`, each option on one willing player. Each one does exactly what it says.
 - [ ] `/hca flag P1 set test`, then `/hca status P1`. If you defined a flag status, it reads true. Clear the flag.
 - [ ] Optional crash test: someone puts items in a trade offer, then *console* `kill -9` the server process (find it with `pgrep -f paper`). Start it again with `./start.sh`, and the items come back exactly once.
-- [ ] **Studio → Backups:** export the configs as a .zip to keep tonight's setup.
+- [ ] On **Backups**, download the configs as a .zip to keep tonight's setup.
 - [ ] Final `/hca reset hard keep-heads` (3 codes) to leave a clean server for next time. The backup folder holds tonight's database and audit log.
 - [ ] Put PvPManager back in `plugins/` only if you want it for normal play (and set `pvp.provider: pvpmanager`).
 - [ ] Copy anything odd from the **Notes** into `1.1 Notes.md`.

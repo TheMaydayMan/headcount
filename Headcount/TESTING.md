@@ -12,9 +12,9 @@ A person is still needed for anything that depends on a real client or on someth
 ## Setup
 
 1. Set up the server once with `TestServer/setup.sh` and build Headcount (`cd Headcount && ./gradlew build`, which copies the jar into the server). Start it with `cd TestServer && ./start.sh` (Java 25, offline mode, port 25565).
-2. Join with two Java clients under different names. Offline mode accepts any name, e.g. two launcher profiles or instances. Call them **A** and **B**. Make A op (`op A` in the console).
+2. Join with two Java clients under different names, for example from two launcher profiles or instances. Offline mode accepts any name. Call them **A** and **B**. Make A op (`op A` in the console).
 3. For Bedrock: join with a Bedrock client on port 19132 (Geyser), called **C**.
-4. Headcount's included PvP starts everyone with PvP off. If PvPManager is still in `plugins/`, it turns PvP on for everyone, and the default `in-pvp` status then blocks vault movement. Delete its jar, or run `/pvp` as each player to turn PvP off (see [TestServer/README.md](../TestServer/README.md)).
+4. Headcount's included PvP starts everyone with PvP off, so the default `in-pvp` status blocks nothing until a player runs `/pvp`. If PvPManager is still in `plugins/`, it applies its own rules in real fights (PvP on for everyone, its newbie protection), which can get in the way of the tests. Delete its jar to test cleanly (see [TestServer/README.md](../TestServer/README.md)).
 5. Start from clean data: stop the server, delete `TestServer/plugins/Headcount/`, and start again.
 6. Useful commands: `/hca status <player>`, `/hca effects <player>`, `/hca audit <player>`, `/hca inspect` (with a head in your hand), `/hca cycle simulate`, `/hca cycle end confirm`.
 
@@ -87,9 +87,9 @@ A person is still needed for anything that depends on a real client or on someth
 
 ## 5. Statuses
 
-- [ ] `/hca status A` lists every status with its current value. Check: `in-pvp` follows `/pvp`; `combat-tagged` turns on when hitting B and off when the combat tag ends; `creative-or-spectator`; `sleeping-or-dead` (in a bed); `vanished` (`/vanish`); `afk` (`/afk`); `low-health`, `on-fire`, `in-lava`, `falling-far`.
+- [ ] `/hca status A` lists every status with its current value. Check: `in-pvp` follows `/pvp`; `combat-tagged` turns on when hitting B and off when the combat tag ends; `creative-or-spectator`; `sleeping-or-dead` (in a bed); `vanished` (`/vanish`); `afk` (stand still for `player-state.included.afk.after`, 5 minutes by default); `low-health`, `on-fire`, `in-lava`, `falling-far`.
 - [ ] `%headcount_status_combat-tagged%` reads true/false (`/papi parse A %headcount_status_combat-tagged%`).
-- [ ] The sources that need a moving player, which the bots can't test. `sleeping` and `falling-far` are default statuses; add test statuses with `source: flying`, `gliding` and `swimming`. Each one turns true while you fly, glide with an elytra, swim, lie in a bed or fall 4 blocks, and false after.
+- [ ] These sources need a moving player, so the bots can't test them. `sleeping` and `falling-far` are default statuses; add test statuses with `source: flying`, `gliding` and `swimming`. Each one turns true while you fly, glide with an elytra, swim, lie in a bed or fall 4 blocks, and false after.
 - [ ] With `pvp.provider: none` in integrations.yml and a restart, `combat-tagged` falls back to recent player damage: true for 15 seconds after a hit.
 
 ## 6. Shop

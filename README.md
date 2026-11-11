@@ -58,7 +58,7 @@ The plugin's [README](Headcount/README.md) has the full list of docs. A few plac
 
 ## What still needs testing
 
-The bot tests and `/hca selftest` cover most of the plugin, but some things need a person or something this machine doesn't have. DiscordSRV needs a bot token to deliver the `discord` action. The paid plugins (LiteBans, ItemsAdder, Oraxen and Nexo) are compiled against but not installed. The movement statuses (`flying`, `gliding`, `swimming`, `sleeping`, `falling`) need a real client, and so do the look of menus and messages, especially on Bedrock with a real Xbox sign-in. The 1.1 features are tested by hand with [test-plan.md](test-plan.md). [TESTING.md](Headcount/TESTING.md) has the full manual checklist.
+The bot tests and `/hca selftest` cover most of the plugin, but some things need a person or something the test server doesn't have. DiscordSRV needs a bot token to deliver the `discord` action. The paid plugins (LiteBans, ItemsAdder, Oraxen and Nexo) are compiled against but not installed. The movement statuses (`flying`, `gliding`, `swimming`, `sleeping`, `falling`) need a real client, and so do the look of menus and messages, especially on Bedrock with a real Xbox sign-in. The 1.1 features are tested by hand with [test-plan.md](test-plan.md). [TESTING.md](Headcount/TESTING.md) has the full manual checklist.
 
 ## License
 

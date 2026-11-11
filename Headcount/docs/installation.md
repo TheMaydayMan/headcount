@@ -16,7 +16,7 @@ Headcount needs no other plugins. It has its own PvP, permission nodes, moderati
 
 ## Headcount Studio
 
-Headcount Studio is an app that runs on your own computer and opens in your browser. It has an editor for each config file, a live view of the server (players, vaults, the leaderboard and the audit log), a console, and guides with a full reference. To start it, double-click a launcher in the repository's `Headcount Studio` folder (`.desktop`, `.command` or `.bat`), or run:
+Headcount Studio is a separate app for editing the configs and watching the server. It runs locally and opens in your browser. It has an editor for each config file, a live view of the server (players, vaults, the leaderboard and the audit log), a console, and guides with a full reference. To start it, double-click a launcher in the repository's `Headcount Studio` folder (`.desktop`, `.command` or `.bat`), or run:
 
 ```bash
 python3 Headcount/tools/studio/server.py --dir /path/to/server/plugins/Headcount

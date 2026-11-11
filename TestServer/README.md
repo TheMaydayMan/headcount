@@ -26,7 +26,7 @@ The repository holds only `setup.sh`, `start.sh`, `restart.sh`, `server.properti
 | Geyser-Spigot | 2.12.1 build 1298 | geysermc.org |
 | Floodgate | 2.2.5 build 141 | geysermc.org |
 
-Some of these are older than Paper 26.3 but still work. EssentialsX 2.22.0 is built for 26.1.2 and logs "unsupported server version", but runs. Geyser's Paper build also stops at 26.1.2 and loads fine. AdvancedBan's last release is from 2020, and it loads and its API works. VaultUnlocked stands in for the unmaintained Vault and registers itself as "Vault". The paid plugins Headcount supports (LiteBans, ItemsAdder, Oraxen, Nexo) aren't installed.
+Some of these are older than Paper 26.3 but still work. EssentialsX 2.22.0 is built for 26.1.2 and logs "unsupported server version", but runs. Geyser's Paper build also stops at 26.1.2 and loads fine. AdvancedBan's last release is from 2020, but it loads and its API works. VaultUnlocked stands in for the unmaintained Vault and registers itself as "Vault". The paid plugins Headcount supports (LiteBans, ItemsAdder, Oraxen, Nexo) aren't installed.
 
 ## Running it
 
@@ -42,6 +42,6 @@ Geyser's config is left at its defaults.
 
 RCON is on (port 25575) with a random password that `setup.sh` writes into `server.properties`, so Headcount Studio can run commands on the server. A server set up before 1.1 gets it from the next `setup.sh`. RCON listens on every network interface, so keep 25575 closed in your firewall.
 
-PvPManager is installed, but Headcount 1.1 uses its own included PvP by default (`integrations.yml pvp.provider`). PvPManager still enforces its own rules while it is installed, like PvP on for everyone and its newbie protection. Delete its jar from `plugins/` to test Headcount's PvP cleanly, or set `pvp.provider: pvpmanager` and restart.
+PvPManager is installed, but Headcount 1.1 uses its included PvP by default (`integrations.yml pvp.provider`). PvPManager still enforces its own rules while it is installed, like PvP on for everyone and its newbie protection. Delete its jar from `plugins/` to test Headcount's PvP cleanly, or set `pvp.provider: pvpmanager` and restart.
 
 DiscordSRV needs a Discord bot token in `plugins/DiscordSRV/config.yml` before it connects.

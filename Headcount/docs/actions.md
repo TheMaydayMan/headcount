@@ -64,7 +64,7 @@ An action with any duration other than `instant` is tracked. It is saved in the 
 
 An action that needs the player online waits for their next join if they're offline, whether it's timed or instant, like a title or a sound. A timed action that ends while they're offline is undone when they next join. Built-in types know how to undo themselves, and `console` and `player-command` run their `revert-commands`.
 
-`permanent` applies once and is never undone. Some effects only exist while they're tracked, such as deny lists, shields, locks, and Headcount's own mutes and jails. `permanent` keeps those tracked forever. The tracked-only types `head-protection`, `extra-heads`, `bounty`, `shield`, `deny`, `force-title` and a locked `equip` do nothing with the default `instant`, so give them a duration. `/hca selftest` and the start-up check report any that don't have one.
+`permanent` applies once and is never undone. Some effects only exist while they're tracked, such as deny lists, shields, locks, and the included mutes and jails. `permanent` keeps those tracked forever. The tracked-only types `head-protection`, `extra-heads`, `bounty`, `shield`, `deny`, `force-title` and a locked `equip` do nothing with the default `instant`, so give them a duration. `/hca selftest` and the start-up check report any that don't have one.
 
 In global hooks, actions run without a player. Message-like actions go to everyone online, server-side actions (console, broadcast, discord, run, random) work as usual, and actions that need a player are skipped with a warning.
 
@@ -142,7 +142,7 @@ These go through the moderation provider in `integrations.yml`, and each kind ca
 |---|---|---|---|---|
 | `ban`, `mute`, `warn` | `reason` | `reason` | no | timed: lifts the ban or mute |
 | `kick` | `reason` | `reason` (skipped for offline players) | - | - |
-| `jail` | `reason` | `reason`, `jail` (jail name for EssentialsX). Headcount's own jail uses `moderation.included-jail` in integrations.yml. | yes | releases |
+| `jail` | `reason` | `reason`, `jail` (jail name for EssentialsX). The included jail uses `moderation.included-jail` in integrations.yml. | yes | releases |
 
 A timed `duration` makes the punishment temporary and is passed to the plugin. `instant` and `permanent` make it permanent. For `cycle`, the plugin gets the time left in the cycle. For `death`, `manual` and `cycles:N`, Headcount lifts the punishment itself when the action ends.
 
