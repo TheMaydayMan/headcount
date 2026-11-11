@@ -33,7 +33,7 @@ export async function rcon(command, { quiet, confirm, danger } = {}) {
     return r.reply;
   } catch (e) { toast("The server didn't take it: " + e.message, "err"); return null; }
 }
-/** A command's reply in a drawer, with its colours. */
+/** A command's reply in a drawer, with its colors. */
 export function showReply(title, reply) {
   drawer(title, el("div", { class: "console", style: { height: "auto", minHeight: "200px" }, html: legacyToHtml(reply || "No reply.") }));
 }
@@ -106,12 +106,12 @@ async function cyclePage(root) {
   const draw = () => {
     const L = live();
     head.innerHTML = ""; body.innerHTML = "";
-    const acts = [runBtn([icon("refresh"), "Reload configs"], "hca reload", { confirm: "Headcount reads its files again. Open trades are cancelled and menus close first." }, "ghost"), runBtn([icon("check"), "Selftest"], "hca selftest", { quiet: true, show: "Selftest" }, "ghost")];
+    const acts = [runBtn([icon("refresh"), "Reload Headcount"], "hca reload", { confirm: "Headcount reads its files again. Open trades are cancelled and menus close first." }, "ghost"), runBtn([icon("check"), "Run selftest"], "hca selftest", { quiet: true, show: "Selftest" }, "ghost")];
     if (!L) { head.append(pageHead("This cycle", null, ...acts)); body.append(el("div", { class: "empty" }, "Reading the database")); return; }
     const c = L.cycle;
     head.append(pageHead(c ? "Cycle " + c.id : "This cycle", null, ...acts));
     if (!c) {
-      body.append(emptyBox("clock", "No cycle is running", "The first cycle starts on the date set under Cycle, or right away if that's set to start right away. You can also start one now.",
+      body.append(emptyBox("clock", "No cycle is running", "The first cycle starts on the date set on the Cycle page. You can also start one now.",
         runBtn("Start a cycle now", "hca cycle start", { confirm: "Starts cycle 1 now. Every player who joins gets a full vault." }, "primary"), btn("Cycle settings", () => go("#/cycle"), "ghost")));
       return;
     }
@@ -139,7 +139,7 @@ async function cyclePage(root) {
     body.append(tools);
     const feed = el("div", { class: "items" }, (L.recent || []).slice(0, 10).map(auditItem));
     body.append(el("section", { class: "group" }, el("header", {}, el("h2", {}, "Latest in the audit log"), el("div", { class: "side" }, el("a", { href: "#/live-audit" }, "Search it"))),
-      L.recent?.length ? feed : emptyBox("book", "The audit log is empty", "Heads being made, traded and moved show up here as they happen.")));
+      L.recent?.length ? feed : emptyBox("book", "The audit log is empty", "New lines appear here while the server runs.")));
   };
   draw();
   return S.on((ev) => { if (ev.type === "live" && !root.contains(document.activeElement)) draw(); });
@@ -151,7 +151,7 @@ function cycleTools() {
   const zone = S.get("config.yml", "cycle.time-zone") ?? "UTC";
   let by = "1d";
   const row = (label, hint, ...ctl) => el("div", { class: "field" }, el("div", { class: "lab" }, el("span", { class: "name" }, label), hint ? el("div", { class: "hint" }, hint) : null), el("div", { class: "ctl" }, el("div", { class: "row" }, ...ctl)));
-  const soon = (min) => runBtn(min < 60 ? "In " + min + " minutes" : "In an hour", () => "hca cycle setend " + zoneIso(Date.now() + min * 60000), { confirm: "The cycle ends " + (min < 60 ? min + " minutes" : "an hour") + " from now, with scores, outcomes and a fresh vault for everyone." }, "small");
+  const soon = (min) => runBtn(min < 60 ? "In " + min + " minutes" : "In an hour", () => "hca cycle setend " + zoneIso(Date.now() + min * 60000), { confirm: "The cycle ends " + (min < 60 ? min + " minutes" : "an hour") + " from now." }, "small");
   const box = el("section", { class: "group" }, el("header", {}, el("h2", {}, "Change this cycle")), el("div", { class: "sheet" },
     row("Ends at", "In " + zone + ", the cycle's time zone.", endInp, runBtn("Move the end", () => "hca cycle setend " + endInp.value, { confirm: "Moves the end of the running cycle." })),
     row("Move it by", null, durationCtl(by, (v) => { by = v; }, { units: ["m", "h", "d"] }), runBtn("Later", () => "hca cycle extend " + by, { confirm: "The cycle ends later by " + by + "." }), runBtn("Sooner", () => "hca cycle extend -" + String(by).replace(/^-/, ""), { confirm: "The cycle ends sooner by " + by + "." })),
@@ -332,7 +332,7 @@ async function historyPage(root, params) {
   }
   root.append(pageHead("Past cycles"));
   const cycles = await S.api("/api/live/history");
-  if (!cycles.length) { root.append(emptyBox("book", "No cycles yet", "Each cycle shows up here once it starts, and its results once it ends.")); return; }
+  if (!cycles.length) { root.append(emptyBox("book", "No cycles yet", "A cycle is listed once it starts. Its results are added when it ends.")); return; }
   root.append(el("div", { class: "items" }, cycles.map((c) => {
     const running = c.state === "active";
     const line = running ? "Running, ends " + fmt(c.end_ms) : c.active ? `${plural(c.active, "player")} scored, ${c.rewarded} above 0 and ${c.punished} below. Average ${c.avg}.` : "Nobody was active.";
@@ -386,7 +386,7 @@ function auditView(initial, { compact } = {}) {
     try {
       const r = await S.api(`/api/audit?q=${encodeURIComponent(q.value)}&type=${type}&page=${page}`);
       res.innerHTML = "";
-      if (!r.lines.length) { res.append(compact ? el("div", { class: "sheet pad muted" }, "Nothing in the audit log for them yet.") : emptyBox("spyglass", page > 1 ? "No more lines" : "Nothing matches", q.value || type ? "Try fewer words, or any type." : "The audit log is empty. It fills as heads are made, moved and traded.")); }
+      if (!r.lines.length) { res.append(compact ? el("div", { class: "sheet pad muted" }, "Nothing in the audit log for them yet.") : emptyBox("spyglass", page > 1 ? "No more lines" : "Nothing matches", q.value || type ? "Try fewer words, or any kind." : "The audit log is empty.")); }
       else res.append(el("div", { class: "items" }, r.lines.map(auditItem)));
       if (page > 1 || r.more) res.append(el("div", { class: "row", style: { marginTop: "10px" } }, page > 1 ? btn([icon("left"), "Newer"], () => { page--; run(); }, "small ghost") : null, el("span", { class: "grow" }), r.more ? btn(["Older", icon("right")], () => { page++; run(); }, "small ghost") : null));
     } catch (e) { res.innerHTML = ""; res.append(el("div", { class: "note bad" }, e.message)); }
@@ -406,10 +406,10 @@ async function auditPage(root, params) {
   root.append(auditView(params[0] ? decodeURIComponent(params[0]) : ""));
 }
 async function tracer(root, id) {
-  root.append(el("div", { class: "crumbs" }, el("a", { href: "#/live-audit" }, "Audit log")), pageHead("One head's story", el("span", { class: "cmd" }, id)));
+  root.append(el("div", { class: "crumbs" }, el("a", { href: "#/live-audit" }, "Audit log")), pageHead("Follow a head", el("span", { class: "cmd" }, id)));
   let r;
   try { r = await S.api("/api/audit/head?id=" + encodeURIComponent(id)); } catch (e) { root.append(el("div", { class: "note bad" }, e.message)); return; }
-  if (!r.lines.length) { root.append(emptyBox("spyglass", "This head isn't in the audit log", "It may be older than the log keeps (audit.keep-days), or its kind of event isn't logged.", btn("Audit log settings", () => window.studio.goToOption("config.yml", "audit.keep-days"), "ghost"))); return; }
+  if (!r.lines.length) { root.append(emptyBox("spyglass", "This head isn't in the audit log", "It may be older than the audit log keeps, or its events may not be logged.", btn("Audit log settings", () => window.studio.goToOption("config.yml", "audit.keep-days"), "ghost"))); return; }
   const list = el("ol", { class: "trace" });
   for (const a of r.lines) {
     const [name, spr] = AUDIT[a.type] || [a.type, "paper"];
@@ -447,7 +447,7 @@ async function consolePage(root, params) {
     if (e.key === "ArrowDown") { hi = Math.min(hist.length, hi + 1); inp.value = hist[hi] || ""; }
   });
   const quick = ["hca cycle info", "hca selftest", "hca integrations", "list", "hca reload"];
-  if (!hist.length) out.append(el("div", { style: { color: "#9aa5ad" } }, "Replies from the server show here, in colour. Up and down arrows go through earlier commands."));
+  if (!hist.length) out.append(el("div", { style: { color: "#9aa5ad" } }, "Replies show here. Up and down arrows bring back earlier commands."));
   root.append(el("div", { class: "row", style: { marginBottom: "10px" } }, quick.map((q) => btn("/" + q, () => run(q), "small ghost"))), out,
     el("div", { class: "row", style: { marginTop: "10px", flexWrap: "nowrap" } }, inp, btn("Run", () => { run(inp.value); inp.value = ""; }, "primary")),
     el("datalist", { id: "cmds" }, cmds.map((c) => el("option", { value: c }))));

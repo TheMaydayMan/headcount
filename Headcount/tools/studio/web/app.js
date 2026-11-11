@@ -168,7 +168,7 @@ function paletteItems() {
   for (const [k, n] of REF_TABS) items.push({ kind: "ref", title: n, desc: "Reference", icon: ICONS.reference, run: () => go("#/reference/" + k) });
   items.push({ kind: "action", title: "Review and save", desc: "Ctrl+S", run: () => openReview() },
     { kind: "action", title: "Undo", desc: "Ctrl+Z", run: doUndo }, { kind: "action", title: "Redo", desc: "Ctrl+Shift+Z", run: doRedo });
-  if (rconReady()) items.push({ kind: "action", title: "Reload Headcount on the server", desc: "/hca reload", run: () => rcon("hca reload", { confirm: "Headcount reads its files again. Open trades are cancelled and menus close first." }) },
+  if (rconReady()) items.push({ kind: "action", title: "Reload Headcount", desc: "/hca reload", run: () => rcon("hca reload", { confirm: "Headcount reads its files again. Open trades are cancelled and menus close first." }) },
     { kind: "action", title: "Run selftest", desc: "/hca selftest", run: async () => { const r = await rcon("hca selftest", { quiet: true }); if (r !== null) showReply("Selftest", r); } });
   for (const o of cat.options || []) if (o.default !== "(section)") items.push({ kind: "option", title: o.path, desc: o.file + "  " + firstSentence(o.help), run: () => goToOption(o.file, o.path) });
   for (const c of cat.commands || []) items.push({ kind: "command", title: c.syntax[0], desc: firstSentence(c.does), run: () => go("#/reference/commands") });
@@ -257,15 +257,15 @@ async function saveFiles(names) {
   route();
   if (S.dirtyNames().length) setTimeout(openReview, 50);
   if (!done.length) return;
-  const msg = "Saved " + done.join(", ") + ". The old version is in backups.";
-  if (rconReady()) toast(msg, "", { label: "Reload the server", run: reloadServer });
+  const msg = "Saved " + done.join(", ") + ". The old version is under Backups.";
+  if (rconReady()) toast(msg, "", { label: "Reload Headcount", run: reloadServer });
   else toast(msg);
 }
 async function reloadServer() {
   const r1 = await rcon("hca reload", { quiet: true });
   if (r1 === null) return;
   const r = await rcon("hca selftest", { quiet: true });
-  if (r !== null) import("./pages-live.js").then((m) => m.showReply("Reloaded, then /hca selftest", r));
+  if (r !== null) import("./pages-live.js").then((m) => m.showReply("Selftest after reload", r));
 }
 
 // ---------------------------------------------------------------- undo, problems, keys

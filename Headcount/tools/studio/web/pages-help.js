@@ -87,11 +87,11 @@ function howItWorks(root) {
   const traded = [3, 7, 11, 12, 16, 20];
   const step = (title, text, ...vis) => el("li", {}, el("div", {}, el("h2", {}, title), el("p", {}, text)), el("div", { class: "vis" }, vis));
 
-  root.append(pageHead("How Headcount works"));
+  root.append(pageHead("How it works"));
   root.append(el("ol", { class: "walk" },
     step("A cycle starts and every vault is full",
       ["Cycles on this server last ", V(days + " days", "#/cycle", "config.yml#cycle.length-days"), " and roll over at ", V(C("cycle.end-time") + " " + C("cycle.time-zone"), "#/cycle", "config.yml#cycle.end-time"),
-        ". At the start, each player's vault (", el("code", {}, "/hc"), ") gets ", V(start + " copies of their own head", "#/vault", "config.yml#vault.starting-heads"), ". It has ", V(size + " slots", "#/vault", "config.yml#vault.size"), " and no more."],
+        ". At the start, each player's vault (", el("code", {}, "/hc"), ") gets ", V(start + " copies of their own head", "#/vault", "config.yml#vault.starting-heads"), ". It has ", V(size + " slots", "#/vault", "config.yml#vault.size"), "."],
       vault((i) => (i < start ? head("Steve") : null), { unique: 1, total: start, used: start, score: 0 })),
     step("Heads change hands",
       ["Players trade heads with ", el("code", {}, "/trade"), C("kills.enabled") !== false ? [", and a kill drops the victim's head", C("kills.once-per-victim-per-cycle") !== false ? ", once per victim each cycle" : ""] : "", ". Only heads inside a vault count, and every head is stamped with its cycle, so an old one is worth nothing."],
@@ -101,7 +101,7 @@ function howItWorks(root) {
       f.ok ? el("div", { class: "sheet", style: { width: "100%" } }, el("table", { class: "t" }, el("tr", {}, el("th", {}, "Unique heads"), el("th", { class: "n" }, "Score, with 12 active players")),
         [1, 3, 5, 8, 12].map((u) => { const s = scoreOf(u, 12); return el("tr", {}, el("td", {}, u), el("td", { class: "n" }, el("b", { class: s > 0 ? "good-ink" : s < 0 ? "bad-ink" : "" }, s))); }))) : el("div", { class: "note bad" }, "The formula has an error, so there's no score to show.")),
     step("Scores bring outcomes and points",
-      ["Each ", V("outcome", "#/outcomes"), " covers a range of scores and runs its actions on everyone in it. A score above 0 also earns ", V((+C("points.earn-multiplier") || 1) === 1 ? "a point per score point" : C("points.earn-multiplier") + " points per score point", "#/scoring", "config.yml#points.earn-multiplier"), ", and ", V(C("points.rollover-percent") + "% of unspent points", "#/scoring", "config.yml#points.rollover-percent"), " carry over."],
+      ["Each ", V("outcome", "#/outcomes"), " covers a range of scores and runs its actions on everyone in it. A score above 0 also earns ", V((+C("points.earn-multiplier") || 1) === 1 ? "a point per score point" : C("points.earn-multiplier") + " points per score point", "#/scoring", "config.yml#points.earn-multiplier"), ", and ", +C("points.rollover-percent") > 0 ? [V(C("points.rollover-percent") + "% of unspent points", "#/scoring", "config.yml#points.rollover-percent"), " carry over."] : ["unspent points ", V("don't carry over", "#/scoring", "config.yml#points.rollover-percent"), "."]],
       rules.length ? el("div", { class: "items", style: { width: "100%" } }, rules.slice(0, 7).map(([id, r]) => el("div", { class: "item", onclick: () => go("#/outcomes/" + id) }, el("div", { class: "main" }, mcName(r.display || id)), el("div", { class: "end" }, describeRange(r.score)))))
         : emptyBox("totem_of_undying", "No outcomes yet", null)),
     step("Vaults empty out for the next cycle",
@@ -122,7 +122,7 @@ export const GLOSSARY = [
   ["Unique heads", "How many different players' heads are in a vault. Your own counts once."],
   ["Expired head", "A head from an earlier cycle. It's still a head, but it's worth nothing and the vault refuses it."],
   ["Defunct head", "A head from before a cycle was started over. Worthless, like an expired head."],
-  ["Active player", "Someone who has played enough this cycle (activity.min-playtime). Only active players get a score."],
+  ["Active player", "Someone who has played enough this cycle to get a score. How much is enough is set on the Cycle page."],
   ["Score", "What a vault is worth when the cycle ends, worked out by the formula in scoring.yml."],
   ["Points", "Headcount's own money. Scores above 0 earn them, and they're spent in the shop."],
   ["Streak", "How many cycles in a row a player scored above 0, or below it. The formula and conditions can use it."],
@@ -160,12 +160,12 @@ function glossarySection() {
 // ============================================================================================
 const WALKS = [
   ["Add a shop item", "emerald", [["Open the shop and pick the tier it belongs in.", "#/shop"], ["Click an empty slot in the chest and give the item an ID."], ["Set its price, then the item and name players see."],
-    ["Under What buying it does, add the actions it runs, like a potion effect or an item."], ["Save, then reload the server."]]],
+    ["Under What buying it does, add the actions it runs, like a potion effect or an item."], ["Save, then reload Headcount."]]],
   ["Warn players before a cycle ends", "bell", [["Open Hooks and add a warning, with how long before the end it goes off.", "#/hooks"], ["Add a message, a title or a sound to it."], ["The warnings show on the timeline under Cycle.", "#/cycle"]]],
   ["Give everyone something when a cycle starts", "chest", [["Open Hooks and click Starts.", "#/hooks"], ["Switch to For each player, so every player gets their own copy."], ["Add a Give item action. Players who are offline get it when they next join."]]],
   ["Let players trade while their PvP is on", "bundle", [["Take in-pvp out of No requests while.", "#/trading", "trade.yml#statuses.block-request"], ["And out of No accepting while.", "#/trading", "trade.yml#statuses.block-accept"],
     ["And out of Cancel open trades when.", "#/trading", "trade.yml#statuses.cancel-open"], ["If heads should move between vaults too, take it out of Heads stay put while.", "#/vault", "config.yml#vault.block-movement.statuses"]]],
-  ["Try a change and take it back", "feather", [["Change what you like. Problems shows anything that won't work.", "#/problems"], ["Review and save shows each changed line before it's written."], ["Reload the server and run selftest from This cycle.", "#/live"],
+  ["Try a change and take it back", "feather", [["Change what you like. Problems shows anything that won't work.", "#/problems"], ["Review and save shows each changed line before it's written."], ["Reload Headcount and run selftest from This cycle.", "#/live"],
     ["If it's wrong, Backups has the file as it was before the save.", "#/backups"]]],
   ["Run a short test cycle", "clock", [["On This cycle, use End soon to end the cycle in 10 minutes.", "#/live"], ["Simulate it first to see who gets what."], ["To begin again with full vaults, use Start it over."]]],
 ];
@@ -316,7 +316,7 @@ function refCommands(root) {
             odd.map((p) => el("span", { class: "badge warn" }, perms[p].default === "false" ? "Nobody has it by default" : perms[p].default === "true" ? "Everyone has it" : "Ops only")))),
           el("td", { class: "n", style: { width: "84px" } }, iconBtn("copy", "Copy", () => copyText(c.syntax[0]), "sm"), g === "admin" && rconReady() ? iconBtn("terminal", "Open in the console", () => go("#/console/" + encodeURIComponent(consoleCmd(c.syntax[0]))), "sm") : null)));
       }
-      if (cmds.length) body.append(el("section", { class: "group" }, el("header", {}, el("h2", {}, title), el("div", { class: "side faint small" }, usual === "true" ? "Everyone can use these unless noted" : "Ops can use these")), el("div", { class: "sheet" }, t)));
+      if (cmds.length) body.append(el("section", { class: "group" }, el("header", {}, el("h2", {}, title), el("div", { class: "side faint small" }, usual === "true" ? "Everyone has these by default" : "Ops have these by default")), el("div", { class: "sheet" }, t)));
     }
     if (!body.children.length) body.append(el("div", { class: "empty" }, "No command matches."));
     if (!s) body.prepend(builder());
@@ -344,7 +344,7 @@ function builder() {
   const ctls = el("div", { class: "row", style: { padding: "12px 18px" } });
   const upd = () => { out.textContent = FORMS[which][2](); };
   const drawForm = () => { ctls.innerHTML = ""; ctls.append(...FORMS[which][1]()); upd(); };
-  const run = btn("Run", () => rcon(out.textContent, { confirm: "Runs on the server now.", danger: which === "reset" }), "small primary");
+  const run = btn("Run", () => rcon(out.textContent, { confirm: "It runs as the console.", danger: which === "reset" }), "small primary");
   if (!rconReady()) { run.disabled = true; run.title = "Needs RCON"; }
   drawForm();
   return el("section", { class: "group" }, el("header", {}, el("h2", {}, "Build a command"), el("div", { class: "side" }, seg(Object.entries(FORMS).map(([k, f]) => [k, f[0]]), which, (v) => { which = v; drawForm(); }))),
@@ -419,7 +419,7 @@ function refFormula(root) {
   root.append(el("section", { class: "group" }, el("header", {}, el("h2", {}, "Ideas")), ideas));
 }
 const MM = [
-  ["Colours", [["<red>", "<red>red"], ["<gold>", "<gold>gold"], ["<green>", "<green>green"], ["<aqua>", "<aqua>aqua"], ["<yellow>", "<yellow>yellow"], ["<gray>", "<gray>gray"], ["<dark_gray>", "<dark_gray>dark gray"], ["<white>", "<white>white"], ["<#ff8800>", "<#ff8800>any hex colour"]]],
+  ["Colors", [["<red>", "<red>red"], ["<gold>", "<gold>gold"], ["<green>", "<green>green"], ["<aqua>", "<aqua>aqua"], ["<yellow>", "<yellow>yellow"], ["<gray>", "<gray>gray"], ["<dark_gray>", "<dark_gray>dark gray"], ["<white>", "<white>white"], ["<#ff8800>", "<#ff8800>any hex color"]]],
   ["Gradients", [["<gradient:gold:yellow>[Legend]</gradient>", "<gradient:gold:yellow>[Legend]</gradient>"], ["<rainbow>rainbow text</rainbow>", "<rainbow>rainbow text</rainbow>"]]],
   ["Styles", [["<bold> or <b>", "<bold>bold"], ["<italic> or <i>", "<italic>italic"], ["<underlined> or <u>", "<underlined>underlined"], ["<strikethrough> or <st>", "<st>struck"], ["<!italic>", "<!italic>italic off, useful in item lore"], ["<reset>", "<red><b>red bold<reset> back to plain"]]],
   ["Lines", [["<newline>", "one<newline>two"], ["\\<", "a literal \\<"]]],

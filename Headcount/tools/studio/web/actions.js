@@ -114,7 +114,8 @@ export function summarize(item) {
   const c = normalize(item);
   if (c.form === "ref") return `Run the list ${c.data.list}`;
   const d = c.data, T = types()[c.type];
-  const main = T?.main ? d[T.main] : undefined;
+  let main = T?.main ? d[T.main] : undefined;
+  if (isObj(main)) main = main.amount ?? main.value; // shorthand like points: {amount: 5, when: next-cycle}
   const text = (v) => (Array.isArray(v) ? v.map(plain).join(" / ") : plain(typeof v === "object" ? "" : v));
   const item2 = isObj(d.item) ? d.item : {};
   let s;

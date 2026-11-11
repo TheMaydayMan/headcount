@@ -34,7 +34,7 @@ function overview(root) {
     "Cycles last ", V(C("cycle.length-days") + " days", "#/cycle", "config.yml#cycle.length-days"), " and roll over at ", V(C("cycle.end-time") + " " + C("cycle.time-zone"), "#/cycle", "config.yml#cycle.end-time"),
     ". Each player starts a cycle with ", V(C("vault.starting-heads") + " of their own heads", "#/vault", "config.yml#vault.starting-heads"), " in a ", V(C("vault.size") + "-slot vault", "#/vault", "config.yml#vault.size"), ". ",
     f.ok ? ["With 12 active players, 4 unique heads score ", el("b", {}, ex(4, 12)), " and 10 score ", el("b", {}, ex(10, 12)), " under ", V("the formula", "#/scoring"), ". "] : ["The ", V("score formula", "#/scoring"), " has an error. "],
-    worst ? ["A score of ", el("b", {}, describeRange(worst[1].score)), " brings ", V(stripMini(worst[1].display || worst[0]), "#/outcomes"), ". "] : "",
+    worst ? ["A score of ", el("b", {}, describeRange(worst[1].score)), " gets ", V(stripMini(worst[1].display || worst[0]), "#/outcomes"), ". "] : "",
     "The shop has ", V(tiers.length + " tiers", "#/shop"), " and ", entries, " items, and PvP is handled by ", V(pvp === "included" ? "Headcount" : pvp === "none" ? "nobody" : pvp, "#/integrations"), ".");
   const mainCol = el("div", {}, lede);
   const problems = window.studio.problems();
@@ -73,7 +73,7 @@ export function countChanged(file) {
 function checklist() {
   const items = [["cycle", "Pick a cycle length and check the time zone", "#/cycle"], ["vault", "Choose the vault size and starting heads", "#/vault"],
     ["scoring", "Try a few numbers on the formula", "#/scoring"], ["shop", "Look through the shop", "#/shop"], ["integrations", "Check who handles PvP and permissions", "#/integrations"],
-    ["learn", "Read how a cycle works", "#/learn"], ["review", "Save your changes", "#/review"], ["reload", "Reload the server and run selftest", S.store.info.live ? "#/live" : "#/problems"]];
+    ["learn", "Read how a cycle works", "#/learn"], ["review", "Save your changes", "#/review"], ["reload", "Reload Headcount and run selftest", S.store.info.live ? "#/live" : "#/problems"]];
   let done = {};
   try { done = JSON.parse(localStorage.getItem("hc-checklist") || "{}"); } catch (e) { /* private window */ }
   if (items.every(([id]) => done[id])) return null;
@@ -97,9 +97,9 @@ const ABBR = { UTC: 0, GMT: 0, Z: 0, WET: 0, WEST: 60, BST: 60, CET: 60, CEST: 1
 export function zoneInfo(z) {
   const s = String(z || "").trim();
   if (s.toLowerCase() === "system") return { iana: Intl.DateTimeFormat().resolvedOptions().timeZone, label: "this computer's zone" };
-  if (ABBR[s.toUpperCase()] !== undefined) return { offset: ABBR[s.toUpperCase()], label: "the same offset all year" };
+  if (ABBR[s.toUpperCase()] !== undefined) return { offset: ABBR[s.toUpperCase()], label: "no daylight saving" };
   const m = /^(?:utc|gmt|ut)?\s*([+-])\s*(\d{1,2})(?::?(\d{2}))?$/i.exec(s);
-  if (m) return { offset: (m[1] === "-" ? -1 : 1) * (+m[2] * 60 + +(m[3] || 0)), label: "the same offset all year" };
+  if (m) return { offset: (m[1] === "-" ? -1 : 1) * (+m[2] * 60 + +(m[3] || 0)), label: "no daylight saving" };
   try { new Intl.DateTimeFormat("en", { timeZone: s }).format(); return { iana: s, label: "follows daylight saving" }; } catch (e) { return null; }
 }
 function wallClock(zi, t = Date.now(), opts = { weekday: "short", hour: "2-digit", minute: "2-digit" }) {
@@ -117,7 +117,7 @@ function zoned(y, mo, d, hh, mm, zi) {
   return guess - (asUtc - guess);
 }
 function cyclePage(root) {
-  const liveBtn = S.store.info.live ? btn([sprite("recovery_compass", 18), "Cycle tools"], () => go("#/live-cycle")) : null;
+  const liveBtn = S.store.info.live ? btn([sprite("recovery_compass", 18), "This cycle"], () => go("#/live-cycle")) : null;
   root.append(pageHead("Cycle", null, liveBtn));
   const aside = el("div", { style: { display: "grid", gap: "22px" } });
   const draw = () => drawSchedule(aside);

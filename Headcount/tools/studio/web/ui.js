@@ -278,7 +278,7 @@ export function chips(items, onChange, { placeholder, suggestions, render } = {}
   const draw = () => {
     box.innerHTML = "";
     list.forEach((it, idx) => box.append(el("span", { class: "chip" }, render ? render(it) : it, el("button", { type: "button", title: "Remove " + it, "aria-label": "Remove " + it, onclick: () => { list.splice(idx, 1); onChange(list.slice()); draw(); } }, icon("close")))));
-    const inp = el("input", { type: "text", placeholder: placeholder || (list.length ? "Add" : "Type and press Enter"), list: dl?.id, spellcheck: "false" });
+    const inp = el("input", { type: "text", placeholder: placeholder || (list.length ? "Add" : "Add one"), list: dl?.id, spellcheck: "false" });
     const add = () => { const v = inp.value.trim().replace(/,$/, ""); if (!v) return; list.push(v); onChange(list.slice()); draw(); box.querySelector("input").focus(); };
     inp.addEventListener("keydown", (ev) => {
       if ((ev.key === "Enter" || ev.key === ",") && inp.value.trim()) { ev.preventDefault(); add(); }
@@ -305,7 +305,7 @@ export function statusPicker(items, onChange, { single = false } = {}) {
       const nm = it.replace(/^!/, "");
       const known = names.includes(nm) || ["always", "never"].includes(nm);
       box.append(el("span", { class: "chip" + (neg ? " neg" : ""), title: known ? null : "Not in statuses.yml" },
-        el("button", { type: "button", title: neg ? "Matches when it is NOT active. Click for active." : "Matches when active. Click for not active.", onclick: () => { list[idx] = neg ? nm : "!" + nm; onChange(single ? list[0] : list.slice()); draw(); }, style: { padding: "0 2px", fontWeight: 600 } }, neg ? "not" : ""),
+        el("button", { type: "button", title: neg ? "Matches when it isn't active. Click to flip." : "Matches when it's active. Click to flip.", onclick: () => { list[idx] = neg ? nm : "!" + nm; onChange(single ? list[0] : list.slice()); draw(); }, style: { padding: "0 2px", fontWeight: 600 } }, neg ? "not" : ""),
         el("span", { style: known ? null : { color: "var(--bad)" } }, nm),
         el("button", { type: "button", "aria-label": "Remove " + nm, onclick: () => { list.splice(idx, 1); onChange(single ? undefined : list.slice()); draw(); } }, icon("close"))));
     });

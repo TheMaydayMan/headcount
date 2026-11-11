@@ -615,7 +615,7 @@ class Handler(BaseHTTPRequestHandler):
     def rcon(self):
         conf = self.srv.rcon_conf()
         if not conf:
-            return self._json(400, {"error": "RCON is off. Set enable-rcon and rcon.password in server.properties."})
+            return self._json(400, {"error": "RCON is off. Set enable-rcon=true and an rcon.password in server.properties, then restart the server."})
         cmd = json.loads(self._body().decode("utf-8")).get("command", "").strip().lstrip("/")
         if not cmd:
             return self._json(400, {"error": "No command given."})

@@ -89,7 +89,7 @@ export function runChecks() {
       for (const ti of e.requires?.titles || []) if (!titles.has(String(ti))) add("warn", `The shop item ${id} needs the title ${ti}, which doesn't exist.`, where);
     }
   }
-  for (const k of ["pvp", "placeholders", "economy", "permissions", "moderation", "discord", "bedrock", "player-state"]) if ((S.get("integrations.yml", k + ".provider") ?? "") === "auto") add("warn", `${k} is set to auto, which Headcount 1.1 dropped. Pick who handles it.`, "#/integrations");
+  for (const k of ["pvp", "placeholders", "economy", "permissions", "moderation", "discord", "bedrock", "player-state"]) if ((S.get("integrations.yml", k + ".provider") ?? "") === "auto") add("warn", `${k} is set to auto, which isn't an option any more. Pick who handles it.`, "#/integrations");
   if (!zoneInfo(S.get("config.yml", "cycle.time-zone") ?? "UTC")) add("error", `Headcount doesn't know the time zone ${S.get("config.yml", "cycle.time-zone")} and would use UTC.`, "#/cycle", "config.yml#cycle.time-zone");
   const f = compileFormula(String(S.get("scoring.yml", "formula") ?? ""));
   if (!f.ok) add("error", "The score formula has an error: " + f.error + ".", "#/scoring");
@@ -110,13 +110,13 @@ export function runChecks() {
 }
 function problemsPage(root) {
   const list = runChecks();
-  root.append(pageHead("Problems", null, rconReady() ? btn("Run selftest on the server", async () => { const r = await rcon("hca selftest", { quiet: true }); if (r !== null) showReply("Selftest", r); }, "ghost") : null));
+  root.append(pageHead("Problems", null, rconReady() ? btn("Run selftest", async () => { const r = await rcon("hca selftest", { quiet: true }); if (r !== null) showReply("Selftest", r); }, "ghost") : null));
   if (!list.length) { root.append(emptyBox("lime_dye", "Nothing wrong that Studio can see", "Studio checks the files as you edit them. The server's own /hca selftest also checks items, menus and messages against the game.")); return; }
   const errs = list.filter((p) => p.level === "error"), warns = list.filter((p) => p.level !== "error");
   const rows = (ps) => el("div", { class: "items" }, ps.map((p) => el("div", { class: "item" + (p.go || p.key ? "" : " static"), onclick: () => (p.go ? go(p.go, p.key) : p.key && window.studio.goToOption(...p.key.split("#"))) },
     el("span", { class: "led", style: { background: p.level === "error" ? "var(--bad)" : "var(--warn)" } }), el("div", { class: "main" }, p.text), p.go || p.key ? icon("right") : null)));
   if (errs.length) root.append(el("section", { class: "group" }, el("header", {}, el("h2", {}, errs.length === 1 ? "1 error" : errs.length + " errors")), rows(errs)));
-  if (warns.length) root.append(el("section", { class: "group" }, el("header", {}, el("h2", {}, "Worth a look")), rows(warns)));
+  if (warns.length) root.append(el("section", { class: "group" }, el("header", {}, el("h2", {}, "Warnings")), rows(warns)));
 }
 
 // ============================================================================================
@@ -168,20 +168,20 @@ async function backupsPage(root) {
       const names = Object.keys(r.files || {});
       if (!names.length) { toast("That .zip has no Headcount config files in it.", "err"); return; }
       for (const n of names) S.setText(n, r.files[n], null);
-      toast("Loaded " + names.join(", ") + ". Nothing is saved until you save it.");
+      toast("Loaded " + names.join(", ") + " as unsaved changes.");
       window.studio.review();
     } catch (e) { toast("Couldn't import it: " + e.message, "err"); }
     file.value = "";
   };
   file.addEventListener("change", doImport);
   const row = (label, hint, ...ctl) => el("div", { class: "field" }, el("div", { class: "lab" }, el("span", { class: "name" }, label), hint ? el("div", { class: "hint" }, hint) : null), el("div", { class: "ctl" }, el("div", { class: "row" }, ...ctl)));
-  root.append(el("section", { class: "group" }, el("header", {}, el("h2", {}, "Take your setup elsewhere")), el("div", { class: "sheet" },
+  root.append(el("section", { class: "group" }, el("header", {}, el("h2", {}, "Export and import")), el("div", { class: "sheet" },
     row("Export", "Every config file as it is saved now, in one .zip.", el("a", { class: "btn", href: "/api/export", download: "" }, "Download the .zip")),
     row("Import", "The files land as unsaved changes, so you see the difference first.", file, btn("Choose a .zip", () => file.click())))));
   let list = [];
   try { list = await S.api("/api/backups"); } catch (e) { root.append(el("div", { class: "note bad" }, e.message)); return; }
   const files = list.filter((b) => b.file);
-  if (!files.length) { root.append(el("section", { class: "group" }, el("header", {}, el("h2", {}, "Saved copies")), emptyBox("barrel", "No backups yet", "Each time Studio saves a file, the version it replaces is kept in backups/studio/ in the server folder. They show up here."))); return; }
+  if (!files.length) { root.append(el("section", { class: "group" }, el("header", {}, el("h2", {}, "Earlier versions")), emptyBox("barrel", "No backups yet", "Each time Studio saves a file, it keeps the version it replaced in backups/studio/ in the server folder."))); return; }
   const filter = select([["", "Every file"], ...[...new Set(files.map((b) => b.file))].map((f) => [f, f])], "", () => draw());
   const box = el("div");
   const draw = () => {
@@ -198,7 +198,7 @@ async function backupsPage(root) {
         btn("Restore this version", () => { S.setText(b.file, r.text, null); closeDrawer(); toast("Restored " + b.file + " as an unsaved change."); window.studio.refresh(); }, "primary")) });
   };
   draw();
-  root.append(el("section", { class: "group" }, el("header", {}, el("h2", {}, "Saved copies"), el("div", { class: "side" }, filter)), box));
+  root.append(el("section", { class: "group" }, el("header", {}, el("h2", {}, "Earlier versions"), el("div", { class: "side" }, filter)), box));
 }
 
 export const filesPages = [

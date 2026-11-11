@@ -149,7 +149,7 @@ function buttonEditor(file, base, id, redraw) {
     if (id === "display" && !b.material) { body.append(el("div", { class: "pad", style: { padding: "12px 18px" } }, el("span", { class: "muted" }, "Shows the item being bought."))); return; }
     body.append(field(file, ib + ".material", { onChange: () => { redraw(); draw(); } }), field(file, ib + ".name", { onChange: redraw }), field(file, ib + ".lore"));
     const mat = S.get(file, ib + ".material") ?? b.material;
-    if (String(mat).toUpperCase() === "PLAYER_HEAD") body.append(field(file, ib + ".head", { hint: "viewer shows the player's own head." }));
+    if (String(mat).toUpperCase() === "PLAYER_HEAD") body.append(field(file, ib + ".head", { hint: "Use viewer for the player's own head." }));
     body.append(field(file, ib + ".glint", { onChange: redraw }));
   };
   draw();
@@ -172,7 +172,7 @@ const layoutBtn = (id) => btn([sprite("chest", 18), "Menu layout"], () => go("#/
 // ============================================================================================
 //  Shop
 // ============================================================================================
-const STATES = [["affordable", "Can buy"], ["too-expensive", "Too expensive"], ["sold-out", "Sold out"], ["limit-reached", "Limit reached"], ["cooldown", "Cooling down"], ["unavailable", "Needs something"], ["locked", "Tier locked"]];
+const STATES = [["affordable", "Can buy"], ["too-expensive", "Too expensive"], ["sold-out", "Sold out"], ["limit-reached", "Limit reached"], ["cooldown", "Cooling down"], ["unavailable", "Requirement not met"], ["locked", "Tier locked"]];
 function shopPage(root, params) {
   const tiers = () => Object.keys(S.get("shop.yml", "tiers") || {});
   let tier = params[0] && tiers().includes(params[0]) ? params[0] : tiers()[0];
@@ -260,7 +260,7 @@ function statesEditor() {
   const body = el("div", { class: "sheet" });
   const draw = () => {
     body.innerHTML = "";
-    body.append(field("shop.yml", "default-states." + st + ".material", { label: "Item instead", hint: "Empty: the item's own." }), field("shop.yml", "default-states." + st + ".glint"),
+    body.append(field("shop.yml", "default-states." + st + ".material", { label: "Item instead", hint: "Leave it empty to keep the item's own." }), field("shop.yml", "default-states." + st + ".glint"),
       field("shop.yml", "default-states." + st + ".lore", { label: "Lore added", vars: { price: 3, stock: "unlimited", purchases_left: 5, missing: 2, limit: 5, cooldown: "2h", threshold: 10 } }));
   };
   draw();
@@ -292,7 +292,7 @@ function entryEditor(tier, id, redraw) {
       el("div", { class: "field" }, el("div", { class: "lab" }, el("span", { class: "name" }, "Ask to confirm")), el("div", { class: "ctl" }, seg([["", "From the shop's price"], ["true", "Always"], ["false", "Never"]], confirmV, (v) => S.set("shop.yml", base + ".confirm", v === "" ? undefined : v === "true"))))),
     group("Item", field("shop.yml", base + ".display.material", { onChange: () => { drawPrev(); entryEditor(tier, id, redraw); } }), field("shop.yml", base + ".display.name", { onChange: drawPrev, vars: { price: e0.price } }),
       field("shop.yml", base + ".display.lore", { onChange: drawPrev }), field("shop.yml", base + ".display.glint", { onChange: drawPrev }),
-      String(e0.display?.material).toUpperCase() === "PLAYER_HEAD" ? field("shop.yml", base + ".display.head", { hint: "viewer shows the buyer's own head." }) : null,
+      String(e0.display?.material).toUpperCase() === "PLAYER_HEAD" ? field("shop.yml", base + ".display.head", { hint: "Use viewer for the buyer's own head." }) : null,
       field("shop.yml", base + ".name", { label: "Name in messages", type: "text", placeholder: stripMini(e0.display?.name || id) }), field("shop.yml", base + ".enabled", { label: "For sale", type: "bool" })),
     el("section", { class: "group" }, el("header", {}, el("h2", {}, "What buying it does")), actionList("shop.yml", base + ".actions", { vars: { price: e0.price } })),
     group("Who can buy it", field("shop.yml", base + ".requires.titles", { label: "Owns these titles", type: "list", suggestions: titles }), field("shop.yml", base + ".requires.purchases", { label: "Bought before", type: "list", suggestions: allEntries }),
@@ -349,7 +349,7 @@ function titlesPage(root, params) {
   draw();
   root.append(layout([el("section", { class: "group" }, listBox),
     group("Showing titles", field("titles.yml", "settings.format", { onChange: drawChat, vars: { title: "<gold>[Champion]" } }), field("titles.yml", "settings.none-text", { onChange: drawChat }), field("titles.yml", "settings.auto-equip-first")),
-    group("Prefix in your permissions plugin", field("titles.yml", "settings.permission-prefix.enabled"), field("titles.yml", "settings.permission-prefix.type"), field("titles.yml", "settings.permission-prefix.priority", { hint: "Use one nothing else uses." }), field("titles.yml", "settings.permission-prefix.format"))],
+    group("Prefix in your permissions plugin", field("titles.yml", "settings.permission-prefix.enabled"), field("titles.yml", "settings.permission-prefix.type"), field("titles.yml", "settings.permission-prefix.priority", { hint: "Pick one no other prefix uses." }), field("titles.yml", "settings.permission-prefix.format"))],
   chatBox));
   if (params[0] && S.get("titles.yml", "titles." + params[0])) edit(params[0]);
 }
@@ -387,7 +387,7 @@ export function statusUses(name) {
   const out = [];
   const lists = [["config.yml", "vault.block-movement.statuses", "Vault"], ["config.yml", "kills.killer-blocked-statuses", "Kills"], ["trade.yml", "statuses.block-request", "Trade requests"], ["trade.yml", "statuses.block-accept", "Accepting trades"], ["trade.yml", "statuses.cancel-open", "Open trades"]];
   for (const [f, p, what] of lists) if ((S.get(f, p) || []).some((x) => String(x).replace(/^!/, "") === name)) out.push(what);
-  if (S.get("trade.yml", "request.vanished-status") === name) out.push("Vanished check");
+  if (S.get("trade.yml", "request.vanished-status") === name) out.push("Trade requests");
   for (const [n, s] of Object.entries(S.get("statuses.yml", "statuses") || {})) {
     if (!isObj(s)) continue;
     if ([...(s.statuses || []), s.status, s.fallback].some((x) => String(x ?? "").replace(/^!/, "") === name)) out.push(n);
@@ -477,7 +477,7 @@ function statusesPage(root, params) {
         rows.push(row);
       }
       body.append(group(null, ...rows),
-        group("When it can't tell", field("statuses.yml", base + ".fallback", { label: "Ask another status", type: "select", options: [["", "No"], ...names.map((n) => [n, n])] }),
+        group("When it can't tell", field("statuses.yml", base + ".fallback", { label: "Ask another status", type: "select", options: [["", "None"], ...names.map((n) => [n, n])] }),
           field("statuses.yml", base + ".unavailable", { label: "Otherwise count it as", type: "seg", options: [[false, "Inactive"], [true, "Active"]] })),
         group(null, field("statuses.yml", base + ".description", { label: "Note", type: "text", placeholder: "For yourself" })),
         el("p", { class: "muted" }, "Used by: " + (statusUses(name).join(", ") || "nothing yet") + ". Placeholder: ", el("code", {}, "%headcount_status_" + name + "%")));
@@ -497,11 +497,11 @@ const INTEG = [
   ["pvp", "PvP", "iron_sword", ["included", "pvpmanager", "none"], { included: "Headcount", pvpmanager: "PvPManager", none: "Nobody" }, { pvpmanager: "PvPManager" }],
   ["permissions", "Permissions", "trial_key", ["included", "luckperms", "vault", "none"], { included: "Headcount", luckperms: "LuckPerms", vault: "Vault", none: "Nobody" }, { luckperms: "LuckPerms", vault: "Vault" }],
   ["moderation", "Bans, mutes and jail", "iron_bars", ["included", "libertybans", "litebans", "advancedban", "essentials", "commands", "none"], { included: "Headcount", libertybans: "LibertyBans", litebans: "LiteBans", advancedban: "AdvancedBan", essentials: "EssentialsX", commands: "Commands", none: "Nobody" }, { libertybans: "LibertyBans", litebans: "LiteBans", advancedban: "AdvancedBan", essentials: "Essentials" }],
-  ["placeholders", "Placeholders", "item_frame", ["included", "placeholderapi", "none"], { included: "Headcount's own", placeholderapi: "PlaceholderAPI", none: "None" }, { placeholderapi: "PlaceholderAPI" }],
+  ["placeholders", "Placeholders", "item_frame", ["included", "placeholderapi", "none"], { included: "Headcount", placeholderapi: "PlaceholderAPI", none: "Nobody" }, { placeholderapi: "PlaceholderAPI" }],
   ["player-state", "AFK and vanish", "clock", ["included", "essentials", "none"], { included: "Headcount", essentials: "EssentialsX", none: "Nobody" }, { essentials: "Essentials" }],
-  ["economy", "Money", "gold_nugget", ["vault", "none"], { vault: "Vault", none: "None" }, { vault: "Vault" }],
-  ["discord", "Discord", "amethyst_shard", ["discordsrv", "none"], { discordsrv: "DiscordSRV", none: "None" }, { discordsrv: "DiscordSRV" }],
-  ["bedrock", "Bedrock players", "bedrock", ["floodgate", "geyser", "none"], { floodgate: "Floodgate", geyser: "Geyser", none: "None" }, { floodgate: "floodgate", geyser: "Geyser-Spigot" }],
+  ["economy", "Money", "gold_nugget", ["vault", "none"], { vault: "Vault", none: "Nobody" }, { vault: "Vault" }],
+  ["discord", "Discord", "amethyst_shard", ["discordsrv", "none"], { discordsrv: "DiscordSRV", none: "Nobody" }, { discordsrv: "DiscordSRV" }],
+  ["bedrock", "Bedrock players", "bedrock", ["floodgate", "geyser", "none"], { floodgate: "Floodgate", geyser: "Geyser", none: "Nobody" }, { floodgate: "floodgate", geyser: "Geyser-Spigot" }],
 ];
 const MSG_EVENTS = [["toggled", "Switching PvP", ["pvp.toggled-on", "pvp.toggled-off"]], ["tag-start", "Entering combat", ["pvp.tag-start"]], ["tag-end", "Leaving combat", ["pvp.tag-end"]],
   ["blocked-hit", "A hit is stopped", ["pvp.blocked-hit.target-off", "pvp.blocked-hit.self-off"]], ["blocked-action", "Something is refused", ["pvp.blocked-command", "pvp.cooldown"]]];
@@ -515,8 +515,8 @@ function integrationsPage(root) {
     const drawBody = (v) => {
       bodyEl.innerHTML = "";
       const rows = [];
-      if (v === "auto") rows.push(el("div", { class: "pad note-inline", style: { padding: "12px 18px", color: "var(--warn)" } }, "auto no longer exists. Pick one."));
-      if (installed && pluginOf[v] && !has(pluginOf[v])) rows.push(el("div", { class: "pad", style: { padding: "12px 18px", color: "var(--warn)" } }, pluginOf[v] + " isn't in this server's plugins folder, so Headcount would fall back."));
+      if (v === "auto") rows.push(el("div", { class: "pad note-inline", style: { padding: "12px 18px", color: "var(--warn)" } }, "Auto isn't an option any more. Pick one."));
+      if (installed && pluginOf[v] && !has(pluginOf[v])) rows.push(el("div", { class: "pad", style: { padding: "12px 18px", color: "var(--warn)" } }, pluginOf[v] + " isn't in this server's plugins folder. Headcount would use its built-in version, or nothing if it has none."));
       if (key === "pvp" && v === "included") rows.push(...pvpIncluded());
       if (key === "pvp" && v === "pvpmanager") rows.push(field("integrations.yml", "pvp.pvpmanager.let-players-toggle"));
       if (key === "placeholders" && v === "placeholderapi") rows.push(field("integrations.yml", "placeholders.placeholderapi.register-expansion"), field("integrations.yml", "placeholders.placeholderapi.expansion-format"));
@@ -592,7 +592,7 @@ function moderationRows(v) {
   if (usesIncluded) out.push(subhead("Headcount's jail and mute"), field("integrations.yml", "moderation.included-jail.location"), field("integrations.yml", "moderation.included-jail.radius"),
     field("integrations.yml", "moderation.included-jail.release-to"), field("integrations.yml", "moderation.included-jail.allowed-commands"), field("integrations.yml", "moderation.included-mute.blocked-commands"));
   if (v === "litebans") out.push(subhead("LiteBans commands"), ...["ban", "tempban", "unban", "mute", "tempmute", "unmute", "kick", "warn"].map((k) => field("integrations.yml", "moderation.litebans-commands." + k, { label: humanize(k), type: "mono" })));
-  if (v === "commands") out.push(subhead("Commands"), ...["ban", "tempban", "unban", "mute", "tempmute", "unmute", "kick", "warn", "jail", "tempjail", "unjail"].map((k) => field("integrations.yml", "moderation.commands." + k, { label: humanize(k), type: "mono", placeholder: "Empty: Headcount does it" })));
+  if (v === "commands") out.push(subhead("Commands"), ...["ban", "tempban", "unban", "mute", "tempmute", "unmute", "kick", "warn", "jail", "tempjail", "unjail"].map((k) => field("integrations.yml", "moderation.commands." + k, { label: humanize(k), type: "mono", placeholder: "Headcount does it" })));
   return out;
 }
 
@@ -616,7 +616,7 @@ function hooksPage(root, params) {
     el("div", { class: "sheet" }, el("div", { class: "track" },
       stop("Starts", count(C("hooks.cycle-start.global")), "lime_dye", () => cycleHook("hooks.cycle-start", "When a cycle starts"), true),
       warnings.map(([id, w]) => stop(formatDuration(parseDuration(w?.before)) + " left", w?.enabled === false ? "Off" : count(w?.global), "bell", () => cycleHook("hooks.warnings." + id, "Warning"))),
-      stop("Ends", count(C("hooks.cycle-end.global")) + ", reports", "red_dye", () => cycleHook("hooks.cycle-end", "When a cycle ends"), true)))));
+      stop("Ends", count(C("hooks.cycle-end.global")) + ", plus player reports", "red_dye", () => cycleHook("hooks.cycle-end", "When a cycle ends"), true)))));
   root.append(el("section", { class: "group" }, el("header", {}, el("h2", {}, "A player")), el("div", { class: "sheet" }, el("div", { class: "track" },
     PLAYER_HOOKS.map(([h, label, when, spr]) => stop(label, count(C("hooks.player." + h)), spr, () => editActions("config.yml", "hooks.player." + h, { title: label, subtitle: when, onClose: () => window.studio.refresh() })))))));
   root.append(group("Timing", field("config.yml", "hooks.join-delay"), field("config.yml", "hooks.missed-warning-grace"), field("config.yml", "hooks.top-count")));
@@ -738,7 +738,7 @@ function messagesPage(root, params) {
     listBox.append(n ? sheet : el("div", { class: "empty" }, filter === "changed" ? "Nothing changed here." : filter === "empty" ? "No empty messages here." : "No message matches."));
     if (n > 150) listBox.append(el("p", { class: "muted" }, "Showing 150. Search to narrow it down."));
   };
-  body.append(el("div", { class: "row", style: { marginBottom: "14px" } }, search, el("span", { class: "grow" }), seg([["all", "All"], ["changed", "Changed"], ["empty", "Turned off"]], filter, (f) => { filter = f; drawList(); })), listBox);
+  body.append(el("div", { class: "row", style: { marginBottom: "14px" } }, search, el("span", { class: "grow" }), seg([["all", "All"], ["changed", "Changed"], ["empty", "Empty"]], filter, (f) => { filter = f; drawList(); })), listBox);
   drawNav(); drawList();
   root.append(el("div", { class: "msgs" }, nav, body));
 }
