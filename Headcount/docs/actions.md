@@ -1,10 +1,10 @@
 # Actions
 
-Rewards, punishments, shop purchases and hooks all use one actions system. An **action list** is a YAML list where each entry is one action. Lists defined under `lists:` in `actions.yml` can be used anywhere by name.
+Rewards, punishments, shop purchases and hooks all use the same actions. An action list is a YAML list with one action per entry. Lists defined under `lists:` in `actions.yml` can be used anywhere by name.
 
 ## Writing actions
 
-These four entries mean the same thing:
+The first three entries below are the same action written three ways. The last two are bare names:
 
 ```yaml
 actions:
@@ -16,7 +16,7 @@ actions:
   - clear-effects                  # or a type that needs no settings (a list with the same name wins)
 ```
 
-When the type is the key, its value fills the type's main setting, shown as **main** below. Extra keys on the same entry are its other settings and common options:
+When the type is the key, its value fills the type's main setting, listed under Main in the tables below. Other keys on the same entry set its other settings and the common options:
 
 ```yaml
   - potion: slowness              # main setting of potion is 'effect'
@@ -30,15 +30,15 @@ Anywhere an action list is expected, you can also give one list name as a string
 
 | Option | Values | Meaning |
 |---|---|---|
-| `duration` | `instant` (default), `10m` / `2h` / `3d`..., `cycle`, `cycles:N`, `death`, `permanent`, `manual` | How long the action lasts. `cycle` lasts until the current cycle ends; `cycles:N` until N cycle ends have passed (actions given at a cycle end, by outcomes or cycle-end hooks, count from the cycle that is starting, so `cycle` there means the whole next cycle); `death` until the player next dies; `manual` until an admin removes it with `/hca effects <player> remove <id>`. |
+| `duration` | `instant` (default), a time like `10m`, `2h` or `3d`, `cycle`, `cycles:N`, `death`, `permanent`, `manual` | How long the action lasts. `cycle` lasts until the current cycle ends, and `cycles:N` until N cycle ends have passed. Actions given at a cycle end, by outcomes or cycle-end hooks, count from the cycle that is starting, so `cycle` there means the whole next cycle. `death` lasts until the player next dies, and `manual` until an admin removes it with `/hca effects <player> remove <id>`. |
 | `time` | `real` (default), `online` | Whether a timed duration counts real time or only time the player is online. |
 | `stacking` | `refresh` (default), `extend`, `stack`, `ignore` | What happens if the same action is already active for the player: restart its timer, add the new time to it, run another copy alongside it, or do nothing. |
-| `key` | text | Marks actions as "the same" for stacking. Default: the type plus its main setting (e.g. the potion effect), or the action's position in its list. |
+| `key` | text | Marks actions as "the same" for stacking. Defaults to the type plus its main setting (such as the potion effect), or the action's position in its list. |
 | `chance` | 0-100 | Chance to run (default 100). |
 | `delay` | duration | Wait before running. Not kept across restarts. |
-| `repeat` | duration | Run again every interval while the action is active (needs a duration). For example, lightning every 5m for 1h, or a location broadcast every 30m. |
+| `repeat` | duration | Run again at this interval while the action is active, so it needs a duration. Lightning every 5m for 1h, or a location broadcast every 30m, both use it. |
 | `conditions` | see below | Only run when these match. |
-| `start-message`, `end-message` | MiniMessage | Shown to the player when it starts and ends. `<duration>` and `<remaining>` are available (their words come from `effects.duration` in the language file). |
+| `start-message`, `end-message` | MiniMessage | Shown to the player when it starts and ends. `<duration>` and `<remaining>` work here, with words from `effects.duration` in the language file. |
 
 ### Conditions
 
@@ -60,20 +60,17 @@ At the end of a cycle, `score`, `rank` and `streak` are that cycle's final value
 
 ## Timed actions
 
-An action with a duration other than `instant` is **tracked**. It is saved in the database, listed in `/hc effects`, and undone automatically when it ends, even across restarts.
+An action with any duration other than `instant` is tracked. It is saved in the database, listed in `/hc effects`, and undone automatically when it ends, even across restarts.
 
-- If the player is offline when it starts, it is applied on their next join (for types that need them online).
-- If they are offline when it ends, it is undone on their next join.
-- Built-in types know how to undo themselves. `console` and `player-command` use `revert-commands`.
-- An instant action for an offline player that needs them online (a title, a sound) waits and runs on their next join.
-- `permanent` applies once and is never undone. For effects that exist only while tracked (deny lists, shields, locks, Headcount's own mutes and jails), `permanent` keeps them tracked forever.
-- Those tracked-only effects (`head-protection`, `extra-heads`, `bounty`, `shield`, `deny`, `force-title`, a locked `equip`) do nothing with the default `instant`: give them a duration. `/hca selftest` and the start-up check report one without.
+An action that needs the player online waits for their next join if they're offline, whether it's timed or instant, like a title or a sound. A timed action that ends while they're offline is undone when they next join. Built-in types know how to undo themselves, and `console` and `player-command` run their `revert-commands`.
 
-In **global hooks**, actions run without a player. Message-like actions then go to everyone online, server-side actions (console, broadcast, discord, run, random) work normally, and actions that need a player are skipped with a warning.
+`permanent` applies once and is never undone. Some effects only exist while they're tracked, such as deny lists, shields, locks, and Headcount's own mutes and jails. `permanent` keeps those tracked forever. The tracked-only types `head-protection`, `extra-heads`, `bounty`, `shield`, `deny`, `force-title` and a locked `equip` do nothing with the default `instant`, so give them a duration. `/hca selftest` and the start-up check report any that don't have one.
+
+In global hooks, actions run without a player. Message-like actions go to everyone online, server-side actions (console, broadcast, discord, run, random) work as usual, and actions that need a player are skipped with a warning.
 
 ## Action types
 
-"Online" says whether the player must be online. Where it says no, the action also works on offline players, for example at the end of a cycle.
+The Online column says whether the player must be online. Actions marked no also work on offline players, for example at the end of a cycle.
 
 ### Messages and effects
 
@@ -85,7 +82,7 @@ In **global hooks**, actions run without a player. Message-like actions then go 
 | `actionbar` | `text` | `text`, `audience` | yes | - |
 | `sound` | `sound` | `sound` (a key like `entity.experience_orb.pickup`), `volume: 1`, `pitch: 1`, `source: master`, `audience` | yes | - |
 | `particle` | `particle` | `particle: happy_villager`, `count: 20`, `offset: 0.5` (or `offset-x/y/z`), `speed: 0.05`, `height: 1` | yes | - |
-| `bossbar` | `text` | `text`, `color: red`, `overlay: progress` (or `notched_6/10/12/20`), `progress: 1.0`, `countdown-to`: `cycle-end`, a duration like `60s`, or a date-time `2026-12-01T00:00`; `seconds: 10` (how long an instant bar shows). Text variables: `<countdown>`, `<countdown_clock>`, `<seconds>`, plus every variable of the list it runs in (such as `<cycle>` in a hook). Timed: shown while active. In a global hook: everyone online sees it, players who join while it runs see it too, and it disappears at the end of the countdown. | yes | hides it |
+| `bossbar` | `text` | `text`, `color: red`, `overlay: progress` (or `notched_6/10/12/20`), `progress: 1.0`, `countdown-to`: `cycle-end`, a duration like `60s`, or a date-time `2026-12-01T00:00`; `seconds: 10` (how long an instant bar shows). Text variables: `<countdown>`, `<countdown_clock>`, `<seconds>`, plus every variable of the list it runs in (such as `<cycle>` in a hook). A timed bar shows while the action is active. In a global hook, everyone online sees it, including players who join while it runs, and it disappears when the countdown ends. | yes | hides it |
 | `discord` | `text` | `text`, `channel` (a DiscordSRV channel; default from integrations.yml) | no | - |
 | `broadcast-location` | `text` | `text` (`<player> <x> <y> <z> <world>`), `audience: all`. Add `repeat` to report it regularly. | yes | - |
 
@@ -118,7 +115,7 @@ Item definitions accept `material`, `amount`, `name`, `lore`, `enchants` (map of
 
 ### Permissions and ranks
 
-These go through the permissions provider in `integrations.yml`. `included` (the default) gives permission nodes itself and re-applies them on every join, but can't do groups, tracks, prefixes or suffixes: those need `luckperms` or `vault` and are skipped with a warning otherwise. With LuckPerms, timed changes also get LuckPerms' own expiry, so they end even if Headcount is removed.
+These go through the permissions provider in `integrations.yml`. The default, `included`, sets permission nodes itself and re-applies them on every join. It can't do groups, tracks, prefixes or suffixes. Those need `luckperms` or `vault`, and are skipped with a warning without one. With LuckPerms, timed changes also get LuckPerms' own expiry, so they end even if Headcount is removed.
 
 | Type | Main | Settings | Online | Undo |
 |---|---|---|---|---|
@@ -139,7 +136,7 @@ These go through the permissions provider in `integrations.yml`. `included` (the
 
 ### Moderation
 
-These go through the moderation provider in `integrations.yml` (each kind can have its own under `moderation.kinds`). `included` uses vanilla bans, kicks and warnings, and Headcount's own mutes and jails; a plugin that can't do a kind leaves it to `included`.
+These go through the moderation provider in `integrations.yml`, and each kind can have its own under `moderation.kinds`. `included` uses vanilla bans, kicks and warnings, plus Headcount's own mutes and jails. If a plugin can't do a kind, `included` handles it.
 
 | Type | Main | Settings | Online | Undo |
 |---|---|---|---|---|
@@ -147,7 +144,7 @@ These go through the moderation provider in `integrations.yml` (each kind can ha
 | `kick` | `reason` | `reason` (skipped for offline players) | - | - |
 | `jail` | `reason` | `reason`, `jail` (jail name for EssentialsX). Headcount's own jail uses `moderation.included-jail` in integrations.yml. | yes | releases |
 
-A timed `duration` makes the punishment temporary and is passed to the plugin. `instant` or `permanent` makes it permanent. For `cycle`, the time left in the cycle is passed. For `death`, `manual` and `cycles:N`, Headcount lifts the punishment itself when the action ends.
+A timed `duration` makes the punishment temporary and is passed to the plugin. `instant` and `permanent` make it permanent. For `cycle`, the plugin gets the time left in the cycle. For `death`, `manual` and `cycles:N`, Headcount lifts the punishment itself when the action ends.
 
 ### PvP
 
@@ -178,7 +175,7 @@ Timed effects are re-applied every second while active, so they survive death an
 
 ### Headcount
 
-`head-protection`, `extra-heads`, `bounty` and `shield` last while they are tracked, so give them a duration (`cycle`, `1d`, `permanent`...). Their charges end them early when used up.
+`head-protection`, `extra-heads`, `bounty` and `shield` need a duration, such as `cycle`, `1d` or `permanent`. Running out of charges ends them early.
 
 | Type | Main | Settings | Online |
 |---|---|---|---|
@@ -229,4 +226,4 @@ Timed effects are re-applied every second while active, so they survive death an
 
 ## Adding your own action types
 
-Other plugins can add action types through the API. See [developers.md](developers.md#adding-an-action-type).
+Other plugins can add action types through the API, as described in [developers.md](developers.md#adding-an-action-type).

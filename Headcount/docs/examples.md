@@ -1,6 +1,6 @@
 # Example setups
 
-Each example changes only the lines shown; everything else stays default.
+Each example shows only the lines it changes. Everything else stays at its default.
 
 ## A weekly cycle that ends Sunday evening
 
@@ -141,7 +141,7 @@ pvp:
       countdown: bossbar
 ```
 
-With PvP on by default, the default vault and trade rules (blocked while `in-pvp`) apply to everyone until they turn it off. Remove `in-pvp` from `vault.block-movement.statuses` and the trade statuses if you don't want that.
+With PvP on by default, the default vault and trade blocks for `in-pvp` apply to everyone until they turn PvP off. If you don't want that, remove `in-pvp` from `vault.block-movement.statuses` and from the trade statuses.
 
 ## Keep using PvPManager
 

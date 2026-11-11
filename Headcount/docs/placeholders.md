@@ -1,14 +1,10 @@
 # Placeholders
 
-Headcount's placeholders are written `%headcount_<name>%`. They work:
+Headcount's placeholders are written `%headcount_<name>%`. They work in all of Headcount's own text, such as messages, menus, items, the sidebar, hooks and actions, with or without PlaceholderAPI. They also work in the score formula and in `placeholder` statuses. Other plugins can use them through PlaceholderAPI when `integrations.yml placeholders.provider` is `placeholderapi`, and the expansion registers itself.
 
-- in all of Headcount's own text (messages, menus, items, sidebar, hooks, actions), with or without PlaceholderAPI;
-- in the score formula and in `placeholder` statuses;
-- in any other plugin, through PlaceholderAPI when `integrations.yml placeholders.provider` is `placeholderapi` (the expansion registers itself).
+With `placeholders.provider: none`, no `%...%` placeholder is filled in anywhere, not even in Headcount's own text.
 
-With `placeholders.provider: none`, no `%...%` placeholder is filled in anywhere, Headcount's own included.
-
-Formatted values (like the title) are given to other plugins as legacy color codes by default. Set `placeholders.placeholderapi.expansion-format` to `minimessage` or `plain` to change that. True/false values read `yes`/`no` (`config.yml placeholders`); status placeholders use `statuses.yml settings`. `/hca placeholders <player>` lists every value for a player.
+Other plugins get formatted values, like the title, as legacy color codes by default. Set `placeholders.placeholderapi.expansion-format` to `minimessage` or `plain` to change that. True/false values read `yes` and `no`, set in `config.yml placeholders`. Status placeholders use `statuses.yml settings` instead. `/hca placeholders <player>` lists every value for a player.
 
 ## Player
 
@@ -25,7 +21,7 @@ Formatted values (like the title) are given to other plugins as legacy color cod
 | `last_score`, `last_unique` | Last cycle's results. |
 | `playtime`, `kills`, `deaths`, `trades` | This cycle. |
 | `title` | Equipped (or forced) title, formatted. |
-| `title_raw`, `title_id` | As plain text, and its ID. |
+| `title_raw`, `title_id` | The title as plain text, and its ID. |
 | `tier`, `tier_id` | Highest shop tier unlocked. |
 | `shield` | Shield charges available. |
 | `bounty` | Points on their head. |
@@ -42,10 +38,10 @@ Formatted values (like the title) are given to other plugins as legacy color cod
 | `cycle` | Current cycle number (0 before the first). A `/hca reset cycle` keeps it. |
 | `cycle_start`, `cycle_end` | Dates. |
 | `time_left`, `time_left_clock`, `seconds_left` | Time until the cycle ends, as `3d 4h`, `HH:MM:SS` or seconds. |
-| `cycle_length`, `starting_heads` | Days per cycle; starting heads this cycle. |
-| `active_players`, `total_players` | Active this cycle; ever joined. |
+| `cycle_length`, `starting_heads` | Days per cycle, and starting heads this cycle. |
+| `active_players`, `total_players` | Players active this cycle, and players who have ever joined. |
 | `top_<n>_name`, `top_<n>_unique`, `top_<n>_total`, `top_<n>_uuid` | The live leaderboard (refreshed every `top.refresh-interval`). |
 
 ## Variables inside Headcount text
 
-Each text in the configs also has its own `<variables>` (for example `<owner>` on head items or `<price>` in the shop), listed next to each option. These are MiniMessage tags filled in by Headcount; see [text.md](text.md).
+Each text in the configs also has its own `<variables>`, such as `<owner>` on head items or `<price>` in the shop. They are listed next to each option. These are MiniMessage tags that Headcount fills in, covered in [text.md](text.md).

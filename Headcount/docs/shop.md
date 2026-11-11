@@ -1,12 +1,12 @@
 # Shop
 
-`/hc shop` opens the shop. Points come from a positive score at the end of a cycle and are spent during the next one.
+`/hc shop` opens the shop. Players earn points from a positive score at the end of a cycle and spend them during the next one.
 
 ## Tiers
 
-Each tier unlocks at a threshold of the player's score from **last cycle** (`threshold: none` is always unlocked). Players with no last cycle use `settings.new-player-score`. Each tier is its own set of pages; buttons switch tiers and pages. Locked tiers can be browsed: their entries show a "locked" look, and a banner shows the threshold and how far away the player is.
+A tier unlocks when the player's score from last cycle is at or above its `threshold`. `threshold: none` is always unlocked, and players with no last cycle count as having `settings.new-player-score`. Each tier has its own pages, with buttons to switch between tiers and pages. Players can still browse a locked tier. Its entries show their locked look, and a banner shows the threshold and how far off the player is.
 
-`/hc shop` opens on the highest tier the player has unlocked; `/hc shop <tier>` opens a given tier (by its ID, such as `common`).
+`/hc shop` opens on the highest tier the player has unlocked. `/hc shop <tier>` opens a tier by its ID, such as `common`.
 
 ```yaml
 tiers:
@@ -18,14 +18,14 @@ tiers:
         page: 1
         slot: 15
         price: 25
-        stock: 10                  # global stock (-1 = unlimited); refills each cycle (settings.stock-reset)
-        limit-per-cycle: 1         # per player (0 = unlimited)
+        stock: 10                  # shared by all players, -1 for unlimited; refills as set by settings.stock-reset
+        limit-per-cycle: 1         # per player, 0 for unlimited
         cooldown: 1d               # per player
-        confirm: true              # force the confirmation menu on or off (default: price >= settings.confirm-at-price)
+        confirm: true              # forces the confirmation menu on or off; by default it shows from settings.confirm-at-price up
         conditions: { statuses: ["!in-pvp"] }
         requires:
           titles: [collector]
-          purchases: [common.speed]          # ever bought (an entry in the same tier can be named without its tier)
+          purchases: [common.speed]          # bought at any time; an entry in the same tier can leave out the tier
           purchases-this-cycle: []
           permissions: []
         display:
@@ -40,11 +40,11 @@ tiers:
 
 ## Entry states
 
-Each entry is shown in one of these states. Its look is built from the entry's `display`, then `default-states.<state>` at the top of shop.yml, then the entry's own `display-states.<state>`. Its lore is the entry's own lore followed by the state's lore.
+Each entry is shown in one of these states. Its look starts from the entry's `display`, then takes `default-states.<state>` from the top of shop.yml, then the entry's own `display-states.<state>`. Its lore is the entry's lore followed by the state's lore.
 
 | State | When |
 |---|---|
-| `affordable` | Everything is fine; clicking buys it. |
+| `affordable` | The player can buy it with a click. |
 | `too-expensive` | Not enough points. |
 | `sold-out` | Global stock is used up. |
 | `limit-reached` | Bought `limit-per-cycle` times this cycle (falls back to `sold-out`). |
@@ -54,4 +54,4 @@ Each entry is shown in one of these states. Its look is built from the entry's `
 
 Variables in names and lore: `<name> <price> <points> <missing> <stock> <purchases_left> <limit> <bought> <cooldown> <tier> <threshold>`, plus every placeholder.
 
-Purchases at or above `confirm-at-price` open the menu in `confirm-gui` first. Every purchase is checked again at the moment of buying, so double clicks or a change in between never sell something twice. `/hca selftest` checks that every entry builds in every state and that no two entries share a slot.
+Purchases at or above `confirm-at-price` open the `confirm-gui` menu first. Each purchase is checked again at the moment of buying, so a double click or a change in between can't sell something twice. `/hca selftest` checks that every entry builds in every state and that no two entries share a slot.

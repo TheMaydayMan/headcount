@@ -1,10 +1,10 @@
 # Score formula
 
-At the end of a cycle each **active** player's score is `formula` from `scoring.yml`, turned into a whole number with `rounding` (`floor`, `round` or `ceil`). Bonuses from `score-bonus` actions are then added, unless `add-bonus-after-formula: false` (in which case use the `bonus` variable yourself).
+At the end of a cycle, each active player's score is the result of `formula` in `scoring.yml`, rounded to a whole number by `rounding` (`floor`, `round` or `ceil`). Bonuses from `score-bonus` actions are added after that. To place them in the formula yourself, set `add-bonus-after-formula: false` and use the `bonus` variable.
 
-A positive score gives that many points (times `points.earn-multiplier` in config.yml). Negative scores trigger punishments in outcomes.yml. `/hc score` shows a player's score if the cycle ended now, and `/hca cycle simulate` shows everyone's.
+A positive score gives that many points, multiplied by `points.earn-multiplier` in config.yml. A negative score triggers the punishments in outcomes.yml. `/hc score` shows a player's score if the cycle ended now, and `/hca cycle simulate` shows everyone's.
 
-Default: `unique - ceil(active / 4)`. With 12 active players, 3 unique heads scores 0 and 10 unique heads scores 7.
+The default is `unique - ceil(active / 4)`. With 12 active players, 3 unique heads scores 0 and 10 unique heads scores 7.
 
 ## Syntax
 
@@ -14,13 +14,13 @@ Default: `unique - ceil(active / 4)`. With 12 active players, 3 unique heads sco
 - Functions: `min(a, b, ...)`, `max(...)`, `avg(...)`, `floor`, `ceil`, `round(x[, digits])`, `trunc`, `abs`, `sign`, `pow(x, y)`, `sqrt`, `cbrt`, `exp`, `log(x[, base])` (natural log by default), `ln`, `log10`, `log2`, `clamp(x, low, high)`, `if(condition, a, b)`, `sin`, `cos`, `tan`
 - Constants: `pi`, `e`, `true`, `false`
 
-An unknown variable counts as 0 and is warned about when the plugin loads. A formula that doesn't parse is reported and replaced with the default until fixed. Write `%` as remainder with spaces around it (`a % 3`), so it is never read as the start of a placeholder.
+An unknown variable counts as 0, and the plugin warns about it when it loads. If the formula doesn't parse, Headcount reports it and uses the default until you fix it. Put spaces around `%` when you mean remainder (`a % 3`) so it isn't read as the start of a placeholder.
 
 ## Variables
 
 | Variable | Meaning |
 |---|---|
-| `unique` | Unique heads in the vault: heads of different owners. Duplicates don't count extra; your own head counts once. |
+| `unique` | Heads of different owners in the vault. Duplicates don't count extra, and your own head counts once. |
 | `total` | Total heads in the vault, duplicates included. |
 | `own` | Copies of your own head in the vault. |
 | `duplicates` | `total - unique` |
@@ -29,9 +29,9 @@ An unknown variable counts as 0 and is warned about when the plugin loads. A for
 | `active` | Active players this cycle. |
 | `players` | Players who have ever joined. |
 | `online` | Players online right now. |
-| `rank` | Your rank among active players by unique heads (1 = most). Ties share a rank; `scoring.yml rank-mode` chooses `competition` (1, 1, 3) or `dense` (1, 1, 2). |
-| `percentile` | Your percentile among active players: 100 = top (including everyone tied for first), 0 = bottom. |
-| `unique_avg`, `unique_median`, `unique_max`, `unique_min`, `unique_sum` | Over active players. |
+| `rank` | Your rank among active players by unique heads, where 1 has the most. Ties share a rank. `scoring.yml rank-mode` picks `competition` (1, 1, 3) or `dense` (1, 1, 2). |
+| `percentile` | Your percentile among active players. 100 is the top, including everyone tied for first, and 0 is the bottom. |
+| `unique_avg`, `unique_median`, `unique_max`, `unique_min`, `unique_sum` | Unique heads across all active players. |
 | `kills` | Kill heads you got this cycle. |
 | `deaths` | Kill heads others got from you this cycle. |
 | `trades` | Completed trades this cycle. |
@@ -47,7 +47,7 @@ An unknown variable counts as 0 and is warned about when the plugin loads. A for
 | `cycle`, `cycle_length` | The cycle number and its length in days. |
 | `days_elapsed`, `days_left` | Days since the cycle started, and days until it ends. |
 | `is_active` | 1 if you are active this cycle. |
-| `%any_placeholder%` | Any numeric PlaceholderAPI placeholder, e.g. `%statistic_player_kills%`. Offline players resolve whatever the placeholder supports; anything that isn't a number counts as 0. |
+| `%any_placeholder%` | Any numeric PlaceholderAPI placeholder, such as `%statistic_player_kills%`. For offline players it depends on what the placeholder supports. A value that isn't a number counts as 0. |
 
 ## Examples
 
