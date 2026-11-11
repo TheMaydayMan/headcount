@@ -109,7 +109,7 @@ public final class PlayerManager implements Listener {
             store.insertPlayer(p.getUniqueId(), p.getName(), now);
             d.exists = true;
             // New players start with the sidebar shown or hidden as config.yml sidebar.shown-for-new-players says.
-            if (plugin.configs().main().getBool("sidebar.shown-for-new-players", false)) {
+            if (plugin.configs().main().getBool("sidebar.shown-for-new-players", true)) {
                 d.sidebar = true;
                 store.set(p.getUniqueId(), "sidebar", true);
             }
@@ -244,7 +244,7 @@ public final class PlayerManager implements Listener {
     }
 
     public long activeThresholdMs() {
-        return plugin.configs().main().getMillis("activity.min-playtime", 0);
+        return plugin.configs().main().getMillis("activity.min-playtime", 7_200_000);
     }
 
     /** Marks the player active for the cycle once they reach the configured playtime. */

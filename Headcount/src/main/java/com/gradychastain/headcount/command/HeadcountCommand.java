@@ -75,7 +75,7 @@ public final class HeadcountCommand implements TabExecutor {
                 if (!perm(p, "headcount.points")) return true;
                 PlayerData d = plugin.players().get(p);
                 plugin.lang().send(p, "points.balance", Vars.of("points", d.points, "points_next", d.pointsNext,
-                        "rollover", Formats.number(d.rolloverOverride != null ? d.rolloverOverride : plugin.configs().main().getDouble("points.rollover-percent", 0))));
+                        "rollover", Formats.number(d.rolloverOverride != null ? d.rolloverOverride : plugin.configs().main().getDouble("points.rollover-percent", 50))));
             }
             case "score" -> {
                 if (!perm(p, "headcount.score")) return true;

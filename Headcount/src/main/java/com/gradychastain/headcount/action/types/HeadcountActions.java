@@ -131,7 +131,7 @@ public final class HeadcountActions {
                         }
                         return null;
                     });
-                    double base = current != null ? current : plugin.configs().main().getDouble("points.rollover-percent", 0);
+                    double base = current != null ? current : plugin.configs().main().getDouble("points.rollover-percent", 50);
                     double result = Math.max(0, Math.min(100, set ? value : base + value));
                     if (d != null) d.rolloverOverride = result;
                     plugin.playerStore().set(ctx.playerId(), "rollover_override", result);

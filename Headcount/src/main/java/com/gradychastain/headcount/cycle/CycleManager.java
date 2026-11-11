@@ -195,7 +195,7 @@ public final class CycleManager {
         try {
             Cfg vaultCfg = plugin.configs().main().getSection("vault");
             int size = Math.max(1, vaultCfg.getInt("size", 27));
-            int startingHeads = Math.max(0, vaultCfg.getInt("starting-heads", 27));
+            int startingHeads = Math.max(0, vaultCfg.getInt("starting-heads", 18));
             CycleSchedule s = schedule();
             int lengthDays = (int) Math.max(1, Math.round((end - start) / 86_400_000.0));
             if (lengthDays <= 0) lengthDays = s.lengthDays();
@@ -311,7 +311,7 @@ public final class CycleManager {
             plugin.db().flush();
             Cfg vaultCfg = plugin.configs().main().getSection("vault");
             int size = Math.max(1, vaultCfg.getInt("size", 27));
-            int startingHeads = Math.max(0, vaultCfg.getInt("starting-heads", 27));
+            int startingHeads = Math.max(0, vaultCfg.getInt("starting-heads", 18));
             CycleSchedule s = schedule();
             long now = System.currentTimeMillis();
             long end = s.boundaryAfter(now, s.lengthDays());

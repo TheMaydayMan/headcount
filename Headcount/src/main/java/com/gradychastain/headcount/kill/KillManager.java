@@ -125,9 +125,9 @@ public final class KillManager implements Listener {
         }
         for (ItemStack item : items) {
             var drop = Items.dropNaturally(at, item);
-            if (drop != null && cfg.getMillis("killer-pickup-only", 0) > 0) {
+            if (drop != null && cfg.getMillis("killer-pickup-only", 15_000) > 0) {
                 drop.setOwner(killer.getUniqueId());
-                long ms = cfg.getMillis("killer-pickup-only", 0);
+                long ms = cfg.getMillis("killer-pickup-only", 15_000);
                 var d = drop;
                 plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
                     if (d.isValid()) d.setOwner(null);

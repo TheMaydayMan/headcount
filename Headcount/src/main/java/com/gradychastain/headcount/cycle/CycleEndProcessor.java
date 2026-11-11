@@ -58,7 +58,7 @@ final class CycleEndProcessor {
         Cfg points = plugin.configs().main().getSection("points");
         String inactiveStreak = scoring.getString("streaks.inactive", "pause").toLowerCase(Locale.ROOT);
         String zeroStreak = scoring.getString("streaks.zero-score", "break").toLowerCase(Locale.ROOT);
-        double defaultRollover = points.getDouble("rollover-percent", 0);
+        double defaultRollover = points.getDouble("rollover-percent", 50);
         double earnMultiplier = points.getDouble("earn-multiplier", 1.0);
 
         List<Integer> activeUniques = new ArrayList<>();

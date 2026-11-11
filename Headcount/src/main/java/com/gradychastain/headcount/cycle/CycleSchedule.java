@@ -22,7 +22,7 @@ public final class CycleSchedule {
     private final ZoneId zone;
 
     public CycleSchedule(Cfg cfg, Logger logger) {
-        this.lengthDays = Math.max(1, cfg.getInt("length-days", 30));
+        this.lengthDays = Math.max(1, cfg.getInt("length-days", 14));
         this.startDate = cfg.getString("start-date", "auto").trim();
         LocalTime t;
         try {
