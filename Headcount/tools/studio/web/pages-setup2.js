@@ -239,7 +239,7 @@ function shopPage(root, params) {
     const list = el("div", { class: "items" });
     for (const [id, e] of entries) list.append(el("div", { class: "item" + (e?.enabled === false ? " off" : ""), onclick: () => editEntry(id) }, sprite(e?.display || "PAPER", 28),
       el("div", { class: "main" }, el("div", { class: "t1" }, stripMini(e?.display?.name || id)), el("div", { class: "t2" }, (Array.isArray(e?.actions) ? e.actions : e?.actions ? [e.actions] : []).map(summarize).join(", "))),
-      el("div", { class: "end" }, (e?.price ?? 0) + " points", el("div", {}, "Page " + (e?.page || 1) + ", slot " + (e?.slot ?? 0)))));
+      el("div", { class: "end" }, (e?.price ?? 0) + (+(e?.price ?? 0) === 1 ? " point" : " points"), el("div", {}, "Page " + (e?.page || 1) + ", slot " + (e?.slot ?? 0)))));
     list.append(el("button", { class: "addrow", onclick: () => { const free = [...Array(size).keys()].find((i) => !at[i] && !menuSlots("shop.yml", "gui").buttons[i] && !isFiller(menuSlots("shop.yml", "gui").fill, menuSlots("shop.yml", "gui").rows, i)); addEntry(free ?? 0); } }, icon("plus"), "New item"));
     left.append(el("section", { class: "group", style: { marginTop: "26px" } }, el("header", {}, el("h2", {}, "Items in " + stripMini(T.name || tier))), list));
     const aside = el("div", { style: { display: "grid", gap: "4px" } },

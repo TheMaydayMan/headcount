@@ -90,7 +90,7 @@ function howItWorks(root) {
   root.append(pageHead("How it works"));
   root.append(el("ol", { class: "walk" },
     step("A cycle starts and every vault is full",
-      ["Cycles on this server last ", V(days + " days", "#/cycle", "config.yml#cycle.length-days"), " and roll over at ", V(C("cycle.end-time") + " " + C("cycle.time-zone"), "#/cycle", "config.yml#cycle.end-time"),
+      ["Cycles on this server last ", V(days + (+days === 1 ? " day" : " days"), "#/cycle", "config.yml#cycle.length-days"), " and roll over at ", V(C("cycle.end-time") + " " + C("cycle.time-zone"), "#/cycle", "config.yml#cycle.end-time"),
         ". At the start, each player's vault (", el("code", {}, "/hc"), ") gets ", V(start + " copies of their own head", "#/vault", "config.yml#vault.starting-heads"), ". It has ", V(size + " slots", "#/vault", "config.yml#vault.size"), "."],
       vault((i) => (i < start ? head("Steve") : null), { unique: 1, total: start, used: start, score: 0 })),
     step("Heads change hands",

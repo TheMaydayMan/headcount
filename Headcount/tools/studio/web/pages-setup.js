@@ -33,7 +33,7 @@ function overview(root) {
   const pvp = S.get("integrations.yml", "pvp.provider") ?? "included";
   root.append(pageHead("Overview"));
   const lede = el("p", { class: "lede" },
-    "Cycles last ", V(C("cycle.length-days") + " days", "#/cycle", "config.yml#cycle.length-days"), " and roll over at ", V(C("cycle.end-time") + " " + C("cycle.time-zone"), "#/cycle", "config.yml#cycle.end-time"),
+    "Cycles last ", V(C("cycle.length-days") + (+C("cycle.length-days") === 1 ? " day" : " days"), "#/cycle", "config.yml#cycle.length-days"), " and roll over at ", V(C("cycle.end-time") + " " + C("cycle.time-zone"), "#/cycle", "config.yml#cycle.end-time"),
     ". Each player starts a cycle with ", V(C("vault.starting-heads") + " of their own heads", "#/vault", "config.yml#vault.starting-heads"), " in a ", V(C("vault.size") + "-slot vault", "#/vault", "config.yml#vault.size"), ". ",
     f.ok ? ["With 12 active players, 4 unique heads score ", el("b", {}, ex(4, 12)), " and 10 score ", el("b", {}, ex(10, 12)), " under ", V("the formula", "#/scoring"), ". "] : ["The ", V("score formula", "#/scoring"), " has an error. "],
     worst ? ["A score of ", el("b", {}, describeRange(worst[1].score)), " gets ", V(stripMini(worst[1].display || worst[0]), "#/outcomes"), ". "] : "",
