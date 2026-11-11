@@ -2,7 +2,7 @@
 
 A Paper plugin where player heads are the currency. Every player starts each cycle (30 days by default) with a vault full of their own head. You collect other players' heads by trading and by killing, and at the end of the cycle the unique heads in your vault become your score. A good score earns points for the shop and a bad one brings punishments. Then everything resets.
 
-Headcount is built for Paper 26.3 and Java 25, and is open source under the [MIT license](LICENSE). Almost all of it can be configured, from the numbers and messages to the menus, statuses, score formula, rewards, punishments and shop.
+Headcount is built for Paper 26.3 and Java 25, and is open source under the [MIT license](../LICENSE). Almost all of it can be configured, from the numbers and messages to the menus, statuses, score formula, rewards, punishments and shop.
 
 ## How a cycle works
 

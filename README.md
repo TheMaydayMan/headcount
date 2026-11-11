@@ -18,11 +18,10 @@ Version 1.0.0 is the latest release. Version 1.1.0 is on `main` and still being 
 │   ├── tools/studio/       Headcount Studio
 │   ├── tools/bot-tests/    automated player tests run by bot clients
 │   ├── DECISIONS.md        design choices the specification left open
-│   └── TESTING.md          what is tested automatically, and the manual checklist
+│   ├── TESTING.md          what is tested automatically, and the manual checklist
+│   └── TEST-NIGHT.md       a test night for 2 to 10 players
 ├── Headcount Studio/       launchers for Headcount Studio
-├── TestServer/             scripts that set up a local Paper server with the free integrations
-├── test-plan.md            a test night for 2 to 10 players
-└── 1.1 Notes.md            the 1.1 work list
+└── TestServer/             scripts that set up a local Paper server with the free integrations
 ```
 
 ## Getting started
@@ -53,12 +52,12 @@ The plugin's [README](Headcount/README.md) has the full list of docs. A few plac
 - [docs/commands.md](Headcount/docs/commands.md) for commands and permissions.
 - [docs/examples.md](Headcount/docs/examples.md) for ready-made setups.
 - [DECISIONS.md](Headcount/DECISIONS.md) for why something works the way it does.
-- [test-plan.md](test-plan.md) for a test night with friends.
+- [TEST-NIGHT.md](Headcount/TEST-NIGHT.md) for a test night with friends.
 - [tools/bot-tests/README.md](Headcount/tools/bot-tests/README.md) for the automated player tests, which need Linux and Node.js 20.
 
 ## What still needs testing
 
-The bot tests and `/hca selftest` cover most of the plugin, but some things need a person or something the test server doesn't have. DiscordSRV needs a bot token to deliver the `discord` action. The paid plugins (LiteBans, ItemsAdder, Oraxen and Nexo) are compiled against but not installed. The movement statuses (`flying`, `gliding`, `swimming`, `sleeping`, `falling`) need a real client, and so do the look of menus and messages, especially on Bedrock with a real Xbox sign-in. The 1.1 features are tested by hand with [test-plan.md](test-plan.md). [TESTING.md](Headcount/TESTING.md) has the full manual checklist.
+The bot tests and `/hca selftest` cover most of the plugin, but some things need a person or something the test server doesn't have. DiscordSRV needs a bot token to deliver the `discord` action. The paid plugins (LiteBans, ItemsAdder, Oraxen and Nexo) are compiled against but not installed. The movement statuses (`flying`, `gliding`, `swimming`, `sleeping`, `falling`) need a real client, and so do the look of menus and messages, especially on Bedrock with a real Xbox sign-in. The 1.1 features are tested by hand with [TEST-NIGHT.md](Headcount/TEST-NIGHT.md). [TESTING.md](Headcount/TESTING.md) has the full manual checklist.
 
 ## License
 

@@ -1,6 +1,6 @@
 # Manual test checklist
 
-This checklist predates 1.1. The 1.1 features (resets, defunct heads, time zone codes, `<score>` and the live vault title, the included PvP, permissions and AFK, and the reworked integrations) aren't in it or in the bot tests. They are covered by the test night plan, [test-plan.md](../test-plan.md), which also runs through most of what is below in a normal play session.
+This checklist predates 1.1. The 1.1 features (resets, defunct heads, time zone codes, `<score>` and the live vault title, the included PvP, permissions and AFK, and the reworked integrations) aren't in it or in the bot tests. They are covered by the test night plan, [TEST-NIGHT.md](TEST-NIGHT.md), which also runs through most of what is below in a normal play session.
 
 Some of it is already tested automatically:
 - `./gradlew test` runs the unit tests for the pure logic, such as expressions, durations, cycle boundaries across DST and audit rotation.

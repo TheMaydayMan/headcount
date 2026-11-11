@@ -1,4 +1,4 @@
-// Phase 2: after the restart, Alpha rejoins; count the cobblestone.
+// Phase 2 of crash-offer: after the restart, Alpha rejoins; the trade offer must come back exactly once.
 const L = require('./lib');
 const { sleep, makeBot, waitFor } = L;
 (async () => {

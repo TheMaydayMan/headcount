@@ -63,7 +63,7 @@ OUT=$(mktemp -d)
 cp "$HERE/addon/plugin.yml" "$OUT/"
 (cd "$OUT" && "$JDK/bin/jar" cf "$B/plugins/HeadcountTestAddon.jar" plugin.yml hctest)
 rm -rf "$OUT"
-cp "$PROJECT/build/libs/Headcount-1.0.0.jar" "$B/plugins/"
+cp "$(ls "$PROJECT"/build/libs/Headcount-*.jar | head -1)" "$B/plugins/"
 
 # --- first boot, so every plugin writes its config; then PvPManager's newbie protection off ----------------
 echo "First boot of the bot server"

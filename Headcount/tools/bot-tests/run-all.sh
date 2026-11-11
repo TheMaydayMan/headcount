@@ -4,8 +4,9 @@
 HERE=$(cd "$(dirname "$0")" && pwd)
 S=${HC_BOT_DIR:-$HERE/work}
 R=$S/runs; rm -rf $R; mkdir -p $R
-cp "$HERE/../../build/libs/Headcount-1.0.0.jar" $S/botserver/plugins/
-sha256sum $S/botserver/plugins/Headcount-1.0.0.jar | cut -c1-16 > $R/jar.sha
+JAR=$(ls "$HERE"/../../build/libs/Headcount-*.jar | head -1)
+rm -f $S/botserver/plugins/Headcount-*.jar; cp "$JAR" $S/botserver/plugins/
+sha256sum "$JAR" | cut -c1-16 > $R/jar.sha
 "$HERE/reset-bot.sh"
 : > $S/botserver-prev.log   # scan only this run's logs for warnings
 cd "$HERE"
@@ -38,7 +39,7 @@ rm -f $S/crash-ready
 for i in $(seq 1 60); do [ -f $S/crash-ready ] && break; sleep 1; done
 sleep 0.5; "$HERE/kill-bot.sh" >> $R/summary.txt; wait; "$HERE/restart-bot.sh"
 grep "SETUP FAILED" $R/crash-offer.out >> $R/summary.txt
-timeout 60 node crash-rejoin.js 2>&1 | grep "after restart" >> $R/summary.txt
+timeout 60 node crash-offer-rejoin.js 2>&1 | grep "after restart" >> $R/summary.txt
 echo "== crash-take $(date +%H:%M:%S)" >> $R/summary.txt
 python3 - <<PY
 d="$S/botserver/plugins/Headcount/"
@@ -52,6 +53,6 @@ rm -f $S/crash-ready
 (timeout 90 node crash-take.js > $R/crash-take.out 2>&1) &
 for i in $(seq 1 60); do [ -f $S/crash-ready ] && break; sleep 1; done
 sleep 0.5; "$HERE/kill-bot.sh" >> $R/summary.txt; wait; "$HERE/restart-bot.sh"
-timeout 60 node crash-take2.js 2>&1 | grep "cobble" >> $R/summary.txt
+timeout 60 node crash-take-rejoin.js 2>&1 | grep "cobble" >> $R/summary.txt
 grep -iE "WARN.*Headcount|ERROR.*Headcount|\[Headcount\].*(WARN|ERROR)|Headcount.*Exception" $S/botserver-prev.log $S/botserver.log 2>/dev/null | grep -vE "t-loop|test" | head -20 > $R/headcount-warnings.txt
 echo "DONE $(date +%H:%M:%S)" >> $R/summary.txt

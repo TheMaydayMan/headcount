@@ -49,7 +49,7 @@ To run one suite: `./reset-bot.sh`, then `node tests-<name>.js`. Several take a 
 | tests-score | formula variables, PlaceholderAPI numbers, rounding, bonuses, activity and playtime |
 | tests-moderation | AdvancedBan, command templates and the vanilla fallback |
 | tests-api | the API methods, an addon status source and action type, and the events, including changing and cancelling them |
-| crash-offer, crash-take | kill -9 with a trade offer open or a take-item active: the items come back exactly once |
+| crash-offer, crash-take | kill -9 with a trade offer open or a take-item active. Their second halves, crash-offer-rejoin and crash-take-rejoin, run after the restart and check the items come back exactly once. |
 
 ## Bedrock (bedrock/)
 

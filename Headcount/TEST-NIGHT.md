@@ -2,7 +2,7 @@
 
 Tonight we play a normal evening of Minecraft with Headcount running underneath. By the end, we'll have used every command, menu, config section and integration, plus Headcount Studio, and hit the edge cases too. You (the **host**) run the server and the admin side. Everyone else plays and follows the "**Everyone:**" prompts.
 
-Tick boxes as you go, and write anything odd under **Notes** at the end of each part. Those notes go into `1.1 Notes.md`. When something looks wrong, save the console lines from `TestServer/logs/latest.log`, the output of `/hca audit <player>` and `/hca status <player>`, and a screenshot of the Studio page if Studio was involved.
+Tick boxes as you go, and write anything odd under **Notes** at the end of each part. Afterwards they're your bug list. When something looks wrong, save the console lines from `TestServer/logs/latest.log`, the output of `/hca audit <player>` and `/hca status <player>`, and a screenshot of the Studio page if Studio was involved.
 
 ---
 
@@ -471,7 +471,7 @@ Back to PvP for a round. Everyone `/pvp on`.
 - [ ] On **Backups**, download the configs as a .zip to keep tonight's setup.
 - [ ] Final `/hca reset hard keep-heads` (3 codes) to leave a clean server for next time. The backup folder holds tonight's database and audit log.
 - [ ] Put PvPManager back in `plugins/` only if you want it for normal play (and set `pvp.provider: pvpmanager`).
-- [ ] Copy anything odd from the **Notes** into `1.1 Notes.md`.
+- [ ] Gather everyone's **Notes** into one bug list.
 
 ### Things this plan can't cover
 

@@ -1,3 +1,4 @@
+// Phase 2 of crash-take: after the restart, Alpha rejoins; count the cobblestone.
 const L = require('./lib');
 const { sleep, makeBot } = L;
 (async () => {
