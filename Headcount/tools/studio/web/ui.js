@@ -85,7 +85,7 @@ export const SAMPLE = {
   cycle_start: "2026-11-01 00:00", cycle_end: "2026-12-01 00:00", cycle_length: 30, active: 12, players: 18, seconds: 12, countdown: "58s",
   countdown_clock: "0:58", duration: "30m", remaining: "12m", price: 10, name: "Speed for 30 minutes", tier: "Uncommon", reason: "Testing",
   head_id_short: "3f9a1c2e", head_id: "3f9a1c2e-0b4d", created: "2026-11-10 14:02", source: "cycle-start", page: 1, pages: 2, amount: 3,
-  title: "<gold>[Champion]", description: "Finished a cycle in the top 3.", status: "in-pvp", command: "/home", state: "on", tagged: "no",
+  title: "<gold>[Champion]", description: "Finished a cycle in first place.", status: "in-pvp", command: "/home", state: "on", tagged: "no",
   "%cycle": 3, "%unique": 7, "%total": 21, "%score": 4, "%points": 12, "%streak_text": "2 positive", "%time_left": "4d 6h", "%vault_size": 27,
   "%rank": 2, "%title": "[Champion]", "%points_next": 0, "%active": 12,
 };
@@ -125,6 +125,8 @@ export function hoverTip(target, content) {
   });
   target.addEventListener("mouseleave", () => { tipEl?.remove(); tipEl = null; });
 }
+// A tooltip whose slot went away (a redraw, a new page) never gets its mouseleave.
+document.addEventListener("scroll", () => { tipEl?.remove(); tipEl = null; }, true);
 export const clearTip = () => { tipEl?.remove(); tipEl = null; };
 
 /**
@@ -172,45 +174,84 @@ export function toast(msg, kind = "", action) {
 export function confirmDialog(title, body, { ok = "OK", danger = false, cancel = "Cancel" } = {}) {
   return new Promise((resolve) => {
     const scrim = el("div", { class: "scrim" });
-    const close = (v) => { scrim.remove(); m.remove(); document.removeEventListener("keydown", key, true); resolve(v); };
-    const key = (e) => { if (e.key === "Escape") { e.stopPropagation(); close(false); } if (e.key === "Enter") { e.preventDefault(); close(true); } };
+    const back = document.activeElement;
+    const close = (v) => { scrim.remove(); m.remove(); document.removeEventListener("keydown", key, true); if (back?.isConnected) back.focus({ preventScroll: true }); resolve(v); };
+    // Enter confirms from a field, but on a focused button it presses that button (so Enter on Cancel cancels).
+    const key = (e) => {
+      if (e.key === "Escape") { e.stopPropagation(); e.preventDefault(); close(false); return; }
+      if (e.key === "Enter" && !["BUTTON", "TEXTAREA", "A"].includes(document.activeElement?.tagName)) { e.preventDefault(); close(true); return; }
+      if (e.key === "Tab") trapTab(e, m);
+    };
     const okBtn = btn(ok, () => close(true), danger ? "danger" : "primary");
-    const m = el("div", { class: "modal", role: "dialog", "aria-modal": "true" }, el("h3", {}, title), body ? (typeof body === "string" ? el("p", { class: "muted" }, body) : body) : null,
+    const head = el("h3", { id: "dlg" + Math.random().toString(36).slice(2) }, title);
+    const m = el("div", { class: "modal", role: danger ? "alertdialog" : "dialog", "aria-modal": "true", "aria-labelledby": head.id }, head, body ? (typeof body === "string" ? el("p", { class: "muted" }, body) : body) : null,
       el("div", { class: "acts" }, btn(cancel, () => close(false)), okBtn));
     scrim.addEventListener("click", () => close(false));
     document.addEventListener("keydown", key, true);
     document.body.append(scrim, m);
-    setTimeout(() => okBtn.focus(), 20);
+    setTimeout(() => (danger ? m.querySelector(".acts .btn") : okBtn).focus(), 20);
   });
 }
 
 export function promptDialog(title, label, value = "", { ok = "OK", check } = {}) {
   return new Promise((resolve) => {
-    const inp = el("input", { type: "text", value, spellcheck: "false" });
-    const err = el("div", { class: "small", style: { color: "var(--bad)", minHeight: "20px", marginTop: "6px" } });
+    const inp = el("input", { type: "text", value, spellcheck: "false", id: "in" + Math.random().toString(36).slice(2) });
+    const err = el("div", { class: "small", role: "alert", style: { color: "var(--bad)", minHeight: "20px", marginTop: "6px" } });
     const scrim = el("div", { class: "scrim" });
-    const close = (v) => { scrim.remove(); m.remove(); resolve(v); };
-    const done = () => { const v = inp.value.trim(); const problem = check?.(v); if (problem) { err.textContent = problem; return; } close(v); };
-    inp.addEventListener("keydown", (e) => { if (e.key === "Enter") done(); if (e.key === "Escape") { e.stopPropagation(); close(null); } });
-    const m = el("div", { class: "modal", role: "dialog", "aria-modal": "true" }, el("h3", {}, title), label ? el("label", { class: "muted", style: { display: "block", marginBottom: "8px" } }, label) : null, inp, err,
+    const back = document.activeElement;
+    const close = (v) => { scrim.remove(); m.remove(); document.removeEventListener("keydown", key, true); if (back?.isConnected) back.focus({ preventScroll: true }); resolve(v); };
+    const done = () => { const v = inp.value.trim(); const problem = check?.(v); if (problem) { err.textContent = problem; inp.focus(); return; } close(v); };
+    const key = (e) => {
+      if (e.key === "Escape") { e.stopPropagation(); e.preventDefault(); close(null); return; }
+      if (e.key === "Enter" && document.activeElement === inp) { e.preventDefault(); done(); return; }
+      if (e.key === "Tab") trapTab(e, m);
+    };
+    const head = el("h3", {}, title);
+    const m = el("div", { class: "modal", role: "dialog", "aria-modal": "true", "aria-label": title }, head, label ? el("label", { class: "muted", for: inp.id, style: { display: "block", marginBottom: "8px" } }, label) : null, inp, err,
       el("div", { class: "acts", style: { marginTop: "8px" } }, btn("Cancel", () => close(null)), btn(ok, done, "primary")));
     scrim.addEventListener("click", () => close(null));
+    document.addEventListener("keydown", key, true);
     document.body.append(scrim, m);
     setTimeout(() => { inp.focus(); inp.select(); }, 20);
   });
 }
 
 let openDrawer = null;
-export function drawer(title, body, { footer, onClose, subtitle, wide } = {}) {
+/**
+ * A panel from the right. `hash` is the drawer's own address (like #/shop/common/steak): it goes in the address bar
+ * while the drawer is open, so a redraw after undo or redo opens it again, and closing it goes back to the page.
+ */
+export function drawer(title, body, { footer, onClose, subtitle, wide, hash } = {}) {
+  clearTip();
+  const base = openDrawer?.base ?? (hash && location.hash === hash ? hash.split("/").slice(0, 2).join("/") : location.hash);
+  const back = document.activeElement instanceof HTMLElement && !openDrawer ? document.activeElement : openDrawer?.back;
   closeDrawer(true);
   const scrim = el("div", { class: "scrim" });
-  const d = el("div", { class: "drawer" + (wide ? " wide" : ""), role: "dialog", "aria-label": typeof title === "string" ? title : "Editor" },
+  const d = el("div", { class: "drawer" + (wide ? " wide" : ""), role: "dialog", "aria-modal": "true", "aria-label": typeof title === "string" ? title : title?.textContent || "Editor" },
     el("header", {}, el("div", { class: "grow" }, el("h2", {}, title), subtitle ? el("div", { class: "sub" }, subtitle) : null), iconBtn("close", "Close (Esc)", () => closeDrawer())),
     el("div", { class: "db" }, body), footer ? el("footer", {}, footer) : null);
   scrim.addEventListener("click", () => closeDrawer());
+  d.addEventListener("keydown", (e) => trapTab(e, d));
   document.body.append(scrim, d);
-  openDrawer = { close: (silent) => { scrim.remove(); d.remove(); if (!silent) onClose?.(); }, el: d };
+  if (hash && location.hash !== hash) history.replaceState(null, "", hash);
+  openDrawer = { base: hash ? base : null, back, el: d, close: (silent) => {
+    scrim.remove(); d.remove();
+    if (silent) return;
+    if (hash && location.hash === hash) history.replaceState(null, "", base);
+    if (back?.isConnected) back.focus({ preventScroll: true });
+    onClose?.();
+  } };
+  if (!d.contains(document.activeElement)) setTimeout(() => { if (!d.contains(document.activeElement) && openDrawer?.el === d) d.querySelector("header .iconbtn")?.focus({ preventScroll: true }); }, 30);
   return openDrawer;
+}
+/** Keeps Tab inside a dialog. */
+function trapTab(e, box) {
+  if (e.key !== "Tab") return;
+  const f = [...box.querySelectorAll("a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex='-1'])")].filter((x) => x.offsetParent !== null || x === document.activeElement);
+  if (!f.length) return;
+  const first = f[0], last = f[f.length - 1];
+  if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+  else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
 }
 /** Closes the open drawer. silent skips its onClose (when another drawer or page replaces it). */
 export function closeDrawer(silent) { closePop(); if (openDrawer) { const o = openDrawer; openDrawer = null; o.close(silent === true); return true; } return false; }
@@ -345,8 +386,8 @@ export function pickMaterial(anchor, current, onPick) {
   };
   q.addEventListener("input", draw);
   q.addEventListener("keydown", (e) => { if (e.key === "Enter") { const first = grid.querySelector("button"); if (first && q.value.trim()) first.click(); else if (q.value.trim()) { closePop(); onPick(q.value.trim().toUpperCase().replace(/\s+/g, "_")); } } });
-  const p = popover(anchor, el("div", { style: { display: "contents" } }, q, grid, foot), { cls: "picker" });
   draw();
+  const p = popover(anchor, el("div", { style: { display: "contents" } }, q, grid, foot), { cls: "picker" });
   setTimeout(() => q.focus(), 10);
   return p;
 }
@@ -487,7 +528,7 @@ export function miniCtl(value, onChange, { multiline, list, vars, placeholder, p
     if (multi) inp.rows = Math.max(1, inp.value.split("\n").length);
     out.innerHTML = "";
     const lines = inp.value.split("\n");
-    if (!inp.value && !isList) { out.classList.add("blank"); return; }
+    if (!inp.value.trim() && !isList) { out.classList.add("blank"); return; }
     out.classList.remove("blank");
     for (const l of lines) out.append(el("div", { class: "mc", html: renderMini(expand(l), { vars: all, prefix: prefix() }) || "&nbsp;" }));
   };
@@ -652,6 +693,9 @@ export function highlight(key) {
   row.closest("details")?.setAttribute("open", "");
   row.scrollIntoView({ behavior: "smooth", block: "center" });
   row.classList.remove("flash"); void row.offsetWidth; row.classList.add("flash");
+  // Focus lands on the row, so Tab goes straight to its control.
+  if (!row.hasAttribute("tabindex")) row.setAttribute("tabindex", "-1");
+  row.focus({ preventScroll: true });
   return true;
 }
 

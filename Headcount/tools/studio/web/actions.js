@@ -45,7 +45,7 @@ const SPRITE = {
   "broadcast-location": "compass", console: "command_block", "player-command": "feather", "give-item": "chest", "take-item": "hopper", equip: "iron_chestplate",
   "give-heads": "player_head", loot: "chest", experience: "experience_bottle", points: "sunflower", money: "gold_nugget", permission: "trial_key", group: "lead",
   "primary-group": "lead", track: "rail", prefix: "name_tag", suffix: "name_tag", "grant-title": "name_tag", "revoke-title": "shears", "strip-title": "shears",
-  "force-title": "carved_pumpkin", ban: "barrier", mute: "white_wool", warn: "goat_horn", kick: "iron_boots", jail: "iron_bars", pvp: "iron_sword", potion: "potion",
+  "force-title": "jack_o_lantern", ban: "barrier", mute: "white_wool", warn: "goat_horn", kick: "iron_boots", jail: "iron_bars", pvp: "iron_sword", potion: "potion",
   attribute: "golden_apple", glowing: "glowstone_dust", fire: "flint_and_steel", lightning: "trident", freeze: "powder_snow_bucket", hunger: "rotten_flesh",
   gamemode: "grass_block", teleport: "ender_pearl", heal: "glistering_melon_slice", feed: "cooked_beef", damage: "cactus", launch: "wind_charge", "clear-effects": "milk_bucket",
   deny: "structure_void", "next-cycle": "clock", rollover: "chest_minecart", "head-protection": "turtle_helmet", "extra-heads": "skeleton_skull", bounty: "crossbow",
@@ -385,10 +385,11 @@ export function actionEditor(raw, onChange, { vars, nested } = {}) {
       const card = el("div", { class: "actioncard" + (isOpen ? " open" : "") });
       const grip = el("span", { class: "grip", title: "Drag to reorder", draggable: "true" }, icon("grip"));
       grip.addEventListener("dragstart", (e) => { dragIdx = idx; card.classList.add("drag"); e.dataTransfer.setData("text/plain", String(idx)); e.dataTransfer.setDragImage(card, 20, 20); });
-      grip.addEventListener("dragend", () => card.classList.remove("drag"));
-      card.addEventListener("dragover", (e) => { if (dragIdx !== null) { e.preventDefault(); card.classList.add("over"); } });
-      card.addEventListener("dragleave", () => card.classList.remove("over"));
-      card.addEventListener("drop", (e) => { e.preventDefault(); card.classList.remove("over"); if (dragIdx !== null && dragIdx !== idx) { const [m] = cards.splice(dragIdx, 1); cards.splice(idx, 0, m); openSet.clear(); commit(); draw(); } dragIdx = null; });
+      grip.addEventListener("dragend", () => { card.classList.remove("drag"); dragIdx = null; });
+      // The line shows where it lands: above this card when moving up, below it when moving down.
+      card.addEventListener("dragover", (e) => { if (dragIdx !== null && dragIdx !== idx) { e.preventDefault(); card.classList.add(dragIdx < idx ? "over-after" : "over"); } });
+      card.addEventListener("dragleave", () => card.classList.remove("over", "over-after"));
+      card.addEventListener("drop", (e) => { e.preventDefault(); card.classList.remove("over", "over-after"); if (dragIdx !== null && dragIdx !== idx) { const [m] = cards.splice(dragIdx, 1); cards.splice(idx, 0, m); openSet.clear(); commit(); draw(); } dragIdx = null; });
       const spr = actionSprite(denormalize(c));
       const t1 = el("div", { class: "t1" }, summarize(denormalize(c)));
       const t2 = el("div", { class: "t2" }, meta(c));
@@ -447,8 +448,8 @@ export function actionList(file, path, opts = {}) {
 }
 
 /** Opens the action builder for the list at file/path in a drawer. */
-export function editActions(file, path, { title, subtitle, onClose } = {}) {
-  drawer(title || "Actions", actionList(file, path), { wide: true, subtitle, onClose,
+export function editActions(file, path, { title, subtitle, onClose, hash } = {}) {
+  drawer(title || "Actions", actionList(file, path), { wide: true, subtitle, onClose, hash,
     footer: el("div", { class: "row", style: { width: "100%" } }, el("span", { class: "grow" }), btn("Done", () => closeDrawer(), "primary")) });
 }
 

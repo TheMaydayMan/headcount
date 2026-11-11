@@ -85,7 +85,7 @@ const FILES = {
     "reset.hard.archive-audit-log": bool("Move the audit log aside"),
     "hooks.join-delay": dur("Wait after a join", { units: ["ms", "s", "m"] }),
     "hooks.missed-warning-grace": dur("Run a missed warning if it's late by less than"),
-    "hooks.top-count": num("Players in <top_list>", { min: 1, step: 1 }),
+    "hooks.top-count": num("Players in the top list", { min: 1, step: 1 }),
     "history.gui.entry.material": { label: "Item", type: "material" },
   },
   "integrations.yml": {

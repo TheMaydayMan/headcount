@@ -78,10 +78,23 @@ const AUDIT = {
   ADMIN: ["Admin", "command_block"], DUPLICATE: ["Copied head found", "structure_void"], ITEM_DELIVERY: ["Items delivered", "chest_minecart"], GUI_ITEM_REMOVED: ["Menu item taken away", "barrier"],
 };
 const PERSON = /^(.+)\(([0-9a-f]{8}-[0-9a-f-]{27})\)$/i;
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const headLink = (id) => el("a", { href: "#/live-audit/head/" + id, title: "Follow this head", class: "cmd" }, id.slice(0, 8));
 function fieldVal(k, v) {
+  // What a trade side gave: HEAD[id,owner=Name,cycle=3] for each head, ; between items.
+  if (/gave$/.test(k) && v.includes("HEAD[")) {
+    const out = [];
+    v.split(";").forEach((part, i) => {
+      if (i) out.push(", ");
+      const h = /^HEAD\[([0-9a-f-]+),owner=([^,\]]*)/i.exec(part);
+      out.push(...(h ? [h[2] + "'s head ", headLink(h[1])] : [part.replace(/_/g, " ")]));
+    });
+    return el("span", {}, out);
+  }
   const m = PERSON.exec(v);
   if (m) return el("a", { href: "#/live-player/" + m[2], title: m[2] }, m[1]);
-  if (k === "head" && /^[0-9a-f-]{8,}$/i.test(v)) return el("a", { href: "#/live-audit/head/" + v, title: "Follow this head", class: "cmd" }, v.slice(0, 8));
+  if ((k === "head" || k === "heads") && /^[0-9a-f-]{8,}(,[0-9a-f-]{8,})*$/i.test(v)) return el("span", {}, v.split(",").flatMap((id, i) => (i ? [", ", headLink(id)] : [headLink(id)])));
+  if (UUID.test(v)) { const who = playerCache.find((p) => p.uuid === v); return el("a", { href: "#/live-player/" + v, title: v }, who ? who.name : v.slice(0, 8)); }
   return v.replace(/_/g, " ");
 }
 function auditItem(a) {
@@ -176,8 +189,8 @@ async function playersPage(root) {
   const bar = el("div", { class: "toolbar" }, q, el("span", { class: "grow" }), show);
   root.append(bar, body);
   let all = [], sort = "rank", filter = "all";
-  const COLS = [["rank", "#", "n hide-s"], ["name", "Player"], ["unique", "Unique", "n"], ["score", "Score now", "n"], ["outcome", "Would get", "hide-s"], ["points", "Points", "n hide-s"],
-    ["streak", "Streak", "n hide-s"], ["playtime_ms", "Played", "n hide-s"], ["seen", "Last seen", "hide-s"]];
+  const COLS = [["rank", "#", "n hide-s"], ["name", "Player"], ["unique", "Unique", "n"], ["score", ["Score", el("span", { class: "hide-s" }, " now")], "n"], ["outcome", "Would get", "hide-s hide-m"], ["points", "Points", "n hide-s"],
+    ["streak", "Streak", "n hide-s"], ["playtime_ms", "Played", "n hide-s"], ["seen", "Last seen", "hide-s hide-m"]];
   const draw = () => {
     body.innerHTML = "";
     bar.hidden = !all.length;
@@ -188,13 +201,15 @@ async function playersPage(root) {
       .filter((p) => (!q.value || p.name.toLowerCase().includes(q.value.toLowerCase())) && (filter === "all" || p[filter]));
     const key = (p) => (sort === "rank" ? (p.rank ?? 1e9) : sort === "name" ? p.name.toLowerCase() : -(p[sort] ?? -1e9));
     rows.sort((a, b) => (key(a) < key(b) ? -1 : key(a) > key(b) ? 1 : a.name.localeCompare(b.name)));
-    const t = el("table", { class: "t" }, el("tr", {}, COLS.map(([k, label, cls]) => el("th", { class: "sort " + (cls || "") + (sort === k ? " on" : ""), onclick: () => { if (k !== "outcome") { sort = k; draw(); } } }, label))));
+    const sortBy = (k) => { if (k !== "outcome") { sort = k; draw(); body.querySelector("th.on")?.focus(); } };
+    const t = el("table", { class: "t" }, el("tr", {}, COLS.map(([k, label, cls]) => el("th", { class: (k === "outcome" ? "" : "sort ") + (cls || "") + (sort === k ? " on" : ""), tabindex: k === "outcome" ? null : 0,
+      "aria-sort": sort === k ? (k === "rank" || k === "name" ? "ascending" : "descending") : null, onclick: () => sortBy(k), onkeydown: (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); sortBy(k); } } }, label))));
     for (const p of rows) t.append(el("tr", { class: "click", onclick: () => go("#/live-player/" + p.uuid) },
       el("td", { class: "n faint hide-s" }, p.rank ?? ""),
-      el("td", {}, el("span", { class: "who" }, face(p.uuid, 22), el("b", {}, p.name), p.online ? el("span", { class: "dotlive", title: "Online" }) : null, p.bedrock ? el("span", { class: "tag" }, "Bedrock") : null)),
+      el("td", {}, el("span", { class: "who" }, face(p.uuid, 22), el("a", { href: "#/live-player/" + p.uuid, class: "plainlink" }, el("b", {}, p.name)), p.online ? el("span", { class: "dotlive", title: "Online" }) : null, p.bedrock ? el("span", { class: "tag hide-s" }, "Bedrock") : null)),
       el("td", { class: "n" }, p.unique), el("td", { class: "n" }, p.active ? scoreEl(p.score) : el("span", { class: "faint", title: "Not active this cycle yet" }, "Not active")),
-      el("td", { class: "hide-s muted" }, p.active ? outcomeText(p.score) : null), el("td", { class: "n hide-s" }, p.points), el("td", { class: "n hide-s" }, p.streak),
-      el("td", { class: "n hide-s" }, formatDuration(p.playtime_ms || 0)), el("td", { class: "hide-s muted" }, p.online ? "Online now" : ago(p.seen))));
+      el("td", { class: "hide-s hide-m muted" }, p.active ? outcomeText(p.score) : null), el("td", { class: "n hide-s" }, p.points), el("td", { class: "n hide-s" }, p.streak),
+      el("td", { class: "n hide-s" }, formatDuration(p.playtime_ms || 0)), el("td", { class: "hide-s hide-m muted" }, p.online ? "Online now" : ago(p.seen))));
     body.append(rows.length ? el("div", { class: "sheet" }, t) : el("div", { class: "empty" }, "No player by that name."));
   };
   q.addEventListener("input", draw);
@@ -309,7 +324,7 @@ function pastCycles(results) {
       el("div", { style: { position: "absolute", left: 0, right: 0, height: h + "px", borderRadius: "2px", background: !r.active ? "var(--line-2)" : s < 0 ? "var(--bad)" : s > 0 ? "var(--good)" : "var(--ink-3)", ...(s < 0 ? { top: "26px" } : { bottom: "26px" }) } }));
   }));
   return el("div", { class: "sheet" }, bars, el("table", { class: "t" }, results.slice(0, 8).map((r) => el("tr", { class: "click", onclick: () => go("#/live-history/" + r.cycle) },
-    el("td", {}, "Cycle " + r.cycle), el("td", { class: "n" }, r.active ? scoreEl(r.score) : el("span", { class: "faint" }, "Not active")), el("td", { class: "muted" }, r.active ? plural(r.unique_heads, "unique head") : ""),
+    el("td", {}, el("a", { href: "#/live-history/" + r.cycle, class: "plainlink" }, "Cycle " + r.cycle)), el("td", { class: "n" }, r.active ? scoreEl(r.score) : el("span", { class: "faint" }, "Not active")), el("td", { class: "muted" }, r.active ? plural(r.unique_heads, "unique head") : ""),
     el("td", { class: "hide-s" }, r.outcomes ? el("span", { class: "row gap-s" }, r.outcomes.split(",").filter(Boolean).map((id) => mcName(S.get("outcomes.yml", "rules." + id + ".display") || id))) : null)))));
 }
 
@@ -323,7 +338,7 @@ async function historyPage(root, params) {
     if (!rows.length) { root.append(emptyBox("book", "No results for this cycle", "Results are written when a cycle ends.")); return; }
     const t = el("table", { class: "t" }, el("tr", {}, el("th", { class: "n" }, "Rank"), el("th", {}, "Player"), el("th", { class: "n" }, "Unique heads"), el("th", { class: "n" }, "Score"), el("th", { class: "hide-s" }, "Got"),
       el("th", { class: "n hide-s" }, "Points after"), el("th", { class: "n hide-s" }, "Streak")));
-    for (const r of rows) t.append(el("tr", { class: "click", onclick: () => go("#/live-player/" + r.uuid) }, el("td", { class: "n faint" }, r.rank ?? ""), el("td", {}, el("span", { class: "who" }, face(r.uuid, 22), el("b", {}, r.name))),
+    for (const r of rows) t.append(el("tr", { class: "click", onclick: () => go("#/live-player/" + r.uuid) }, el("td", { class: "n faint" }, r.rank ?? ""), el("td", {}, el("span", { class: "who" }, face(r.uuid, 22), el("a", { href: "#/live-player/" + r.uuid, class: "plainlink" }, el("b", {}, r.name)))),
       el("td", { class: "n" }, r.unique_heads), el("td", { class: "n" }, r.active ? scoreEl(r.score) : el("span", { class: "faint" }, "Not active")),
       el("td", { class: "hide-s" }, r.outcomes ? el("span", { class: "row gap-s" }, r.outcomes.split(",").filter(Boolean).map((o) => mcName(S.get("outcomes.yml", "rules." + o + ".display") || o))) : null),
       el("td", { class: "n hide-s" }, r.points_after), el("td", { class: "n hide-s" }, r.streak)));
@@ -398,6 +413,7 @@ function auditView(initial, { compact } = {}) {
   return box;
 }
 async function auditPage(root, params) {
+  if (S.store.info.live && !playerCache.length) playerCache = await S.api("/api/live/players").catch(() => []);
   if (params[0] === "head" && params[1]) return tracer(root, params[1]);
   root.append(pageHead("Audit log", null, btn("Follow a head", async () => {
     const inp = el("input", { type: "text", placeholder: "3f9a1c2e-0b4d-...", spellcheck: "false", style: { fontFamily: "var(--mono)" } });

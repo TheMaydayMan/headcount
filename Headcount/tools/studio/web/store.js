@@ -53,7 +53,7 @@ export function setText(name, text, group) {
   const d = store.docs[name];
   if (!d || text === d.text) return;
   const now = Date.now();
-  if (group && group === lastGroup && now - lastTime < 1200 && store.history.length && store.history[store.history.length - 1].name === name) {
+  if (group && group === lastGroup && now - lastTime < 1200 && store.history.length && store.history[store.history.length - 1].name === name && !store.history[store.history.length - 1].batch) {
     store.history[store.history.length - 1].after = text;
   } else {
     store.history.push({ name, before: d.text, after: text });
@@ -63,6 +63,17 @@ export function setText(name, text, group) {
   store.future = [];
   build(d, text);
   emit({ type: "change", name });
+}
+
+/** Replaces several files' text as one undoable edit (a recipe that touches more than one file). */
+export function setTexts(map) {
+  const items = Object.entries(map).filter(([n, t]) => store.docs[n] && store.docs[n].text !== t);
+  if (!items.length) return;
+  store.history.push({ name: items.map(([n]) => n).join(", "), batch: items.map(([n, t]) => ({ name: n, before: store.docs[n].text, after: t })) });
+  store.future = [];
+  lastGroup = null;
+  for (const [n, t] of items) build(store.docs[n], t);
+  for (const [n] of items) emit({ type: "change", name: n });
 }
 
 function edit(name, fn, group) {
@@ -79,18 +90,18 @@ export function undo() {
   const h = store.history.pop();
   if (!h) return false;
   store.future.push(h);
-  build(store.docs[h.name], h.before);
+  for (const x of h.batch || [h]) build(store.docs[x.name], x.before);
   lastGroup = null;
-  emit({ type: "change", name: h.name, undo: true });
+  for (const x of h.batch || [h]) emit({ type: "change", name: x.name, undo: true });
   return h.name;
 }
 export function redo() {
   const h = store.future.pop();
   if (!h) return false;
   store.history.push(h);
-  build(store.docs[h.name], h.after);
+  for (const x of h.batch || [h]) build(store.docs[x.name], x.after);
   lastGroup = null;
-  emit({ type: "change", name: h.name, undo: true });
+  for (const x of h.batch || [h]) emit({ type: "change", name: x.name, undo: true });
   return h.name;
 }
 

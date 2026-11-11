@@ -315,10 +315,15 @@ class Handler(BaseHTTPRequestHandler):
     def skin(self, rel):
         who = unquote(rel).removesuffix(".png")
         p = mcassets.skin(CACHE, who)
+        cache = "max-age=3600"
+        if not p:
+            # No skin to be had (offline, or not a real account): the default skin, so the page shows a face and
+            # the browser logs no failed request.
+            p, cache = self.assets.path("entity/player/wide/steve.png"), "max-age=300"
         if not p:
             return self._json(404, {"error": "no skin"})
         with open(p, "rb") as f:
-            self._send(200, f.read(), "image/png", {"Cache-Control": "max-age=3600"})
+            self._send(200, f.read(), "image/png", {"Cache-Control": cache})
 
     def sound(self, rel):
         p = self.assets.sound(unquote(rel).removesuffix(".ogg"))

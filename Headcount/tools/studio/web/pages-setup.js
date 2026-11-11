@@ -6,6 +6,8 @@ import * as S from "./store.js";
 import { actionList, conditionsCtl, rangeCtl, summarize } from "./actions.js";
 
 export const C = (p) => S.get("config.yml", p) ?? S.def("config.yml", p);
+/** A number from the config, or what Headcount uses when it's missing (0 is a real value here). */
+export const num = (v, fallback) => (v === undefined || v === null || v === "" || isNaN(+v) ? fallback : +v);
 const go = (h, key) => window.studio.go(h, key);
 const link = (text, hash, key, cls) => el("a", { href: hash, class: cls || null, onclick: (e) => { e.preventDefault(); go(hash, key); } }, text);
 export const pageHead = (title, sub, ...actions) => el("div", { class: "pagehead" }, el("div", { class: "grow" }, el("h1", {}, title), sub ? el("div", { class: "sub" }, sub) : null),
@@ -151,7 +153,7 @@ function cyclePage(root) {
 function refreshUnsaved(row, path) { row.classList.toggle("unsaved", JSON.stringify(S.get("config.yml", path)) !== JSON.stringify(S.savedValue("config.yml", path))); }
 function drawSchedule(box) {
   box.innerHTML = "";
-  const days = +C("cycle.length-days") || 30;
+  const days = +C("cycle.length-days") || 14;
   const [hh, mm] = String(C("cycle.end-time") || "00:00").split(":").map(Number);
   const zone = S.get("config.yml", "cycle.time-zone") ?? "UTC";
   const zi = zoneInfo(zone) || { offset: 0 };
@@ -163,10 +165,10 @@ function drawSchedule(box) {
   else { const [y, mo, d] = sdv.split("-").map(Number); start = zoned(y, mo - 1, d, hh || 0, mm || 0, zi); }
   const fmt = (t) => wallClock(zi, t, { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
   const rows = el("div", { class: "items" });
-  if (live) rows.append(el("div", { class: "item", style: { cursor: "default" } }, el("div", { class: "main" }, el("div", { class: "t1" }, "Cycle " + live.id + ", running"), el("div", { class: "t2" }, "Ends " + fmt(live.end_ms)))));
+  if (live) rows.append(el("div", { class: "item static" }, el("div", { class: "main" }, el("div", { class: "t1" }, "Cycle " + live.id + ", running"), el("div", { class: "t2" }, "Ends " + fmt(live.end_ms)))));
   for (let k = 0; k < 3; k++) {
     const end = start + days * 86400000;
-    rows.append(el("div", { class: "item", style: { cursor: "default" } }, el("div", { class: "main" }, el("div", { class: "t1" }, live ? "Cycle " + (live.id + k + 1) : k ? "Then" : sdv === "auto" ? "If it started today" : "First cycle"),
+    rows.append(el("div", { class: "item static" }, el("div", { class: "main" }, el("div", { class: "t1" }, live ? "Cycle " + (live.id + k + 1) : k ? "Then" : sdv === "auto" ? "If it started today" : "First cycle"),
       el("div", { class: "t2" }, fmt(start) + " to " + fmt(end)))));
     start = end;
   }
@@ -195,7 +197,7 @@ function vaultPage(root) {
   const aside = el("div", { style: { display: "grid", gap: "22px" } });
   const drawPrev = () => {
     aside.innerHTML = "";
-    const size = Math.max(1, +C("vault.size") || 27), start = Math.min(size, +C("vault.starting-heads") || 0);
+    const size = Math.max(1, +C("vault.size") || 27), start = Math.min(size, num(C("vault.starting-heads"), 18));
     const shown = Math.min(size, 54);
     const rows = Math.min(6, Math.ceil(shown / 9));
     const vars = { owner: "Steve", unique: 1, total: start, size, used: start, score: -2 };
@@ -206,8 +208,9 @@ function vaultPage(root) {
     const [p, title] = HEAD_STATES.find((h) => h[0] === state);
     aside.append(preview(title + " head", el("div", { class: "row", style: { alignItems: "flex-start", flexWrap: "nowrap" } }, sprite({ material: "PLAYER_HEAD", glint: !p && C("heads.item.glint") }, 48),
       tooltip(C("heads.item." + p + "name"), C("heads.item." + p + "lore"), { owner: "Steve", cycle: p === "expired-" ? 2 : 3 }))));
+    aside.append(el("div", {}, btn([sprite("chest", 18), "Vault menu layout"], () => go("#/menus/vault"), "ghost")));
   };
-  const headBox = el("div");
+  const headBox = el("div", { class: "rows" });
   const drawHead = () => {
     headBox.innerHTML = "";
     headBox.append(field("config.yml", "heads.item." + state + "name", { onChange: drawPrev }), field("config.yml", "heads.item." + state + "lore", { onChange: drawPrev }));
@@ -225,8 +228,7 @@ function vaultPage(root) {
     group("Heads placed as blocks", field("config.yml", "heads.placed.preserve"), field("config.yml", "heads.placed.creative-break"), field("config.yml", "heads.placed.always-drop"), field("config.yml", "heads.placed.untracked-blocks")),
     group("Copied heads", field("config.yml", "duplicates.notify-admins"), field("config.yml", "duplicates.remove-copies"), field("config.yml", "duplicates.scan-on-inventory-close")),
   ];
-  aside.append();
-  root.append(layout(main, [aside, el("div", {}, btn([sprite("chest", 18), "Vault menu layout"], () => go("#/menus/vault"), "ghost"))]));
+  root.append(layout(main, aside));
   drawPrev();
 }
 
@@ -290,9 +292,9 @@ function scoringPage(root) {
   ];
   root.append(layout(main, [result, chartBox]));
   const scoreFor = (f, e) => {
-    const raw = f.eval({ players: e.active + 6, online: 4, duplicates: Math.max(0, e.total - e.unique), vault_size: +C("vault.size") || 27, vault_free: 0, starting_heads: +C("vault.starting-heads") || 27,
+    const raw = f.eval({ players: e.active + 6, online: 4, duplicates: Math.max(0, e.total - e.unique), vault_size: +C("vault.size") || 27, vault_free: 0, starting_heads: num(C("vault.starting-heads"), 18),
       unique_avg: 5, unique_median: 5, unique_max: 15, unique_min: 1, unique_sum: 60, heads_in: 2, heads_out: 2, purchases: 1, points_spent: 3, points_next: 0, playtime_hours: e.playtime / 60,
-      streak_positive: Math.max(0, e.streak), streak_negative: Math.max(0, -e.streak), last_unique: 5, has_last: 1, titles: 1, cycle: 3, cycle_length: +C("cycle.length-days") || 30,
+      streak_positive: Math.max(0, e.streak), streak_negative: Math.max(0, -e.streak), last_unique: 5, has_last: 1, titles: 1, cycle: 3, cycle_length: +C("cycle.length-days") || 14,
       days_elapsed: 10, days_left: 20, is_active: 1, ...e });
     let s = roundScore(raw, S.get("scoring.yml", "rounding") ?? "floor");
     if ((S.get("scoring.yml", "add-bonus-after-formula") ?? true) !== false) s += e.bonus;
@@ -408,7 +410,7 @@ function outcomesPage(root, params) {
         groupRow, priRow),
       el("section", { class: "group" }, el("header", {}, el("h2", {}, "Only when")), el("div", { class: "sheet pad", style: { padding: "12px 18px" } }, conditionsCtl("outcomes.yml", base + ".conditions"))),
       el("section", { class: "group" }, el("header", {}, el("h2", {}, "What happens")), actionList("outcomes.yml", base + ".actions", { vars: "outcome" })));
-    drawer(mcName(r.display || id), body, { subtitle: "For scores of " + describeRange(r.score), wide: true, onClose: draw,
+    drawer(mcName(r.display || id), body, { subtitle: "For scores of " + describeRange(r.score), wide: true, onClose: draw, hash: "#/outcomes/" + id,
       footer: el("div", { class: "row", style: { width: "100%" } },
         btn("Rename", async () => { const n = await promptDialog("Rename rule", "New ID:", id, { check: (v) => (!/^[a-z0-9][a-z0-9-]*$/i.test(v) ? "Use letters, numbers and dashes." : null) }); if (n && n !== id) { S.rename("outcomes.yml", base, n); closeDrawer(); edit(n); } }, "ghost"),
         btn([icon("trash"), "Delete"], async () => { if (await confirmDialog("Delete " + stripMini(r.display || id) + "?", null, { ok: "Delete", danger: true })) { S.remove("outcomes.yml", base); closeDrawer(); } }, "ghost danger"),

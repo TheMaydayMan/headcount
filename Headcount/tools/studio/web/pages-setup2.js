@@ -35,14 +35,14 @@ export function menuSlots(file, base) {
 }
 const isFiller = (fill, rows, i) => fill === "empty" ? true : fill === "border" ? (Math.floor(i / 9) === 0 || Math.floor(i / 9) === rows - 1 || i % 9 === 0 || i % 9 === 8) : fill === "none" ? false : fill.includes(i);
 /** A chest preview of a menu. extra(i) can put items in slots (entries, offers). */
-export function menuChest(file, base, { extra, vars, onButton, onEmpty, onDrop, paint, paintEnd, numbers, overlay } = {}) {
+export function menuChest(file, base, { extra, vars, onButton, onEmpty, onDrop, paint, paintEnd, numbers, overlay, dragButtons = true } = {}) {
   const { L, rows, buttons, fill } = menuSlots(file, base);
   const filler = isObj(L.filler) ? L.filler : { material: "GRAY_STAINED_GLASS_PANE" };
   return chest(rows, L.title ?? "", (i) => {
     const o = overlay?.(i) || "";
     const x = extra?.(i);
     if (x) return { ...x, cls: (x.cls || "") + " " + o };
-    if (buttons[i]) { const { id, b } = buttons[i]; return { item: b, title: id, cls: o, tip: () => tooltip(b.name ?? id, b.lore, vars), onclick: () => onButton?.(id, i), draggable: !!onDrop && b.slot !== undefined }; }
+    if (buttons[i]) { const { id, b } = buttons[i]; return { item: b, title: id, cls: o, tip: () => tooltip(b.name ?? id, b.lore, vars), onclick: () => onButton?.(id, i), draggable: !!onDrop && dragButtons && b.slot !== undefined }; }
     if (isFiller(fill, rows, i) && !(fill === "empty" && extra)) return { item: filler, cls: "dim " + o, onclick: () => onEmpty?.(i) };
     return { cls: o, onclick: () => onEmpty?.(i) };
   }, { vars, onDrop, paint, paintEnd, numbers });
@@ -51,7 +51,7 @@ export function menuChest(file, base, { extra, vars, onButton, onEmpty, onDrop, 
 const MENUS = [
   { id: "vault", name: "Vault", file: "config.yml", base: "vault.gui", icon: "ender_chest", vars: { owner: "Steve", unique: 7, total: 21, size: 27, used: 21, score: 4, page: 1, pages: 1 } },
   { id: "history", name: "History", file: "config.yml", base: "history.gui", icon: "book", areas: [["entry-slots", "Cycles", "paint-area"]], vars: { player: "Steve", page: 1, pages: 2 } },
-  { id: "shop", name: "Shop", file: "shop.yml", base: "gui", icon: "emerald", vars: { tier: "<white>Common", points: 12, tier_number: 1, tiers: 4, last_score: 6, target_tier: "Uncommon", threshold: 5, needed: 0 } },
+  { id: "shop", name: "Shop", file: "shop.yml", base: "gui", icon: "emerald", vars: { tier: "<white>Common", points: 12, tier_number: 1, tiers: 4, last_score: 6, target_tier: "Uncommon", threshold: 3, needed: 0 } },
   { id: "confirm", name: "Purchase", file: "shop.yml", base: "confirm-gui", icon: "lime_concrete", vars: { name: "Speed for 30 minutes", price: 3, points: 12 } },
   { id: "trade", name: "Trade", file: "trade.yml", base: "gui", icon: "bundle", areas: [["own-slots", "Your offer", "paint-own"], ["other-slots", "Their offer", "paint-other"]], vars: { other: "Alex", my_heads: 2, max_heads: 24, my_items: 1, max_items: 24, their_heads: 1, their_items: 0, seconds: 3 } },
   { id: "titles", name: "Titles", file: "titles.yml", base: "gui", icon: "name_tag", areas: [["title-slots", "Titles", "paint-area"]], vars: { page: 1, pages: 1 } },
@@ -102,7 +102,16 @@ function menusPage(root, params) {
       menuChest(file, base, { vars: m.vars, extra, overlay, numbers, paint, paintEnd: () => drawAside(),
         onButton: (id) => { selected = id; drawChest(); drawAside(); },
         onEmpty: () => { selected = null; drawChest(); drawAside(); },
-        onDrop: tool === "select" ? (from, to) => { const b = menuSlots(file, base).buttons[from]; if (!b) return; S.set(file, base + ".buttons." + b.id + ".slot", to); selected = b.id; drawChest(); drawAside(); } : null }),
+        onDrop: tool === "select" ? (from, to) => {
+          const { buttons: bs } = menuSlots(file, base);
+          const b = bs[from], other = bs[to];
+          if (!b) return;
+          if (other && S.get(file, base + ".buttons." + other.id + ".slot") === undefined) { toast(humanize(other.id) + " covers several slots, so it can't swap places. Change its slots instead."); return; }
+          const g = "drag" + Date.now();
+          S.set(file, base + ".buttons." + b.id + ".slot", to, g);
+          if (other && other.id !== b.id) S.set(file, base + ".buttons." + other.id + ".slot", from, g);
+          selected = b.id; drawChest(); drawAside();
+        } : null }),
       el("div", { class: "small faint", style: { marginTop: "8px" } }, tool === "select" ? "Drag a button to move it." : "Drag across slots to paint them."));
     const btns = el("div", { class: "items", style: { marginTop: "22px" } });
     for (const [id, b] of Object.entries(S.get(file, base + ".buttons") || {})) {
@@ -180,7 +189,10 @@ function shopPage(root, params) {
   const newTier = async () => {
     const id = await promptDialog("New tier", "A short ID, like epic:", "epic", { check: idCheck((v) => tiers().includes(v)) });
     if (!id) return;
-    S.set("shop.yml", "tiers." + id, { name: "<light_purple>" + humanize(id), threshold: 30, entries: {} });
+    // The next step up from the highest tier, keeping the same spacing (3, 6, 9 gives 12).
+    const steps = Object.values(S.get("shop.yml", "tiers") || {}).map((T) => +T?.threshold).filter((n) => isFinite(n)).sort((a, b) => a - b);
+    const gap = steps.length > 1 ? steps[steps.length - 1] - steps[steps.length - 2] || 3 : 3;
+    S.set("shop.yml", "tiers." + id, { name: "<light_purple>" + humanize(id), threshold: steps.length ? steps[steps.length - 1] + gap : 3, entries: {} });
     tier = id; draw();
   };
   root.append(pageHead("Shop", null, layoutBtn("shop")));
@@ -216,8 +228,9 @@ function shopPage(root, params) {
     };
     const grid = menuChest("shop.yml", "gui", { vars: vars({}),
       extra: (i) => { const hit = at[i]; if (!hit) return null; const [id, e] = hit; const L = look(e); return { item: L, draggable: true, title: id, tip: () => tooltip(L.name ?? id, L.lore, vars(e)), onclick: () => editEntry(id), cls: e?.enabled === false ? "dim" : "" }; },
-      onEmpty: (i) => addEntry(i), onButton: () => go("#/menus/shop"),
-      onDrop: (from, to) => { const a = at[from]; if (!a) return; const b = at[to]; S.set("shop.yml", `${base}.entries.${a[0]}.slot`, to); if (b) S.set("shop.yml", `${base}.entries.${b[0]}.slot`, from); draw(); } });
+      onEmpty: (i) => addEntry(i), onButton: () => go("#/menus/shop"), dragButtons: false,
+      onDrop: (from, to) => { const a = at[from]; if (!a) return; const b = at[to];
+        if (!b && menuSlots("shop.yml", "gui").buttons[to]) { toast("That slot holds the menu's " + humanize(menuSlots("shop.yml", "gui").buttons[to].id) + " button. Pick a free slot."); return; } const g = "drag" + Date.now(); S.set("shop.yml", `${base}.entries.${a[0]}.slot`, to, g); if (b) S.set("shop.yml", `${base}.entries.${b[0]}.slot`, from, g); draw(); } });
     const left = el("div", {},
       el("div", { class: "row", style: { marginBottom: "12px" } }, el("span", { class: "muted" }, "Show items as"), select(STATES, state, (v) => { state = v; draw(); }), el("span", { class: "grow" }),
         pages > 1 ? el("span", { class: "row gap-s" }, el("span", { class: "muted" }, "Page"), seg([...Array(pages).keys()].map((n) => [n + 1, String(n + 1)]), page, (n) => { page = +n; draw(); })) : null,
@@ -301,7 +314,7 @@ function entryEditor(tier, id, redraw) {
     group("Place", field("shop.yml", base + ".page", { label: "Page", type: "number", min: 1, step: 1 }), field("shop.yml", base + ".slot", { onChange: redraw })));
   const rest = allFields("shop.yml", base, { skip: ["actions", "display.material", "display.name", "display.lore", "display.glint", "display.head", "requires", "price", "limit-per-cycle", "stock", "cooldown", "confirm", "conditions", "page", "slot", "name", "enabled"].map((k) => base + "." + k) });
   if (rest.children.length) body.append(el("section", { class: "group" }, el("header", {}, el("h2", {}, "Other settings")), rest));
-  drawer(stripMini(e0.display?.name || id), body, { subtitle: stripMini(S.get("shop.yml", "tiers." + tier + ".name") || humanize(tier)) + " tier", wide: true, onClose: redraw,
+  drawer(stripMini(e0.display?.name || id), body, { subtitle: stripMini(S.get("shop.yml", "tiers." + tier + ".name") || humanize(tier)) + " tier", wide: true, onClose: redraw, hash: "#/shop/" + tier + "/" + id,
     footer: doneFooter(
       btn("Rename", async () => { const n = await promptDialog("Rename", "New ID:", id, { check: idCheck(() => false) }); if (n && n !== id) { S.rename("shop.yml", base, n); entryEditor(tier, n, redraw); } }, "ghost"),
       btn([icon("trash"), "Delete"], async () => { if (await confirmDialog("Delete " + stripMini(e0.display?.name || id) + "?", null, { ok: "Delete", danger: true })) { S.remove("shop.yml", base); closeDrawer(); } }, "ghost danger")) });
@@ -344,7 +357,7 @@ function titlesPage(root, params) {
     drawPrev();
     drawer(stripMini(S.get("titles.yml", base + ".display") || id), el("div", {}, prev, group(null, field("titles.yml", base + ".display", { onChange: () => { drawPrev(); draw(); } }), field("titles.yml", base + ".description", { label: "Description", onChange: drawPrev }),
       field("titles.yml", base + ".icon.material", { label: "Menu item", onChange: drawPrev }), field("titles.yml", base + ".icon.glint", { onChange: drawPrev }), field("titles.yml", base + ".enabled", { label: "In use", type: "bool" }))),
-    { onClose: draw, footer: doneFooter(btn([icon("trash"), "Delete"], async () => { if (await confirmDialog("Delete " + id + "?", "Players who have it keep it in the database, but it stops showing anywhere.", { ok: "Delete", danger: true })) { S.remove("titles.yml", base); closeDrawer(); } }, "ghost danger")) });
+    { onClose: draw, hash: "#/titles/" + id, footer: doneFooter(btn([icon("trash"), "Delete"], async () => { if (await confirmDialog("Delete " + id + "?", "Players who have it keep it in the database, but it stops showing anywhere.", { ok: "Delete", danger: true })) { S.remove("titles.yml", base); closeDrawer(); } }, "ghost danger")) });
   };
   draw();
   root.append(layout([el("section", { class: "group" }, listBox),
@@ -409,6 +422,8 @@ function srcSettings(src) {
   for (const m of text.matchAll(/`([a-z0-9-]+):\s*([^`]+)`/g)) if (!out[m[1]]) out[m[1]] = { def: m[2] };
   return out;
 }
+/** What Headcount uses for a status setting with fixed choices when the file leaves it out. */
+const SRC_DEFAULTS = { direction: "either", hand: "any" };
 const CHECKS = { "pvp-enabled": "PvP is on", "pvp-disabled": "PvP is off", "combat-tagged": "In combat", newbie: "New-player protection", "respawn-protected": "Just respawned", override: "PvP forced by a world",
   afk: "AFK", vanished: "Vanished", god: "In god mode", jailed: "Jailed", muted: "Muted" };
 const list = (a) => { a = [].concat(a || []).map(String); return a.length > 1 ? a.slice(0, -1).join(", ") + " or " + a[a.length - 1] : a[0] || ""; };
@@ -470,7 +485,7 @@ function statusesPage(root, params) {
         else if (k === "status") row = field("statuses.yml", p, { label: "Status", type: "select", options: names });
         else if (k === "modes") row = field("statuses.yml", p, { label: "Game modes", type: "list", suggestions: ["survival", "creative", "adventure", "spectator"] });
         else if (k === "materials") row = field("statuses.yml", p, { label: "Items", type: "materials" });
-        else if (o.options) row = field("statuses.yml", p, { label: humanize(k), type: o.options.length <= 4 ? "seg" : "select", options: o.options.map((x) => [x, humanize(x)]) });
+        else if (o.options) row = field("statuses.yml", p, { label: humanize(k), type: o.options.length <= 4 ? "seg" : "select", options: o.options.map((x) => [x, humanize(x)]), default: SRC_DEFAULTS[k] });
         else if (o.def !== undefined && /^-?\d+(\.\d+)?$/.test(o.def) && S.get("statuses.yml", p) === undefined) row = field("statuses.yml", p, { label: humanize(k), type: "number", placeholder: o.def });
         else if (o.def === "true" || o.def === "false") row = field("statuses.yml", p, { label: humanize(k), type: "bool" });
         else row = field("statuses.yml", p, { label: humanize(k) });
@@ -478,12 +493,12 @@ function statusesPage(root, params) {
       }
       body.append(group(null, ...rows),
         group("When it can't tell", field("statuses.yml", base + ".fallback", { label: "Ask another status", type: "select", options: [["", "None"], ...names.map((n) => [n, n])] }),
-          field("statuses.yml", base + ".unavailable", { label: "Otherwise count it as", type: "seg", options: [[false, "Inactive"], [true, "Active"]] })),
+          field("statuses.yml", base + ".unavailable", { label: "Otherwise count it as", type: "seg", options: [[false, "Inactive"], [true, "Active"]], default: false })),
         group(null, field("statuses.yml", base + ".description", { label: "Note", type: "text", placeholder: "For yourself" })),
         el("p", { class: "muted" }, "Used by: " + (statusUses(name).join(", ") || "nothing yet") + ". Placeholder: ", el("code", {}, "%headcount_status_" + name + "%")));
     };
     drawE();
-    drawer(name, body, { subtitle: statusSummary(S.get("statuses.yml", base)), onClose: draw, footer: doneFooter(btn([icon("trash"), "Delete"], async () => { if (await confirmDialog("Delete " + name + "?", statusUses(name).length ? "It's used by " + statusUses(name).join(", ") + ", which would then name a status that doesn't exist." : null, { ok: "Delete", danger: true })) { S.remove("statuses.yml", base); closeDrawer(); } }, "ghost danger")) });
+    drawer(name, body, { subtitle: statusSummary(S.get("statuses.yml", base)), onClose: draw, hash: "#/statuses/" + name, footer: doneFooter(btn([icon("trash"), "Delete"], async () => { if (await confirmDialog("Delete " + name + "?", statusUses(name).length ? "It's used by " + statusUses(name).join(", ") + ", which would then name a status that doesn't exist." : null, { ok: "Delete", danger: true })) { S.remove("statuses.yml", base); closeDrawer(); } }, "ghost danger")) });
   };
   draw();
   root.append(el("section", { class: "group" }, listBox), group("Placeholder text", field("statuses.yml", "settings.placeholder-true"), field("statuses.yml", "settings.placeholder-false")));
@@ -570,7 +585,7 @@ function pvpIncluded() {
       field("lang/en_US.yml", keys[0], { label: "Text", type: "mini", onChange: drawShow, render: () => show })));
     drawShow();
   }
-  const sec = (title, ...rows) => el("details", { class: "more", style: { padding: "0 18px", borderTop: "1px solid var(--line)" } }, el("summary", {}, title), el("div", { style: { margin: "0 -18px" } }, rows));
+  const sec = (title, ...rows) => el("details", { class: "more", style: { padding: "0 18px", borderTop: "1px solid var(--line)" } }, el("summary", {}, title), el("div", { class: "rows", style: { margin: "0 -18px" } }, rows));
   return [
     f("toggle.default"), f("toggle.allow-toggle"), f("toggle.cooldown"), f("toggle.reset-on-join"), f("toggle.force-on-worlds"), f("toggle.force-off-worlds"),
     sec("New players and respawns", f("newbie-protection.duration"), f("newbie-protection.can-end-early"), f("respawn-protection.duration")),
@@ -618,21 +633,23 @@ function hooksPage(root, params) {
       warnings.map(([id, w]) => stop(formatDuration(parseDuration(w?.before)) + " left", w?.enabled === false ? "Off" : count(w?.global), "bell", () => cycleHook("hooks.warnings." + id, "Warning"))),
       stop("Ends", count(C("hooks.cycle-end.global")) + ", plus player reports", "red_dye", () => cycleHook("hooks.cycle-end", "When a cycle ends"), true)))));
   root.append(el("section", { class: "group" }, el("header", {}, el("h2", {}, "A player")), el("div", { class: "sheet" }, el("div", { class: "track" },
-    PLAYER_HOOKS.map(([h, label, when, spr]) => stop(label, count(C("hooks.player." + h)), spr, () => editActions("config.yml", "hooks.player." + h, { title: label, subtitle: when, onClose: () => window.studio.refresh() })))))));
+    PLAYER_HOOKS.map(([h, label, when, spr]) => stop(label, count(C("hooks.player." + h)), spr, () => playerHook(h)))))));
   root.append(group("Timing", field("config.yml", "hooks.join-delay"), field("config.yml", "hooks.missed-warning-grace"), field("config.yml", "hooks.top-count")));
   const names = listNames();
   const addList = async () => {
     const id = await promptDialog("New action list", "Name:", "my-list", { check: idCheck((v) => names.includes(v)) });
     if (!id) return;
     S.set("actions.yml", "lists." + id, [{ message: "<green>Hello <player>!" }]);
-    editActions("actions.yml", "lists." + id, { title: id, subtitle: "Not used yet", onClose: () => window.studio.refresh() });
+    openList(id);
   };
+  const openList = (n) => editActions("actions.yml", "lists." + n, { title: n, subtitle: usageText(listUsages(n)), onClose: () => window.studio.refresh(), hash: "#/hooks/list/" + n });
+  const playerHook = (h) => { const [, label, when] = PLAYER_HOOKS.find((x) => x[0] === h); editActions("config.yml", "hooks.player." + h, { title: label, subtitle: when, onClose: () => window.studio.refresh(), hash: "#/hooks/hook/hooks.player." + h }); };
   const items = el("div", { class: "items" });
   for (const n of names) {
     const v = S.get("actions.yml", "lists." + n);
     const uses = listUsages(n);
     const first = Array.isArray(v) ? v[0] : v;
-    items.append(el("div", { class: "item", onclick: () => editActions("actions.yml", "lists." + n, { title: n, subtitle: usageText(uses), onClose: () => window.studio.refresh() }) }, sprite(first ? actionSprite(first) : "repeater", 28),
+    items.append(el("div", { class: "item", onclick: () => openList(n) }, sprite(first ? actionSprite(first) : "repeater", 28),
       el("div", { class: "main" }, el("div", { class: "t1" }, n), el("div", { class: "t2" }, (Array.isArray(v) ? v : [v]).slice(0, 3).map(summarize).join(", "))),
       el("div", { class: "end hide-s" }, usageText(uses)),
       iconBtn("edit", "Rename", async (e) => { e.stopPropagation(); const nn = await promptDialog("Rename " + n, "New name. Places that use it keep the old name.", n, { check: idCheck((x) => x !== n && names.includes(x)) }); if (nn && nn !== n) { S.rename("actions.yml", "lists." + n, nn); window.studio.refresh(); } }, "sm"),
@@ -642,7 +659,12 @@ function hooksPage(root, params) {
   root.append(el("section", { class: "group" }, el("header", {}, el("h2", {}, "Action lists")), items));
   const rest = allFields("actions.yml", "", { skip: ["lists", "config-version"] });
   if (rest.children.length) root.append(el("section", { class: "group" }, el("header", {}, el("h2", {}, "Other")), rest));
-  if (params[0] === "list" && params[1] && names.includes(params[1])) editActions("actions.yml", "lists." + params[1], { title: params[1], subtitle: usageText(listUsages(params[1])), onClose: () => window.studio.refresh() });
+  if (params[0] === "list" && params[1] && names.includes(params[1])) openList(params[1]);
+  const hp = params[0] === "hook" ? params[1] || "" : "";
+  if (hp.startsWith("hooks.player.") && PLAYER_HOOKS.some((x) => "hooks.player." + x[0] === hp)) playerHook(hp.slice(13));
+  else if (hp === "hooks.cycle-start") cycleHook(hp, "When a cycle starts");
+  else if (hp === "hooks.cycle-end") cycleHook(hp, "When a cycle ends");
+  else if (hp.startsWith("hooks.warnings.") && S.get("config.yml", hp) !== undefined) cycleHook(hp, "Warning");
 }
 function cycleHook(path, title) {
   const warn = path.includes("warnings.");
@@ -663,7 +685,7 @@ function cycleHook(path, title) {
   };
   draw();
   const when = warn ? formatDuration(parseDuration(S.get("config.yml", path + ".before") ?? path.split(".").pop())) + " before a cycle ends" : path.endsWith("cycle-end") ? "After scores and outcomes, before the vaults empty" : null;
-  drawer(title, body, { wide: true, subtitle: when, onClose: () => window.studio.refresh(),
+  drawer(title, body, { wide: true, subtitle: when, onClose: () => window.studio.refresh(), hash: "#/hooks/hook/" + path,
     footer: doneFooter(warn ? btn([icon("trash"), "Delete warning"], async () => { if (await confirmDialog("Delete this warning?", null, { ok: "Delete", danger: true })) { S.remove("config.yml", path); closeDrawer(); } }, "ghost danger") : null) });
 }
 

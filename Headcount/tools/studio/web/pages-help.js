@@ -2,7 +2,7 @@
 import { el, btn, icon, iconBtn, seg, select, switchCtl, numberCtl, miniCtl, drawer, closeDrawer, toast, chest, tooltip, sprite, mcText, emptyBox, copyText, SAMPLE, ICONS, humanize } from "./ui.js";
 import { renderMini, esc, isObj, readYaml, setValue, compileFormula, roundScore, parseRange, describeRange, stripMini, formatDuration, parseDuration } from "./core.js";
 import * as S from "./store.js";
-import { pageHead, C, layout, preview, mcName, outcomesFor } from "./pages-setup.js";
+import { pageHead, C, layout, preview, mcName, outcomesFor, num } from "./pages-setup.js";
 import { types as actionTypes, ACTION_SPRITES, ACTION_DESC } from "./actions.js";
 import { SRC_SPRITE, statusSummary } from "./pages-setup2.js";
 import { rcon, rconReady, showReply, players as knownPlayers } from "./pages-live.js";
@@ -74,14 +74,14 @@ export function markdown(md) {
 // ============================================================================================
 const OTHERS = ["Alex", "Notch", "jeb_", "Dinnerbone", "Grumm"];
 function howItWorks(root) {
-  const size = +C("vault.size") || 27, start = Math.min(size, +C("vault.starting-heads") || 0), days = +C("cycle.length-days") || 30;
+  const size = +C("vault.size") || 27, start = Math.min(size, num(C("vault.starting-heads"), 18)), days = +C("cycle.length-days") || 14;
   const formula = String(S.get("scoring.yml", "formula") ?? S.def("scoring.yml", "formula"));
   const f = compileFormula(formula);
   const scoreOf = (u, a) => { if (!f.ok) return "?"; let s = roundScore(f.eval({ unique: u, active: a, total: start, own: Math.max(0, start - u), rank: 3, percentile: 50, players: a + 4, kills: 0, deaths: 0, trades: 0, streak: 0, points: 0, bonus: 0, vault_size: size, starting_heads: start }), S.get("scoring.yml", "rounding") ?? "floor"); return isFinite(s) ? s : "?"; };
   const rows = Math.min(6, Math.ceil(Math.min(size, 54) / 9));
   const head = (who) => ({ item: { material: "PLAYER_HEAD", head: who === "Steve" ? undefined : who, glint: C("heads.item.glint") }, tip: () => tooltip(C("heads.item.name"), C("heads.item.lore"), { owner: who, cycle: 3 }) });
   const vault = (fill, vars) => chest(rows, C("vault.gui.title"), (i) => (i >= Math.min(size, 54) ? { item: C("vault.gui.locked-slot.material") || "BLACK_STAINED_GLASS_PANE", cls: "dim" } : fill(i)), { vars: { owner: "Steve", size, ...vars } });
-  const minPlay = parseDuration(String(C("activity.min-playtime") ?? "0"));
+  const minPlay = parseDuration(String(C("activity.min-playtime") ?? "2h"));
   const rules = Object.entries(S.get("outcomes.yml", "rules") || {}).filter(([, r]) => isObj(r) && r.enabled !== false && parseRange(r.score).ok).sort((a, b) => parseRange(a[1].score).min - parseRange(b[1].score).min);
   const tiers = Object.entries(S.get("shop.yml", "tiers") || {}).filter(([, t]) => isObj(t));
   const traded = [3, 7, 11, 12, 16, 20];
@@ -101,7 +101,7 @@ function howItWorks(root) {
       f.ok ? el("div", { class: "sheet", style: { width: "100%" } }, el("table", { class: "t" }, el("tr", {}, el("th", {}, "Unique heads"), el("th", { class: "n" }, "Score, with 12 active players")),
         [1, 3, 5, 8, 12].map((u) => { const s = scoreOf(u, 12); return el("tr", {}, el("td", {}, u), el("td", { class: "n" }, el("b", { class: s > 0 ? "good-ink" : s < 0 ? "bad-ink" : "" }, s))); }))) : el("div", { class: "note bad" }, "The formula has an error, so there's no score to show.")),
     step("Scores bring outcomes and points",
-      ["Each ", V("outcome", "#/outcomes"), " covers a range of scores and runs its actions on everyone in it. A score above 0 also earns ", V((+C("points.earn-multiplier") || 1) === 1 ? "a point per score point" : C("points.earn-multiplier") + " points per score point", "#/scoring", "config.yml#points.earn-multiplier"), ", and ", +C("points.rollover-percent") > 0 ? [V(C("points.rollover-percent") + "% of unspent points", "#/scoring", "config.yml#points.rollover-percent"), " carry over."] : ["unspent points ", V("don't carry over", "#/scoring", "config.yml#points.rollover-percent"), "."]],
+      ["Each ", V("outcome", "#/outcomes"), " covers a range of scores and runs its actions on everyone in it. A score above 0 also earns ", V((+C("points.earn-multiplier") || 1) === 1 ? "a point per score point" : C("points.earn-multiplier") + " points per score point", "#/scoring", "config.yml#points.earn-multiplier"), ", and ", num(C("points.rollover-percent"), 50) > 0 ? [V(num(C("points.rollover-percent"), 50) + "% of unspent points", "#/scoring", "config.yml#points.rollover-percent"), " carry over."] : ["unspent points ", V("don't carry over", "#/scoring", "config.yml#points.rollover-percent"), "."]],
       rules.length ? el("div", { class: "items", style: { width: "100%" } }, rules.slice(0, 7).map(([id, r]) => el("div", { class: "item", onclick: () => go("#/outcomes/" + id) }, el("div", { class: "main" }, mcName(r.display || id)), el("div", { class: "end" }, describeRange(r.score)))))
         : emptyBox("totem_of_undying", "No outcomes yet", null)),
     step("Vaults empty out for the next cycle",
@@ -225,8 +225,8 @@ export function openRecipe(i) {
   else if (plan.ok) body.append(emptyBox("lime_dye", "Already set up this way", "Your files already have every line this recipe would write."));
   else body.append(el("p", { class: "muted" }, "Studio can't merge this one into your files for you. Copy it into the file it names."), el("pre", { class: "diff", style: { padding: "10px 12px", whiteSpace: "pre" } }, yaml));
   if (plan.ok) body.append(el("details", { class: "more" }, el("summary", {}, "The recipe as written in the docs"), el("pre", { class: "diff", style: { padding: "10px 12px", whiteSpace: "pre" } }, yaml)));
-  drawer(r.title, body, { wide: true, footer: el("div", { class: "row", style: { width: "100%" } }, el("span", { class: "grow" }), btn("Cancel", () => closeDrawer(), "ghost"),
-    plan.ok ? btn("Apply", () => { for (const [f, t] of changed) S.setText(f, t, null); closeDrawer(); toast("Applied. It isn't saved yet.", "", { label: "Review and save", run: () => window.studio.review() }); window.studio.refresh(); }, "primary") : btn("Copy it", () => copyText(yaml, "the recipe"), "primary")) });
+  drawer(r.title, body, { wide: true, hash: "#/recipes/" + i, footer: el("div", { class: "row", style: { width: "100%" } }, el("span", { class: "grow" }), btn("Cancel", () => closeDrawer(), "ghost"),
+    plan.ok ? btn("Apply", () => { S.setTexts(Object.fromEntries(changed)); closeDrawer(); toast("Applied. It isn't saved yet.", "", { label: "Review and save", run: () => window.studio.review() }); window.studio.refresh(); }, "primary") : btn("Copy it", () => copyText(yaml, "the recipe"), "primary")) });
 }
 
 // ============================================================================================
@@ -259,7 +259,7 @@ function whyPage(root) {
     }
     left.append(el("section", { class: "group" }, el("header", {}, el("h2", {}, "The player tries to")), select(GATES.map((g) => [g[0], g[1]]), gid, (v) => { gate = GATES.find((g) => g[0] === v); draw(); })),
       el("section", { class: "group" }, el("header", {}, el("h2", {}, "Which of these are true for them?")),
-        names.length ? st : emptyBox("lime_dye", opening && !lockOn ? "Opening the vault is never blocked" : "No status blocks this", opening && !lockOn ? "Statuses only stop players opening the vault when Those statuses also lock the vault is on." : null,
+        names.length ? st : emptyBox("lime_dye", opening && !lockOn ? "Opening the vault is never blocked" : "No status blocks this", opening && !lockOn ? "Statuses only lock the vault when the Vault page is set that way." : null,
           btn("Change it", () => go(hash, (opening ? "config.yml#vault.block-movement.block-opening" : file + "#" + path)), "ghost"))));
     const hit = list.find((x) => (x.startsWith("!") ? !truths[x.slice(1)] : !!truths[x]));
     const res = el("div", { class: "sheet result" });

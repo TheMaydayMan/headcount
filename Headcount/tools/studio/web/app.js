@@ -1,6 +1,6 @@
 // Headcount Studio: the frame (navigation, routing, header, search, review and save, undo and redo, keyboard
 // shortcuts, live polling and the texture download).
-import { el, btn, icon, iconBtn, toast, closeDrawer, closePop, confirmDialog, highlight, drawer, sprite, face, ICONS } from "./ui.js";
+import { el, btn, icon, iconBtn, toast, closeDrawer, closePop, clearTip, confirmDialog, highlight, drawer, sprite, face, ICONS } from "./ui.js";
 import * as S from "./store.js";
 import { loadSprites } from "./sprites.js";
 import { setupPages } from "./pages-setup.js";
@@ -44,31 +44,69 @@ function pageDirty(p) {
   }
   return false;
 }
-function drawNav() {
+// Each group folds to its heading. A group you opened or closed stays that way. The others fold on their own when the
+// list is taller than the window, starting with Files, and the group of the page you're on stays open.
+let navPref = {};
+try { navPref = JSON.parse(localStorage.getItem("hc-nav") || "{}"); } catch (e) { /* private window */ }
+let autoShut = new Set();
+const FOLD_ORDER = ["Files", "Help", "Live server", "Set up"];
+function drawNav(fitting) {
   navList.innerHTML = "";
   const probs = problems();
+  const curGroup = byId[currentId]?.group;
   for (const g of GROUPS) {
     if (g === "Live server" && !S.store.info.live) continue;
     const items = PAGES.filter((p) => p.group === g && !p.hidden);
     if (!items.length) continue;
-    navList.append(el("div", { class: "navgroup" }, g === "Home" ? null : el("div", { class: "gl" }, g), items.map((p) => {
-      const errs = p.id === "problems" ? probs.length : 0;
-      return el("a", { class: "navitem" + (p.id === currentId ? " active" : ""), href: "#/" + p.id, "aria-current": p.id === currentId ? "page" : null, onclick: () => document.body.classList.remove("navopen") },
-        sprite(p.icon, 18), p.title,
-        errs ? el("span", { class: "num" + (probs.some((x) => x.level === "error") ? " bad" : "") }, errs) : null,
-        p.group === "Set up" && pageDirty(p) ? el("span", { class: "dot", title: "Unsaved changes" }) : null);
-    })));
+    const shut = g !== "Home" && (navPref[g] === false || (navPref[g] === undefined && g !== curGroup && autoShut.has(g)));
+    const marks = items.map((p) => ({ p, errs: p.id === "problems" ? probs.length : 0, dirty: p.group === "Set up" && pageDirty(p) }));
+    const errMark = (n) => el("span", { class: "num" + (probs.some((x) => x.level === "error") ? " bad" : "") }, n);
+    const head = g === "Home" ? null : el("button", { type: "button", class: "gl" + (shut && g === curGroup ? " here" : ""), "aria-expanded": String(!shut),
+      onclick: () => { navPref[g] = shut; try { localStorage.setItem("hc-nav", JSON.stringify(navPref)); } catch (e) { /* ignore */ } drawNav(); } },
+      el("span", { class: "grow" }, g), shut && marks.some((m) => m.errs) ? errMark(marks.find((m) => m.errs).errs) : null,
+      shut && marks.some((m) => m.dirty) ? el("span", { class: "dot", title: "Unsaved changes" }) : null, icon("down"));
+    navList.append(el("div", { class: "navgroup" + (shut ? " shut" : "") }, head, marks.map(({ p, errs, dirty }) =>
+      el("a", { class: "navitem" + (p.id === currentId ? " active" : ""), href: "#/" + p.id, "aria-current": p.id === currentId ? "page" : null, onclick: () => document.body.classList.remove("navopen") },
+        sprite(p.icon, 18), el("span", { class: "nt" }, p.title), errs ? errMark(errs) : null, dirty ? el("span", { class: "dot", title: "Unsaved changes" }) : null))));
   }
+  if (!fitting) fitNav();
   const n = S.dirtyNames().length;
   saveBtn.className = "savebtn" + (n ? " dirty" : "");
   saveBtn.innerHTML = "";
-  saveBtn.append(n ? "Review and save" : "All saved");
+  saveBtn.append(el("span", { class: "long" }, n ? "Review and save" : "All saved"), el("span", { class: "short" }, n ? "Save" : "Saved"));
   if (n) saveBtn.append(el("span", { class: "n" }, n));
   undoBtn.disabled = !S.store.history.length;
   redoBtn.disabled = !S.store.future.length;
   undoBtn.title = S.store.history.length ? "Undo a change to " + S.store.history[S.store.history.length - 1].name + " (Ctrl+Z)" : "Nothing to undo";
   redoBtn.title = S.store.future.length ? "Redo a change to " + S.store.future[S.store.future.length - 1].name + " (Ctrl+Shift+Z)" : "Nothing to redo";
+  undoBtn.setAttribute("aria-label", undoBtn.title); redoBtn.setAttribute("aria-label", redoBtn.title);
 }
+/** Works out which groups to fold so the whole list fits the window, from the heights of a row and a heading. */
+function fitNav() {
+  const room = nav.clientHeight - navFoot.offsetHeight - 12;
+  const row = navList.querySelector(".navitem")?.offsetHeight || 30;
+  const headEl = navList.querySelector(".gl");
+  if (!room || !headEl) return;
+  const head = headEl.offsetHeight + (parseFloat(getComputedStyle(headEl.parentElement).marginTop) || 0);
+  const curGroup = byId[currentId]?.group;
+  const sizes = {};
+  let total = 0;
+  for (const g of navList.querySelectorAll(".navgroup")) {
+    const name = g.querySelector(".gl")?.firstChild?.textContent || "Home";
+    sizes[name] = g.querySelectorAll(".navitem").length * row;
+    total += (name === "Home" ? 6 : head) + sizes[name];
+  }
+  const next = new Set();
+  for (const g of FOLD_ORDER) {
+    if (total <= room) break;
+    if (!(g in sizes) || g === curGroup || navPref[g] !== undefined) continue;
+    next.add(g);
+    total -= sizes[g];
+  }
+  if ([...next].join() !== [...autoShut].join()) { autoShut = next; drawNav(true); }
+}
+let fitTimer = null;
+window.addEventListener("resize", () => { clearTimeout(fitTimer); fitTimer = setTimeout(() => drawNav(), 120); });
 
 // The server folder, the live and RCON state, textures, theme and quit, at the foot of the navigation.
 let texState = null;
@@ -113,6 +151,7 @@ export function go(hash, key) {
 async function route() {
   closeDrawer(true);
   closePop();
+  clearTip();
   let parts = (location.hash.replace(/^#\/?/, "") || "overview").split("/").map(decodeURIComponent);
   if (ALIASES[parts[0]]) parts = [...ALIASES[parts[0]].split("/"), ...parts.slice(1)];
   if (parts[0] === "review") { history.replaceState(null, "", "#/overview"); parts = ["overview"]; setTimeout(openReview, 60); }
@@ -134,6 +173,7 @@ async function route() {
     root.append(el("div", { class: "note bad" }, "This page hit an error: " + e.message));
   }
   main.scrollTop = scroll;
+  fitAsides();
   if (pendingKey) {
     const k = pendingKey; pendingKey = null;
     if (!k.includes("#")) setTimeout(() => { const t = document.getElementById(k); if (t) { t.scrollIntoView({ block: "center" }); t.classList.remove("flash"); void t.offsetWidth; t.classList.add("flash"); } }, 80);
@@ -141,6 +181,11 @@ async function route() {
   }
 }
 window.addEventListener("hashchange", () => { main.scrollTop = 0; currentId = null; route(); });
+// A preview column taller than the window would hide its bottom while it sticks, so it sticks by its bottom edge instead.
+const fitAsides = () => main.querySelectorAll(".aside").forEach((a) => { a.style.top = Math.min(18, main.clientHeight - a.offsetHeight - 18) + "px"; });
+let asideFrame = 0;
+main.addEventListener("scroll", () => { cancelAnimationFrame(asideFrame); asideFrame = requestAnimationFrame(fitAsides); }, { passive: true });
+new ResizeObserver(fitAsides).observe(main);
 
 /** The page that edits an option, from each page's `owns` list ("file", "file:top-key" or "file:a.b"). */
 function pageFor(file, path) {
@@ -289,6 +334,13 @@ document.addEventListener("keydown", (e) => {
   if (mod && e.key.toLowerCase() === "y" && !typing) { e.preventDefault(); doRedo(); return; }
   if (e.key === "Escape") { if (!closePop()) closeDrawer(); document.body.classList.remove("navopen"); return; }
   if (e.key === "/" && !typing) { e.preventDefault(); palette(); }
+});
+// Rows that open something (rules, items, statuses, recipes) work from the keyboard like buttons.
+new MutationObserver(() => {
+  for (const r of document.querySelectorAll(".item:not(.static):not([tabindex])")) { r.tabIndex = 0; r.setAttribute("role", "button"); }
+}).observe(document.body, { childList: true, subtree: true });
+document.addEventListener("keydown", (e) => {
+  if ((e.key === "Enter" || e.key === " ") && e.target.matches?.(".item[role=button]")) { e.preventDefault(); e.target.click(); }
 });
 window.addEventListener("beforeunload", (e) => { if (S.dirtyNames().length) { e.preventDefault(); e.returnValue = ""; } });
 
