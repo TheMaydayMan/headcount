@@ -12,7 +12,7 @@ settings:
   confirm-at-price: 50
   # Last-cycle score for players who don't have one, because they are new or were inactive.
   new-player-score: 0
-  # When global stock refills: cycle or never.
+  # When global stock refills: cycle | never
   stock-reset: cycle
 
 gui:
@@ -65,7 +65,7 @@ gui:
 
 # Confirmation menu for expensive purchases. The entry being bought is shown in the 'display' slot.
 confirm-gui:
-  title: "<dark_gray>Buy <name> for <price> points?"
+  title: "<dark_gray>Buy <name>? <price> points"
   rows: 3
   filler: { material: GRAY_STAINED_GLASS_PANE, name: " " }
   filler-slots: empty
@@ -132,8 +132,8 @@ default-states:
 #   display              item definition (material, name, lore, item-model, glint, enchants, custom ...)
 #   display-states       per-state overrides (affordable, too-expensive, sold-out, locked, limit-reached, cooldown, unavailable)
 #   actions              what a purchase does
-#   limit-per-cycle      purchases per player per cycle (0 = no limit)
-#   stock                global stock (-1 = unlimited)
+#   limit-per-cycle      purchases per player per cycle, 0 for no limit
+#   stock                global stock, -1 for unlimited
 #   cooldown             time between purchases per player
 #   conditions           extra requirements (see actions.yml)
 #   requires             titles: [..], purchases: [entry or tier.entry, ever], purchases-this-cycle: [..], permissions: [..]

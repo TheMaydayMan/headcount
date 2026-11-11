@@ -4,7 +4,7 @@
 #  score, so no outcomes either.
 #
 #  Each rule has:
-#    score:       a range, e.g. "..-1" for -1 or lower, "-4..-1", "10.." for 10 or more, "5", ">=3", "<0"
+#    score:       a range, like "..-1" for -1 or lower, "-4..-1", "10.." for 10 or more, "5", ">=3", "<0"
 #    conditions:  optional extra requirements such as streak, rank or statuses, as in actions.yml
 #    actions:     an action list, or the name of one from actions.yml
 #    display:     the rule's name in reports and history
@@ -18,8 +18,9 @@
 # ============================================================================================
 config-version: 1
 
-# Which matching rules a player gets. With all, they get every rule their score matches. With most-extreme,
-# they get only the most extreme match in each group, so a score of -12 gets the severe penalty and not all three.
+# Which matching rules a player gets: all | most-extreme
+# all gives every rule the score matches. most-extreme gives only the most extreme match in each group, so a
+# score of -12 gets the severe penalty and not all three.
 mode: most-extreme
 
 rules:

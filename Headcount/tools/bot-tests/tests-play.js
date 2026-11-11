@@ -173,7 +173,7 @@ const pvpOn = async (bot, want) => {
   ma = a.chatLog.length;
   await a.clickWindow(12, 0, 0);          // Speed (3 points)
   await sleep(1200);
-  record('shop: buying an entry takes its price and runs its actions', await waitChat(a, /Bought Speed for 30 minutes for 3 points/, ma, 2000) && db(`SELECT points FROM players WHERE name='Alpha'`)[0][0] === 97,
+  record('shop: buying an entry takes its price and runs its actions', await waitChat(a, /Bought Speed for 30 minutes\. \(-3 points/, ma, 2000) && db(`SELECT points FROM players WHERE name='Alpha'`)[0][0] === 97,
     `points=${db(`SELECT points FROM players WHERE name='Alpha'`)[0][0]}`);
   out = await consoleOut('hca effects Alpha');
   record('effects: the timed speed effect is tracked', /speed/.test(out));

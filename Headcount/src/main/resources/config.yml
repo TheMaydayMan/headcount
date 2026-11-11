@@ -64,7 +64,7 @@ general:
   # Date format for messages, as a Java DateTimeFormatter pattern. Dates show in the cycle time zone.
   date-format: "yyyy-MM-dd HH:mm z"
   time-units:
-    # How many units a duration shows. With 2 a duration reads "3d 4h", with 3 it reads "3d 4h 12m".
+    # How many units a duration shows: 2 gives "3d 4h" and 3 gives "3d 4h 12m".
     # Unit names are in the lang file.
     shown: 2
 
@@ -120,7 +120,7 @@ vault:
       - combat-tagged
       - creative-or-spectator
       - sleeping-or-dead
-    # Whether the same statuses also stop the vault from opening. With false, blocked players can still open it and
+    # Whether the same statuses also stop the vault from opening. If false, blocked players can still open it and
     # look. Messages are gates.vault-open.<status> and the bypass is headcount.bypass.vault-open.<status>.
     block-opening: false
   # Whether the drop key (Q) on a vault slot drops the head on the ground. Normally players take it out first.
@@ -193,7 +193,7 @@ heads:
     defunct-lore:
       - "<red>Defunct</red> <dark_gray>- cycle <gray><cycle></gray> was reset"
       - "<dark_gray>No longer counts and cannot go in a vault."
-    # Stack size for heads, 1-99. With 1 every head keeps its own slot. Each head has a unique ID either way.
+    # Stack size for heads, 1-99. At 1, every head keeps its own slot. Each head has a unique ID either way.
     max-stack-size: 1
     # Enchantment glint on current heads.
     glint: false
@@ -215,7 +215,7 @@ heads:
 duplicates:
   # Message admins with headcount.admin.notify when a duplicated head ID is found.
   notify-admins: true
-  # Remove extra copies found in an inventory. The copy already in a vault is kept. With false they are only flagged.
+  # Remove extra copies found in an inventory. The copy already in a vault is kept. If false, copies are only flagged.
   remove-copies: false
   # Check a player's inventory for duplicates whenever they close any inventory.
   scan-on-inventory-close: true

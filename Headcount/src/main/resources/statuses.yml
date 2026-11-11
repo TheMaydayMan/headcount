@@ -39,8 +39,8 @@
 #    biome            biomes: [desert, minecraft:badlands]
 #    holding          materials: [DIAMOND_SWORD], hand: main | off | any
 #    world-time       from: 13000, to: 23000 (ticks; wraps past midnight)
-#    player-state     the player-state provider (integrations.yml: included or EssentialsX).
-#                     check: afk | vanished | god | jailed | muted   ("essentials" is the same source's old name)
+#    player-state     the player-state provider (integrations.yml: included or EssentialsX). "essentials" is
+#                     this source's old name. check: afk | vanished | god | jailed | muted
 #    muted            muted by the moderation plugin or by Headcount's own mute
 #    in-trade         in an open Headcount trade
 #    headcount        value: points | unique | total | rank | percentile | streak | score | ..., range: ">0"
@@ -57,13 +57,13 @@ settings:
 
 statuses:
   # The player has PvP on, from the /pvp toggle of the PvP provider in integrations.yml.
-  # The default vault and trade rules block players while it's on. With provider none it is always false.
+  # The default vault and trade rules block players while it's on. It is always false when the PvP provider is none.
   in-pvp:
     source: pvp
     check: pvp-enabled
     unavailable: false
 
-  # The player is in combat, from the PvP provider's combat tag. With provider none, recent-pvp-damage is used.
+  # The player is in combat, from the PvP provider's combat tag. When the provider is none, recent-pvp-damage is used.
   combat-tagged:
     source: pvp
     check: combat-tagged
@@ -93,8 +93,8 @@ statuses:
   dead:
     source: dead
 
-  # The player is vanished. Most vanish plugins set the "vanished" metadata this reads. With the essentials
-  # player-state provider, EssentialsX's /vanish counts too.
+  # The player is vanished. Most vanish plugins set the "vanished" metadata this reads. EssentialsX's /vanish
+  # also counts when the player-state provider is essentials.
   vanished:
     source: any-of
     statuses: [vanished-metadata, vanished-essentials]

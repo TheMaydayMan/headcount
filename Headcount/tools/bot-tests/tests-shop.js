@@ -86,7 +86,7 @@ const edit = (file, pairs) => {
   const before = pts();
   mp = p.chatLog.length;
   await p.clickWindow(16, 0, 0);
-  record('shop: a purchase takes exactly its price', await waitChat(p, /Bought .*for 8 points/, mp, 2000) && pts() === before - 8, `${before} -> ${pts()}`);
+  record('shop: a purchase takes exactly its price', await waitChat(p, /Bought .*\(-8 points/, mp, 2000) && pts() === before - 8, `${before} -> ${pts()}`);
   await sleep(1200);
   w = p.currentWindow;
   record('shop: the entry now shows limit-reached', !!w && /already bought this 1 time/.test(text(w.slots[16])));

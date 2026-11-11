@@ -31,7 +31,7 @@ pvp:
   included:
     toggle:
       # PvP for players who never used /pvp: on | off
-      # With off, players opt in with /pvp before they can fight or be hit. That also keeps the default vault and
+      # If it is off, players opt in with /pvp before they can fight or be hit. That also keeps the default vault and
       # trade rules, which block players with PvP on, out of their way.
       default: "off"
       # Players can switch their own PvP with /pvp. They also need headcount.pvp, which everyone has by default.
@@ -40,7 +40,7 @@ pvp:
       cooldown: 10s
       # Put everyone back to the default each time they join.
       reset-on-join: false
-      # Worlds where PvP is always on, whatever players chose, by exact world name. force-off-worlds keeps it off.
+      # Worlds where PvP is always on for everyone, by exact world name. force-off-worlds keeps it off.
       force-on-worlds: []
       force-off-worlds: []
 
@@ -101,7 +101,7 @@ pvp:
     #   sound:   a sound key like "minecraft:block.note_block.bass", or "" for none. volume and pitch: 0-2.
     # A player gets the same message at most once a second.
     messages:
-      # /pvp switched your PvP (pvp.toggled-on / toggled-off / newbie-ended).
+      # /pvp switched your PvP (pvp.toggled-on, toggled-off and newbie-ended).
       toggled:
         channel: chat
         sound: "minecraft:ui.button.click"
@@ -156,7 +156,7 @@ placeholders:
 # --------------------------------------------------------------------------------------------
 economy:
   # Which economy the money action uses: vault | none
-  # vault uses whatever economy plugin is behind Vault, like EssentialsX or CMI.
+  # vault uses the economy plugin behind Vault, like EssentialsX or CMI.
   provider: vault
 
 # --------------------------------------------------------------------------------------------
@@ -285,5 +285,6 @@ player-state:
       after: 5m
       # Count turning the camera as activity.
       looking-counts: true
-      # Who is told when someone goes AFK or comes back: self | everyone | none (lang: player-state.*)
+      # Who is told when someone goes AFK or comes back: self | everyone | none
+      # The messages are player-state.* in the lang file.
       announce: self

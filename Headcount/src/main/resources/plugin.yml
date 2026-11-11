@@ -2,7 +2,7 @@ name: Headcount
 version: '${version}'
 main: com.gradychastain.headcount.HeadcountPlugin
 api-version: '26.3'
-description: Collect player heads each cycle. A good score earns points to spend, and a bad one earns a punishment.
+description: Collect player heads each cycle. Your score at the end decides whether you get shop points or a punishment.
 author: Grady Chastain
 website: https://github.com/TheMaydayMan/headcount
 load: POSTWORLD
@@ -178,7 +178,7 @@ permissions:
     description: See and set other players' PvP with /pvp <player> [on|off] (included PvP).
     default: op
   headcount.pvp.override:
-    description: Attack anyone, whatever their PvP setting or protection (included PvP).
+    description: Attack anyone, even players with PvP off or protection (included PvP).
     default: false
   headcount.bypass.pvp.cooldown:
     description: Toggle PvP without waiting for the cooldown (included PvP).

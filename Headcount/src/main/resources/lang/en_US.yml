@@ -50,13 +50,13 @@ gates:
     sleeping-or-dead: "<prefix><red>You can't move heads right now."
   vault-open:
     default: "<prefix><red>You can't open your vault right now (<status>)."
-    in-pvp: "<prefix><red>You can't open your vault while your PvP is on."
+    in-pvp: "<prefix><red>You can't open your vault while your PvP is on. <gray>Turn it off with /pvp."
     combat-tagged: "<prefix><red>You can't open your vault while in combat."
     creative-or-spectator: "<prefix><red>You can't open your vault in creative or spectator mode."
     sleeping-or-dead: "<prefix><red>You can't open your vault right now."
   trade-send:
     default: "<prefix><red>You can't send a trade request right now (<status>)."
-    in-pvp: "<prefix><red>You can't trade while your PvP is on."
+    in-pvp: "<prefix><red>You can't trade while your PvP is on. <gray>Turn it off with /pvp."
     combat-tagged: "<prefix><red>You can't trade while in combat."
     creative-or-spectator: "<prefix><red>You can't trade in creative or spectator mode."
     sleeping-or-dead: "<prefix><red>You can't trade right now."
@@ -64,7 +64,7 @@ gates:
     default: "<prefix><red><target> can't trade right now."
   trade-accept:
     default: "<prefix><red>You can't accept a trade right now (<status>)."
-    in-pvp: "<prefix><red>You can't accept a trade while your PvP is on."
+    in-pvp: "<prefix><red>You can't accept a trade while your PvP is on. <gray>Turn it off with /pvp."
     combat-tagged: "<prefix><red>You can't accept a trade while in combat."
     creative-or-spectator: "<prefix><red>You can't accept a trade in creative or spectator mode."
     sleeping-or-dead: "<prefix><red>You can't accept a trade right now."
@@ -226,7 +226,7 @@ titles:
 shop:
   empty: "<prefix><gray>The shop is empty."
   unlimited: "∞"
-  purchased: "<prefix><green>Bought <name> for <price> points. <gray>(<points> left)"
+  purchased: "<prefix><green>Bought <name>. <gray>(-<price> points, <points> left)"
   state:
     too-expensive: "<prefix><red>You need <missing> more points."
     sold-out: "<prefix><red>That is sold out."

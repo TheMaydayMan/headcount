@@ -74,7 +74,7 @@ Hooks are explained in [hooks.md](hooks.md).
 | `general.language` | `en_US` | Language file in plugins/Headcount/lang/, without .yml. |
 | `general.date-format` | `"yyyy-MM-dd HH:mm z"` | Date format for messages, as a Java DateTimeFormatter pattern. Dates show in the cycle time zone. |
 | `general.time-units` | `(section)` |  |
-| `general.time-units.shown` | `2` | How many units a duration shows. With 2 a duration reads "3d 4h", with 3 it reads "3d 4h 12m". Unit names are in the lang file. |
+| `general.time-units.shown` | `2` | How many units a duration shows: 2 gives "3d 4h" and 3 gives "3d 4h 12m". Unit names are in the lang file. |
 | `storage` | `(section)` |  |
 | `storage.file` | `headcount.db` | SQLite database file in plugins/Headcount/. Every change is saved as it happens. |
 | `cycle` | `(section)` | Cycle |
@@ -91,7 +91,7 @@ Hooks are explained in [hooks.md](hooks.md).
 | `vault.max-size` | `270` | Largest size the next-cycle vault-size action can grow a vault to. |
 | `vault.block-movement` | `(section)` |  |
 | `vault.block-movement.statuses` | `[in-pvp, combat-tagged, creative-or-spectator, sleeping-or-dead]` | Statuses (statuses.yml) that stop a player moving heads in or out of their vault. Each one has its own message, gates.vault-move.&lt;status&gt; in the lang file, and its own bypass permission, headcount.bypass.vault-move.&lt;status&gt;. Put ! before a status to block while it is NOT active. |
-| `vault.block-movement.block-opening` | `false` | Whether the same statuses also stop the vault from opening. With false, blocked players can still open it and look. Messages are gates.vault-open.&lt;status&gt; and the bypass is headcount.bypass.vault-open.&lt;status&gt;. |
+| `vault.block-movement.block-opening` | `false` | Whether the same statuses also stop the vault from opening. If false, blocked players can still open it and look. Messages are gates.vault-open.&lt;status&gt; and the bypass is headcount.bypass.vault-open.&lt;status&gt;. |
 | `vault.allow-drop-key` | `false` | Whether the drop key (Q) on a vault slot drops the head on the ground. Normally players take it out first. |
 | `vault.duplicate-insert` | `reject` | Whether a head whose ID is already in a vault can go in another one: reject \| allow A second head with the same ID can only be a copy, usually from creative cloning. |
 | `vault.save-player-data-after-change` | `true` | Save the player's inventory to disk shortly after a vault change, so a crash can't roll back just one side. |
@@ -133,7 +133,7 @@ Hooks are explained in [hooks.md](hooks.md).
 | `heads.item.expired-lore` | `["&lt;red&gt;Expired&lt;/red&gt; &lt;dark_gray&gt;- from cycle &lt;...` |  |
 | `heads.item.defunct-name` | `"&lt;gray&gt;&lt;owner&gt;'s Head &lt;dark_gray&gt;(defunct)"` | Name of a defunct head, one made before a reset that kept the old heads (keep-heads). |
 | `heads.item.defunct-lore` | `["&lt;red&gt;Defunct&lt;/red&gt; &lt;dark_gray&gt;- cycle &lt;gray&...` |  |
-| `heads.item.max-stack-size` | `1` | Stack size for heads, 1-99. With 1 every head keeps its own slot. Each head has a unique ID either way. |
+| `heads.item.max-stack-size` | `1` | Stack size for heads, 1-99. At 1, every head keeps its own slot. Each head has a unique ID either way. |
 | `heads.item.glint` | `false` | Enchantment glint on current heads. |
 | `heads.item.item-model` | `""` | Item model (namespace:key) for resource packs. Leave empty for the normal head. |
 | `heads.placed` | `(section)` |  |
@@ -143,7 +143,7 @@ Hooks are explained in [hooks.md](hooks.md).
 | `heads.placed.untracked-blocks` | `strip` | How to treat head blocks with economy data that Headcount never saw placed: strip \| allow These come from world editor copies or copied block data. strip turns them into plain heads and logs them as duplicates. allow trusts them. |
 | `duplicates` | `(section)` |  |
 | `duplicates.notify-admins` | `true` | Message admins with headcount.admin.notify when a duplicated head ID is found. |
-| `duplicates.remove-copies` | `false` | Remove extra copies found in an inventory. The copy already in a vault is kept. With false they are only flagged. |
+| `duplicates.remove-copies` | `false` | Remove extra copies found in an inventory. The copy already in a vault is kept. If false, copies are only flagged. |
 | `duplicates.scan-on-inventory-close` | `true` | Check a player's inventory for duplicates whenever they close any inventory. |
 | `kills` | `(section)` | Kills |
 | `kills.enabled` | `true` | Killing a player drops a new head of the victim where they died. The head is made fresh, not taken from their vault, and it drops even with keepInventory on. The killer is whoever vanilla credits, so projectiles and knocking someone into lava count. Suicide gives nothing. |
@@ -259,7 +259,7 @@ The trade menu's text is written here. Everything else Headcount says is in lang
 | `statuses.block-request` | `[in-pvp, combat-tagged, creative-or-spectator, sleeping-or-dead]` | Statuses that stop a request from being sent, checked on both players. The sender sees gates.trade-send.&lt;status&gt; or gates.trade-send-target.&lt;status&gt;, depending on who has it. Bypass: headcount.bypass.trade-send.&lt;status&gt; |
 | `statuses.block-accept` | `[in-pvp, combat-tagged, creative-or-spectator, sleeping-or-dead]` | Statuses that stop a request from being accepted, checked on both players. Messages are gates.trade-accept.&lt;status&gt; and gates.trade-accept-target.&lt;status&gt;. |
 | `statuses.cancel-open` | `[in-pvp, combat-tagged, creative-or-spectator, sleeping-or-dead]` | Statuses that cancel an open trade, checked on both players every cancel.check-interval. Bypass: headcount.bypass.trade-cancel.&lt;status&gt; |
-| `cancel` | `(section)` | When an open trade is cancelled, everything goes back to its owner. It always cancels if either player closes the screen, leaves, dies, changes world, goes out of range or gets a cancel status, and when the cycle ends or the server stops or reloads. |
+| `cancel` | `(section)` | When an open trade is cancelled, everything goes back to its owner. A trade always cancels when a player closes the screen, leaves, dies or changes world, and at a cycle end, a stop or a reload. range, statuses.cancel-open and the options below add more reasons. |
 | `cancel.on-teleport` | `true` | Also cancel when either player teleports. |
 | `cancel.teleport-min-distance` | `0` | Teleports shorter than this many blocks, within the same world, don't cancel. |
 | `cancel.on-gamemode-change` | `true` | Also cancel when either player's game mode changes. |
@@ -358,11 +358,11 @@ What each integration does is in [integrations.md](integrations.md).
 | `pvp.provider` | `included` | Which plugin handles PvP: included \| pvpmanager \| none included:   the built-in PvP, set up under 'included' below. It owns the /pvp command. pvpmanager: PvPManager does all of it, and the 'included' settings are ignored. none:       no PvP handling. Players can always fight, as in vanilla, and... (the full comment is in the file) |
 | `pvp.included` | `(section)` | ---- Built-in PvP (provider: included) ---- |
 | `pvp.included.toggle` | `(section)` |  |
-| `pvp.included.toggle.default` | `"off"` | PvP for players who never used /pvp: on \| off With off, players opt in with /pvp before they can fight or be hit. That also keeps the default vault and trade rules, which block players with PvP on, out of their way. |
+| `pvp.included.toggle.default` | `"off"` | PvP for players who never used /pvp: on \| off If it is off, players opt in with /pvp before they can fight or be hit. That also keeps the default vault and trade rules, which block players with PvP on, out of their way. |
 | `pvp.included.toggle.allow-toggle` | `true` | Players can switch their own PvP with /pvp. They also need headcount.pvp, which everyone has by default. |
 | `pvp.included.toggle.cooldown` | `10s` | Time between two switches. Bypass: headcount.bypass.pvp.cooldown |
 | `pvp.included.toggle.reset-on-join` | `false` | Put everyone back to the default each time they join. |
-| `pvp.included.toggle.force-on-worlds` | `[]` | Worlds where PvP is always on, whatever players chose, by exact world name. force-off-worlds keeps it off. |
+| `pvp.included.toggle.force-on-worlds` | `[]` | Worlds where PvP is always on for everyone, by exact world name. force-off-worlds keeps it off. |
 | `pvp.included.toggle.force-off-worlds` | `[]` |  |
 | `pvp.included.newbie-protection` | `(section)` |  |
 | `pvp.included.newbie-protection.duration` | `10m` | How long new players are protected after their first join, in real time. 0 turns it off. Protected players can't attack or be attacked. |
@@ -388,7 +388,7 @@ What each integration does is in [integrations.md](integrations.md).
 | `pvp.included.combat-log.actions` | `[]` | Extra actions to run on the player who left. Any action from actions.yml works. Actions that need the player online wait until they next join. For example: actions: - type: points amount: -5 - message: "&lt;red&gt;You logged out during a fight and lost 5 points." |
 | `pvp.included.combat-log.broadcast` | `true` | Tell everyone else. The message is pvp.combat-log-broadcast in the lang file. |
 | `pvp.included.messages` | `(section)` | How each kind of PvP message reaches the player. The texts are in lang/en_US.yml under pvp. channel: chat \| actionbar \| title \| none sound:   a sound key like "minecraft:block.note_block.bass", or "" for none. volume and pitch: 0-2. A player gets the same message at most once a second. |
-| `pvp.included.messages.toggled` | `(section)` | /pvp switched your PvP (pvp.toggled-on / toggled-off / newbie-ended). |
+| `pvp.included.messages.toggled` | `(section)` | /pvp switched your PvP (pvp.toggled-on, toggled-off and newbie-ended). |
 | `pvp.included.messages.toggled.channel` | `chat` |  |
 | `pvp.included.messages.toggled.sound` | `"minecraft:ui.button.click"` |  |
 | `pvp.included.messages.tag-start` | `(section)` | You hit someone or were hit, and are now in combat (pvp.tag-start). |
@@ -414,7 +414,7 @@ What each integration does is in [integrations.md](integrations.md).
 | `placeholders.placeholderapi.register-expansion` | `true` | Register the %headcount_...% expansion, so other plugins like scoreboards, tab and chat can show Headcount's data. |
 | `placeholders.placeholderapi.expansion-format` | `legacy` | How formatted values like %headcount_title% are passed to other plugins: legacy \| minimessage \| plain |
 | `economy` | `(section)` | Money, for the money action. Points are Headcount's own currency and need nothing. |
-| `economy.provider` | `vault` | Which economy the money action uses: vault \| none vault uses whatever economy plugin is behind Vault, like EssentialsX or CMI. |
+| `economy.provider` | `vault` | Which economy the money action uses: vault \| none vault uses the economy plugin behind Vault, like EssentialsX or CMI. |
 | `permissions` | `(section)` | Permissions: the permission, group, primary-group, track, prefix and suffix actions, and title prefixes (titles.yml permission-prefix). |
 | `permissions.provider` | `included` | Which plugin handles permissions: included \| luckperms \| vault \| none included:  Headcount sets permission nodes itself, saves them and re-applies them on every join. It can't do groups, tracks, prefixes or suffixes, so those actions are skipped with a warning. luckperms: everything, with... (the full comment is in the file) |
 | `permissions.luckperms` | `(section)` |  |
@@ -466,7 +466,7 @@ What each integration does is in [integrations.md](integrations.md).
 | `player-state.included.afk` | `(section)` |  |
 | `player-state.included.afk.after` | `5m` | How long a player goes without moving, looking around, chatting, using commands or clicking before they are AFK. 0 means never. |
 | `player-state.included.afk.looking-counts` | `true` | Count turning the camera as activity. |
-| `player-state.included.afk.announce` | `self` | Who is told when someone goes AFK or comes back: self \| everyone \| none (lang: player-state.*) |
+| `player-state.included.afk.announce` | `self` | Who is told when someone goes AFK or comes back: self \| everyone \| none The messages are player-state.* in the lang file. |
 
 ## shop.yml
 
@@ -484,7 +484,7 @@ Tiers and entries are explained in [shop.md](shop.md).
 | `settings` | `(section)` |  |
 | `settings.confirm-at-price` | `50` | Price at which a purchase asks for confirmation first. An entry can override this with confirm: true or false. |
 | `settings.new-player-score` | `0` | Last-cycle score for players who don't have one, because they are new or were inactive. |
-| `settings.stock-reset` | `cycle` | When global stock refills: cycle or never. |
+| `settings.stock-reset` | `cycle` | When global stock refills: cycle \| never |
 | `gui` | `(section)` |  |
 | `gui.title` | `"&lt;dark_gray&gt;Shop » &lt;tier&gt; &lt;dark_gray&gt;(&lt;points&...` | Menu title. Variables: &lt;tier&gt; &lt;tier_id&gt; &lt;tier_number&gt; &lt;tiers&gt; &lt;page&gt; &lt;pages&gt; &lt;points&gt; &lt;last_score&gt; &lt;threshold&gt; &lt;needed&gt; |
 | `gui.rows` | `6` |  |
@@ -526,7 +526,7 @@ Tiers and entries are explained in [shop.md](shop.md).
 | `gui.buttons.locked-banner.name` | `"&lt;red&gt;Locked: &lt;tier&gt;"` |  |
 | `gui.buttons.locked-banner.lore` | `["&lt;gray&gt;Needs a last cycle score of &lt;white&gt;&lt;threshol...` |  |
 | `confirm-gui` | `(section)` | Confirmation menu for expensive purchases. The entry being bought is shown in the 'display' slot. |
-| `confirm-gui.title` | `"&lt;dark_gray&gt;Buy &lt;name&gt; for &lt;price&gt; points?"` |  |
+| `confirm-gui.title` | `"&lt;dark_gray&gt;Buy &lt;name&gt;? &lt;price&gt; points"` |  |
 | `confirm-gui.rows` | `3` |  |
 | `confirm-gui.filler` | `{ material: GRAY_STAINED_GLASS_PANE, name: " " }` |  |
 | `confirm-gui.filler-slots` | `empty` |  |
@@ -652,8 +652,8 @@ Sources (full reference in docs/statuses.md):
   biome            biomes: [desert, minecraft:badlands]
   holding          materials: [DIAMOND_SWORD], hand: main | off | any
   world-time       from: 13000, to: 23000 (ticks; wraps past midnight)
-  player-state     the player-state provider (integrations.yml: included or EssentialsX).
-                   check: afk | vanished | god | jailed | muted   ("essentials" is the same source's old name)
+  player-state     the player-state provider (integrations.yml: included or EssentialsX). "essentials" is
+                   this source's old name. check: afk | vanished | god | jailed | muted
   muted            muted by the moderation plugin or by Headcount's own mute
   in-trade         in an open Headcount trade
   headcount        value: points | unique | total | rank | percentile | streak | score | ..., range: ">0"
@@ -678,7 +678,7 @@ What happens to each active player at the end of a cycle, based on their score. 
 score, so no outcomes either.
 
 Each rule has:
-  score:       a range, e.g. "..-1" for -1 or lower, "-4..-1", "10.." for 10 or more, "5", ">=3", "<0"
+  score:       a range, like "..-1" for -1 or lower, "-4..-1", "10.." for 10 or more, "5", ">=3", "<0"
   conditions:  optional extra requirements such as streak, rank or statuses, as in actions.yml
   actions:     an action list, or the name of one from actions.yml
   display:     the rule's name in reports and history
@@ -695,7 +695,7 @@ Writing rules is explained in [outcomes.md](outcomes.md).
 
 | Option | Default | Description |
 |---|---|---|
-| `mode` | `most-extreme` | Which matching rules a player gets. With all, they get every rule their score matches. With most-extreme, they get only the most extreme match in each group, so a score of -12 gets the severe penalty and not all three. |
+| `mode` | `most-extreme` | Which matching rules a player gets: all \| most-extreme all gives every rule the score matches. most-extreme gives only the most extreme match in each group, so a score of -12 gets the severe penalty and not all three. |
 | `rules` | `(section)` | (see the linked page) |
 
 ## actions.yml
@@ -722,7 +722,7 @@ Options every action takes:
   key:        a name that marks actions as the same for stacking (default: the type and its main setting)
   chance:     0-100 (default 100)
   delay:      wait before running (lost on restart)
-  repeat:     run again every X while active, e.g. lightning every 5m for 1h. Needs a duration.
+  repeat:     run again every X while active, like lightning every 5m for 1h. Needs a duration.
   conditions: statuses: [..]  any-statuses: [..]  score: "..-1"  streak: ">=2"  rank: "1..3"  points: ">=10"
               unique: ">=5"  active: true  permission: node  expression: "unique > 5 && rank <= 3"
   start-message / end-message: MiniMessage shown when it starts and ends, with <duration> and <remaining>
@@ -752,7 +752,7 @@ Items
   give-item     (material or item: {...full item definition}, amount, to: inventory | enderchest, take-back: true)
   take-item     (item definition to match: material, name-contains, lore-contains, custom, pdc; amount: N | all;
                 from: inventory | enderchest | both; return: true gives them back when a timed action ends)
-  equip         (slot: head | chest | legs | feet | offhand, item, lock: true) - e.g. a dunce cap
+  equip         (slot: head | chest | legs | feet | offhand, item, lock: true) - a dunce cap, for example
   give-heads    (owner: self | <name> | <uuid>, amount, cycle: current | next, to: inventory | vault)
   loot          (table: minecraft:chests/simple_dungeon, luck)
   experience    (amount: +/- points, levels: false)
@@ -792,7 +792,7 @@ Headcount
   rollover      (percent: 50 to set, or add: 10)
 head-protection, extra-heads, bounty, shield, deny and force-title only work while active, so give them a
 duration such as cycle, 1d or permanent. /hca selftest warns about one without.
-  head-protection (charges: 0 = unlimited) - your head does not drop when you are killed
+  head-protection (charges, 0 for unlimited) - your head does not drop when you are killed
   extra-heads   (amount, charges) - extra heads drop when you are killed
   bounty        (points, actions: [...] for the killer, claims: 1, announce: true)
   shield        (charges: 1) - blocks the next punishment outcome

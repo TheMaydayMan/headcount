@@ -757,7 +757,7 @@
   },
   {
    "name": "headcount.pvp.override",
-   "description": "Attack anyone, whatever their PvP setting or protection (included PvP).",
+   "description": "Attack anyone, even players with PvP off or protection (included PvP).",
    "default": "false",
    "children": []
   },
@@ -2352,7 +2352,7 @@
    "file": "config.yml",
    "path": "general.time-units.shown",
    "default": "2",
-   "help": "How many units a duration shows. With 2 a duration reads \"3d 4h\", with 3 it reads \"3d 4h 12m\". Unit names are in the lang file."
+   "help": "How many units a duration shows: 2 gives \"3d 4h\" and 3 gives \"3d 4h 12m\". Unit names are in the lang file."
   },
   {
    "file": "config.yml",
@@ -2454,7 +2454,7 @@
    "file": "config.yml",
    "path": "vault.block-movement.block-opening",
    "default": "false",
-   "help": "Whether the same statuses also stop the vault from opening. With false, blocked players can still open it and look. Messages are gates.vault-open.<status> and the bypass is headcount.bypass.vault-open.<status>."
+   "help": "Whether the same statuses also stop the vault from opening. If false, blocked players can still open it and look. Messages are gates.vault-open.<status> and the bypass is headcount.bypass.vault-open.<status>."
   },
   {
    "file": "config.yml",
@@ -2706,7 +2706,7 @@
    "file": "config.yml",
    "path": "heads.item.max-stack-size",
    "default": "1",
-   "help": "Stack size for heads, 1-99. With 1 every head keeps its own slot. Each head has a unique ID either way."
+   "help": "Stack size for heads, 1-99. At 1, every head keeps its own slot. Each head has a unique ID either way."
   },
   {
    "file": "config.yml",
@@ -2766,7 +2766,7 @@
    "file": "config.yml",
    "path": "duplicates.remove-copies",
    "default": "false",
-   "help": "Remove extra copies found in an inventory. The copy already in a vault is kept. With false they are only flagged."
+   "help": "Remove extra copies found in an inventory. The copy already in a vault is kept. If false, copies are only flagged."
   },
   {
    "file": "config.yml",
@@ -3660,7 +3660,7 @@
    "file": "integrations.yml",
    "path": "pvp.included.toggle.default",
    "default": "\"off\"",
-   "help": "PvP for players who never used /pvp: on | off With off, players opt in with /pvp before they can fight or be hit. That also keeps the default vault and trade rules, which block players with PvP on, out of their way."
+   "help": "PvP for players who never used /pvp: on | off If it is off, players opt in with /pvp before they can fight or be hit. That also keeps the default vault and trade rules, which block players with PvP on, out of their way."
   },
   {
    "file": "integrations.yml",
@@ -3684,7 +3684,7 @@
    "file": "integrations.yml",
    "path": "pvp.included.toggle.force-on-worlds",
    "default": "[]",
-   "help": "Worlds where PvP is always on, whatever players chose, by exact world name. force-off-worlds keeps it off."
+   "help": "Worlds where PvP is always on for everyone, by exact world name. force-off-worlds keeps it off."
   },
   {
    "file": "integrations.yml",
@@ -3840,7 +3840,7 @@
    "file": "integrations.yml",
    "path": "pvp.included.messages.toggled",
    "default": "(section)",
-   "help": "/pvp switched your PvP (pvp.toggled-on / toggled-off / newbie-ended)."
+   "help": "/pvp switched your PvP (pvp.toggled-on, toggled-off and newbie-ended)."
   },
   {
    "file": "integrations.yml",
@@ -3996,7 +3996,7 @@
    "file": "integrations.yml",
    "path": "economy.provider",
    "default": "vault",
-   "help": "Which economy the money action uses: vault | none vault uses whatever economy plugin is behind Vault, like EssentialsX or CMI."
+   "help": "Which economy the money action uses: vault | none vault uses the economy plugin behind Vault, like EssentialsX or CMI."
   },
   {
    "file": "integrations.yml",
@@ -4308,7 +4308,7 @@
    "file": "integrations.yml",
    "path": "player-state.included.afk.announce",
    "default": "self",
-   "help": "Who is told when someone goes AFK or comes back: self | everyone | none (lang: player-state.*)"
+   "help": "Who is told when someone goes AFK or comes back: self | everyone | none The messages are player-state.* in the lang file."
   },
   {
    "file": "statuses.yml",
@@ -4338,7 +4338,7 @@
    "file": "statuses.yml",
    "path": "statuses.in-pvp",
    "default": "(section)",
-   "help": "The player has PvP on, from the /pvp toggle of the PvP provider in integrations.yml. The default vault and trade rules block players while it's on. With provider none it is always false."
+   "help": "The player has PvP on, from the /pvp toggle of the PvP provider in integrations.yml. The default vault and trade rules block players while it's on. It is always false when the PvP provider is none."
   },
   {
    "file": "statuses.yml",
@@ -4362,7 +4362,7 @@
    "file": "statuses.yml",
    "path": "statuses.combat-tagged",
    "default": "(section)",
-   "help": "The player is in combat, from the PvP provider's combat tag. With provider none, recent-pvp-damage is used."
+   "help": "The player is in combat, from the PvP provider's combat tag. When the provider is none, recent-pvp-damage is used."
   },
   {
    "file": "statuses.yml",
@@ -4494,7 +4494,7 @@
    "file": "statuses.yml",
    "path": "statuses.vanished",
    "default": "(section)",
-   "help": "The player is vanished. Most vanish plugins set the \"vanished\" metadata this reads. With the essentials player-state provider, EssentialsX's /vanish counts too."
+   "help": "The player is vanished. Most vanish plugins set the \"vanished\" metadata this reads. EssentialsX's /vanish also counts when the player-state provider is essentials."
   },
   {
    "file": "statuses.yml",
@@ -4818,7 +4818,7 @@
    "file": "trade.yml",
    "path": "cancel",
    "default": "(section)",
-   "help": "When an open trade is cancelled, everything goes back to its owner. It always cancels if either player closes the screen, leaves, dies, changes world, goes out of range or gets a cancel status, and when the cycle ends or the server stops or reloads."
+   "help": "When an open trade is cancelled, everything goes back to its owner. A trade always cancels when a player closes the screen, leaves, dies or changes world, and at a cycle end, a stop or a reload. range, statuses.cancel-open and the options below add more reasons."
   },
   {
    "file": "trade.yml",
@@ -5184,7 +5184,7 @@
    "file": "outcomes.yml",
    "path": "mode",
    "default": "most-extreme",
-   "help": "Which matching rules a player gets. With all, they get every rule their score matches. With most-extreme, they get only the most extreme match in each group, so a score of -12 gets the severe penalty and not all three."
+   "help": "Which matching rules a player gets: all | most-extreme all gives every rule the score matches. most-extreme gives only the most extreme match in each group, so a score of -12 gets the severe penalty and not all three."
   },
   {
    "file": "outcomes.yml",
@@ -5484,7 +5484,7 @@
    "file": "shop.yml",
    "path": "settings.stock-reset",
    "default": "cycle",
-   "help": "When global stock refills: cycle or never."
+   "help": "When global stock refills: cycle | never"
   },
   {
    "file": "shop.yml",
@@ -5735,7 +5735,7 @@
   {
    "file": "shop.yml",
    "path": "confirm-gui.title",
-   "default": "\"<dark_gray>Buy <name> for <price> points?\"",
+   "default": "\"<dark_gray>Buy <name>? <price> points\"",
    "help": ""
   },
   {
@@ -5940,7 +5940,7 @@
    "file": "shop.yml",
    "path": "tiers",
    "default": "(section)",
-   "help": "The shop's tiers, in order. A tier with 'threshold: none' is always unlocked. Tier settings: name, threshold (a last-cycle score, or none), pages (the minimum; entries can add more), enabled and entries. Entry settings: name                 the entry's name in messages (default: its display name without formatting) enabled              false hides it page, slot           where it goes (page starts at 1) price                in points display              item definition (material, name, lore, item-model, glint, enchants, custom ...) display-states       per-state overrides (affordable, too-expensive, sold-out, locked, limit-reached, cooldown, unavailable) actions              what a purchase does limit-per-cycle      purchases per player per cycle (0 = no limit) stock                global stock (-1 = unlimited) cooldown             time between purchases per player conditions           extra requirements (see actions.yml) requires             titles: [..], purchases: [entry or tier.entry, ever], purchases-this-cycle: [..], permissions: [..] confirm              force the confirmation menu on (true) or off (false)"
+   "help": "The shop's tiers, in order. A tier with 'threshold: none' is always unlocked. Tier settings: name, threshold (a last-cycle score, or none), pages (the minimum; entries can add more), enabled and entries. Entry settings: name                 the entry's name in messages (default: its display name without formatting) enabled              false hides it page, slot           where it goes (page starts at 1) price                in points display              item definition (material, name, lore, item-model, glint, enchants, custom ...) display-states       per-state overrides (affordable, too-expensive, sold-out, locked, limit-reached, cooldown, unavailable) actions              what a purchase does limit-per-cycle      purchases per player per cycle, 0 for no limit stock                global stock, -1 for unlimited cooldown             time between purchases per player conditions           extra requirements (see actions.yml) requires             titles: [..], purchases: [entry or tier.entry, ever], purchases-this-cycle: [..], permissions: [..] confirm              force the confirmation menu on (true) or off (false)"
   },
   {
    "file": "shop.yml",
@@ -7379,7 +7379,7 @@
   {
    "file": "actions.yml",
    "path": "lists.punish-medium",
-   "default": "[message: \"<red>Your score was <score>. You are weakened and lose 2 hearts for two days of playtime.\", type: potion]",
+   "default": "[message: \"<red>Your score was <score>. You are weakened and lose 2 hearts for 2 days of playtime.\", type: potion]",
    "help": ""
   },
   {
