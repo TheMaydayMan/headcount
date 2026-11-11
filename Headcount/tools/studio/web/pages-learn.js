@@ -452,6 +452,7 @@ export function runChecks() {
   const walk = (file, v, p) => {
     if (isObj(v)) { for (const [k, x] of Object.entries(v)) walk(file, x, p ? p + "." + k : k); return; }
     const k = p.split(".").pop();
+    if (p === "pvp.included.messages.countdown") return; // a display mode (actionbar | bossbar | none), not a duration
     if (DURATION_KEYS.has(k) && typeof v === "string" && !["cycle", "death", "permanent", "manual", "instant"].includes(v) && !v.startsWith("cycles:") && isNaN(parseDuration(v))) add("error", `${file} ${p}: "${v}" isn't a duration (30s, 10m, 2h, 3d…).`, null);
   };
   for (const file of ["config.yml", "trade.yml", "integrations.yml"]) walk(file, S.doc(file)?.data, "");
