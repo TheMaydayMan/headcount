@@ -1,50 +1,60 @@
 # ============================================================================================
 #  Headcount - scoring.yml
-#  How each active player's end-of-cycle score is calculated. A positive score gives that many points
-#  (config.yml points.earn-multiplier); a negative score triggers punishments (outcomes.yml).
-#
-#  Where text lives: this file holds text you design (menu titles, item names and lore, and the messages inside
-#  action lists). Everything Headcount itself says (command replies, errors, confirmations, help, effect
-#  descriptions) is in lang/en_US.yml.
+#  How each active player's score is worked out at the end of a cycle. A positive score gives points
+#  (config.yml points.earn-multiplier) and a negative one brings punishments (outcomes.yml).
 # ============================================================================================
 config-version: 1
 
-# The formula. Normal math: + - * / % (remainder) ^ (power), parentheses, comparisons (< <= > >= == !=, which give
+# The score formula, worked out for each active player when a cycle ends.
+# It takes normal math: + - * / % (remainder) ^ (power), parentheses, comparisons (< <= > >= == !=, which give
 # 1 or 0), && || !, and "condition ? a : b".
 # Functions: min(a, b, ...) max(...) avg(...) floor ceil round(x[, digits]) trunc abs sign pow(x, y) sqrt cbrt
 #            exp log(x[, base]) ln log10 log2 clamp(x, low, high) if(condition, a, b) sin cos tan
 # Constants: pi e true false
 #
 # Variables:
-#   unique            unique heads in the vault (different owners; your own head counts once)
-#   total             total heads in the vault, duplicates included
+#   unique            unique heads in the vault, from different owners (your own head counts once)
+#   total             all heads in the vault, duplicates included
 #   own               copies of your own head in the vault
 #   duplicates        total - unique
-#   vault_size        your vault slots this cycle;  vault_free  empty slots
+#   vault_size        your vault slots this cycle
+#   vault_free        empty vault slots
 #   starting_heads    heads every vault started with this cycle
-#   active            active players this cycle;  players  everyone who has ever joined;  online  players online
-#   rank              your rank among active players by unique heads (1 = most; ties share a rank)
-#   percentile        your percentile among active players (100 = top, 0 = bottom)
-#   unique_avg unique_median unique_max unique_min unique_sum   over active players
-#   kills             kill heads you got this cycle;  deaths  kill heads others got from you
-#   trades            completed trades;  heads_in / heads_out  heads received / given through trades
-#   purchases         shop purchases this cycle;  points_spent  points spent this cycle
-#   points            points you hold now;  points_next  points already waiting for next cycle
-#   playtime          minutes played this cycle;  playtime_hours
-#   streak            +N for N positive cycles in a row, -N for N negative;  streak_positive / streak_negative
-#   last_score        last cycle's score (0 if none);  last_unique;  has_last  1 if there was a last score
-#   bonus             score bonus from actions (added after the formula unless add-bonus-after-formula is false)
+#   active            active players this cycle
+#   players           everyone who has ever joined
+#   online            players online now
+#   rank              your rank among active players by unique heads, 1 being the most (ties share a rank)
+#   percentile        your percentile among active players, from 0 at the bottom to 100 at the top
+#   unique_avg, unique_median, unique_max, unique_min, unique_sum
+#                     unique heads over all active players
+#   kills             kill heads you got this cycle
+#   deaths            kill heads others got from you
+#   trades            completed trades
+#   heads_in          heads received through trades
+#   heads_out         heads given through trades
+#   purchases         shop purchases this cycle
+#   points_spent      points spent this cycle
+#   points            points you hold now
+#   points_next       points already waiting for next cycle
+#   playtime          minutes played this cycle
+#   playtime_hours    hours played this cycle
+#   streak            +N after N positive cycles in a row, -N after N negative ones
+#   streak_positive   the length of a positive streak, else 0
+#   streak_negative   the length of a negative streak, else 0
+#   last_score        last cycle's score, or 0 if there was none
+#   last_unique       last cycle's unique heads
+#   has_last          1 if there was a last score
+#   bonus             score bonus from actions (see add-bonus-after-formula)
 #   titles            titles you own
-#   cycle             the cycle ID;  cycle_length  days;  days_elapsed / days_left
+#   cycle             the cycle ID
+#   cycle_length      cycle length in days
+#   days_elapsed      days since the cycle started
+#   days_left         days until it ends
 #   is_active         1 if you are active
-#   %any_placeholder% any numeric PlaceholderAPI placeholder, e.g. %statistic_player_kills% (offline players
-#                     resolve whatever the placeholder supports; anything non-numeric counts as 0)
+#   %any_placeholder% any numeric PlaceholderAPI placeholder, like %statistic_player_kills%. For offline players
+#                     it gives whatever the placeholder supports. Anything that isn't a number counts as 0.
 #
-# Default: one point per unique head, minus a quarter of the active players (rounded up). With 12 active players,
-# 3 unique heads scores 0 and 10 unique heads scores 7.
-formula: "unique - ceil(active / 4)"
-
-# Other ideas (copy one into 'formula'):
+# Other formulas to try (copy one into 'formula'):
 #   Exponential, rewarding big collections:   floor(pow(unique, 1.5) / 2) - ceil(active / 4)
 #   Percent-based, compared to everyone:      round((percentile - 50) / 10)
 #   Rank-based, top 3 rewarded:               rank <= 3 ? 10 - rank * 2 : (percentile < 25 ? -3 : 0)
@@ -52,19 +62,25 @@ formula: "unique - ceil(active / 4)"
 #   Streak bonus on top of the default:       unique - ceil(active / 4) + min(streak_positive, 3)
 #   Punish hoarding your own head:            unique - ceil(active / 4) - floor(own / 10)
 #   Kills matter:                             unique + kills - deaths - ceil(active / 4)
+#
+# The default gives one point per unique head, minus a quarter of the active players rounded up. With 12 active
+# players, 3 unique heads scores 0 and 10 unique heads scores 7.
+formula: "unique - ceil(active / 4)"
 
-# How the formula's result becomes a whole number: floor | round | ceil
+# How the formula's result is rounded to a whole number: floor | round | ceil
 rounding: floor
 
-# Add the 'score-bonus' action total after the formula and rounding. Set false if your formula uses 'bonus' itself.
+# Add the total from 'score-bonus' actions after the formula and rounding. Set false if your formula uses 'bonus'.
 add-bonus-after-formula: true
 
-# How ties rank: competition (10, 10, 8 -> 1, 1, 3) or dense (10, 10, 8 -> 1, 1, 2).
+# How tied scores are ranked: competition | dense
+# Scores of 10, 10 and 8 rank 1, 1, 3 with competition and 1, 1, 2 with dense.
 rank-mode: competition
 
 streaks:
-  # A streak counts consecutive cycles with a positive score, or with a negative score.
-  # When a player is inactive for a cycle: pause (keep the streak) | break (reset to 0)
+  # What a cycle without activity does to a streak: pause | break
+  # pause keeps the streak and break resets it to 0. A streak counts cycles in a row with a positive score, or
+  # in a row with a negative one.
   inactive: pause
-  # A score of exactly 0: break | pause
+  # What a score of exactly 0 does to a streak: break | pause
   zero-score: break

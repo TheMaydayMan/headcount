@@ -32,7 +32,7 @@
     "headcount.titles"
    ],
    "permissionText": "`headcount.titles`",
-   "does": "Equip a title."
+   "does": "Opens the titles menu, where you equip a title."
   },
   {
    "group": "player",
@@ -43,7 +43,7 @@
     "headcount.points"
    ],
    "permissionText": "`headcount.points`",
-   "does": "Your points, points waiting for next cycle, and the rollover percent."
+   "does": "Shows your points, the points waiting for next cycle, and the rollover percent."
   },
   {
    "group": "player",
@@ -54,7 +54,7 @@
     "headcount.score"
    ],
    "permissionText": "`headcount.score`",
-   "does": "Your score if the cycle ended now."
+   "does": "Shows what your score would be if the cycle ended now."
   },
   {
    "group": "player",
@@ -65,7 +65,7 @@
     "headcount.top"
    ],
    "permissionText": "`headcount.top`",
-   "does": "The live leaderboard, or last cycle's."
+   "does": "Shows the live leaderboard, or last cycle's."
   },
   {
    "group": "player",
@@ -76,7 +76,7 @@
     "headcount.history"
    ],
    "permissionText": "`headcount.history`",
-   "does": "Your past cycles."
+   "does": "Shows your past cycles."
   },
   {
    "group": "player",
@@ -87,7 +87,7 @@
     "headcount.sidebar"
    ],
    "permissionText": "`headcount.sidebar`",
-   "does": "Toggle the sidebar."
+   "does": "Turns the sidebar on or off."
   },
   {
    "group": "player",
@@ -98,7 +98,7 @@
     "headcount.effects"
    ],
    "permissionText": "`headcount.effects`",
-   "does": "Your active effects and how long each lasts."
+   "does": "Lists your active effects and how long each one lasts."
   },
   {
    "group": "player",
@@ -109,7 +109,7 @@
     "headcount.help"
    ],
    "permissionText": "`headcount.help`",
-   "does": "Help, filtered to what you can use."
+   "does": "Lists the commands you can use."
   },
   {
    "group": "player",
@@ -123,7 +123,7 @@
     "headcount.trade"
    ],
    "permissionText": "`headcount.trade`",
-   "does": "Trading."
+   "does": "Sends a trade request, answers one, or cancels your own."
   },
   {
    "group": "player",
@@ -134,7 +134,7 @@
     "headcount.pvp"
    ],
    "permissionText": "`headcount.pvp`",
-   "does": "Turns your own PvP on or off, or shows it. Only with the included PvP (`integrations.yml pvp.provider: included`); with PvPManager, `/pvp` is PvPManager's."
+   "does": "Turns your own PvP on or off, or shows it. Only with the included PvP (`pvp.provider: included` in `integrations.yml`). With PvPManager, `/pvp` belongs to PvPManager."
   },
   {
    "group": "admin",
@@ -145,7 +145,7 @@
     "headcount.admin.cycle"
    ],
    "permissionText": "`headcount.admin.cycle`",
-   "does": "Cycle number and run ID, start, end, time left, vault settings, active players."
+   "does": "Shows the cycle number and run ID, start and end, time left, vault settings and active players."
   },
   {
    "group": "admin",
@@ -190,7 +190,7 @@
     "headcount.admin.cycle"
    ],
    "permissionText": "`headcount.admin.cycle`",
-   "does": "Changes the current cycle's end (`extend -1d` shortens it)."
+   "does": "Moves the current cycle's end. A negative duration such as `extend -1d` shortens it."
   },
   {
    "group": "admin",
@@ -235,7 +235,7 @@
     "headcount.admin.titles"
    ],
    "permissionText": "`headcount.admin.titles`",
-   "does": "Titles."
+   "does": "Grants or removes a title."
   },
   {
    "group": "admin",
@@ -246,7 +246,7 @@
     "headcount.admin.history"
    ],
    "permissionText": "`headcount.admin.history`",
-   "does": "Anyone's history."
+   "does": "Shows anyone's past cycles."
   },
   {
    "group": "admin",
@@ -257,7 +257,7 @@
     "headcount.admin.effects"
    ],
    "permissionText": "`headcount.admin.effects`",
-   "does": "A player's active actions."
+   "does": "Lists a player's active effects, or removes one or all of them."
   },
   {
    "group": "admin",
@@ -293,7 +293,7 @@
     "headcount.admin.reset.hard",
     "headcount.admin"
    ],
-   "permissionText": "`headcount.admin.reset` and `headcount.admin.reset.hard` (op, **not** part of `headcount.admin`; the console always has it)",
+   "permissionText": "`headcount.admin.reset` and `headcount.admin.reset.hard` (op only, not part of `headcount.admin`. The console always has it.)",
    "does": "Deletes all Headcount data and starts over from cycle 1 (see Resets)."
   },
   {
@@ -338,7 +338,7 @@
     "headcount.admin.debug"
    ],
    "permissionText": "`headcount.admin.debug`",
-   "does": "A player's statuses, live."
+   "does": "Shows a player's statuses as they are right now."
   },
   {
    "group": "admin",
@@ -349,7 +349,7 @@
     "headcount.admin.debug"
    ],
    "permissionText": "`headcount.admin.debug`",
-   "does": "Sets a flag (usable as a status)."
+   "does": "Sets or clears a flag, which statuses can check."
   },
   {
    "group": "admin",
@@ -371,7 +371,7 @@
     "headcount.admin.debug"
    ],
    "permissionText": "`headcount.admin.debug`",
-   "does": "Every placeholder's value for a player."
+   "does": "Lists every placeholder's value for a player."
   },
   {
    "group": "admin",
@@ -382,7 +382,7 @@
     "headcount.admin.debug"
    ],
    "permissionText": "`headcount.admin.debug`",
-   "does": "Who handles each job: included, a plugin, or none, and why (for example a missing plugin)."
+   "does": "Shows who handles each job (included, a plugin, or none) and why, for example because a plugin is missing."
   },
   {
    "group": "admin",
@@ -393,7 +393,7 @@
     "headcount.admin.debug"
    ],
    "permissionText": "`headcount.admin.debug`",
-   "does": "Checks every configured item, menu, message, list and status reference. It also runs quietly on start and reload, warning only about failures."
+   "does": "Checks the configured items, menus, messages, lists and status references. It also runs quietly on start-up and reload, and only warns about failures."
   },
   {
    "group": "admin",
@@ -486,9 +486,9 @@
   {
    "permission": [
     "headcount.bypass.deny.<category>",
-    "deny.*"
+    "headcount.bypass.deny.*"
    ],
-   "bypasses": "Deny actions."
+   "bypasses": "Deny actions of that category, or all of them."
   },
   {
    "permission": [
@@ -525,7 +525,7 @@
  "permissions": [
   {
    "name": "headcount.*",
-   "description": "Every Headcount permission, including admin and bypasses.",
+   "description": "All player and admin permissions. Bypasses and hard reset are separate.",
    "default": "op",
    "children": [
     "headcount.player",
@@ -534,7 +534,7 @@
   },
   {
    "name": "headcount.player",
-   "description": "Every regular player command.",
+   "description": "All player commands.",
    "default": "true",
    "children": [
     "headcount.vault",
@@ -613,19 +613,19 @@
   },
   {
    "name": "headcount.trade",
-   "description": "Use /trade.",
+   "description": "Trade with other players using /trade.",
    "default": "true",
    "children": []
   },
   {
    "name": "headcount.pvp",
-   "description": "Use /pvp to turn your own PvP on or off (included PvP).",
+   "description": "Turn your own PvP on or off with /pvp (included PvP).",
    "default": "true",
    "children": []
   },
   {
    "name": "headcount.admin",
-   "description": "Every admin command.",
+   "description": "All admin commands except /hca reset hard.",
    "default": "op",
    "children": [
     "headcount.admin.cycle",
@@ -649,7 +649,7 @@
   },
   {
    "name": "headcount.admin.cycle",
-   "description": "Cycle info, force end/start, simulate, change end time.",
+   "description": "View, end, start and simulate the cycle, and change when it ends.",
    "default": "op",
    "children": []
   },
@@ -691,7 +691,7 @@
   },
   {
    "name": "headcount.admin.effects",
-   "description": "List or remove any player's active actions.",
+   "description": "List or remove any player's active effects.",
    "default": "op",
    "children": []
   },
@@ -703,13 +703,13 @@
   },
   {
    "name": "headcount.admin.reset.cycle",
-   "description": "Start the current cycle over with /hca reset cycle (also needs headcount.admin.reset).",
+   "description": "Restart the current cycle with /hca reset cycle. Also needs headcount.admin.reset.",
    "default": "op",
    "children": []
   },
   {
    "name": "headcount.admin.reset.hard",
-   "description": "Delete all Headcount data with /hca reset hard (also needs headcount.admin.reset). Not part of headcount.admin; the console always has it.",
+   "description": "Delete all Headcount data with /hca reset hard. Also needs headcount.admin.reset. It isn't part of headcount.admin, and the console always has it.",
    "default": "op",
    "children": []
   },
@@ -727,7 +727,7 @@
   },
   {
    "name": "headcount.admin.reload",
-   "description": "Reload configuration.",
+   "description": "Reload the config files.",
    "default": "op",
    "children": []
   },
@@ -739,13 +739,13 @@
   },
   {
    "name": "headcount.admin.run",
-   "description": "Run action lists and hooks on players (testing).",
+   "description": "Run action lists and hooks on players, for testing.",
    "default": "op",
    "children": []
   },
   {
    "name": "headcount.admin.notify",
-   "description": "Receive admin alerts (duplicate heads, errors).",
+   "description": "Get admin alerts, such as duplicate heads and errors.",
    "default": "op",
    "children": []
   },
@@ -757,7 +757,7 @@
   },
   {
    "name": "headcount.pvp.override",
-   "description": "Attack anyone regardless of PvP toggles and protection (included PvP).",
+   "description": "Attack anyone, whatever their PvP setting or protection (included PvP).",
    "default": "false",
    "children": []
   },
@@ -781,7 +781,7 @@
   },
   {
    "name": "headcount.bypass.*",
-   "description": "Bypass every status gate, trade restriction and combat restriction.",
+   "description": "Skip every status gate and every trade and combat restriction.",
    "default": "false",
    "children": [
     "headcount.bypass.pvp.cooldown",
@@ -1072,7 +1072,7 @@
    "type": "bossbar",
    "group": "Messages and effects",
    "main": "text",
-   "settingsText": "`text`, `color: red`, `overlay: progress` (or `notched_6/10/12/20`), `progress: 1.0`, `countdown-to`: `cycle-end`, a duration like `60s`, or a date-time `2026-12-01T00:00`; `seconds: 10` (how long an instant bar shows). Text variables: `<countdown>`, `<countdown_clock>`, `<seconds>`, plus every variable of the list it runs in (such as `<cycle>` in a hook). Timed: shown while active. In a global hook: everyone online sees it, players who join while it runs see it too, and it disappears at the end of the countdown.",
+   "settingsText": "`text`, `color: red`, `overlay: progress` (or `notched_6/10/12/20`), `progress: 1.0`, `countdown-to`: `cycle-end`, a duration like `60s`, or a date-time `2026-12-01T00:00`; `seconds: 10` (how long an instant bar shows). Text variables: `<countdown>`, `<countdown_clock>`, `<seconds>`, plus every variable of the list it runs in (such as `<cycle>` in a hook). A timed bar shows while the action is active. In a global hook, everyone online sees it, including players who join while it runs, and it disappears when the countdown ends.",
    "settings": [
     "text",
     "color",
@@ -1717,7 +1717,7 @@
    "settings": [
     "check"
    ],
-   "trueWhen": "The PvP provider chosen in `integrations.yml` (Headcount's included PvP, or PvPManager) reports that state. With provider `none` it can't answer."
+   "trueWhen": "The PvP provider chosen in `integrations.yml` reports that state. With provider `none` it can't answer."
   },
   {
    "source": "player-state",
@@ -1726,7 +1726,7 @@
    "settings": [
     "check"
    ],
-   "trueWhen": "The player-state provider reports that state. `included`: AFK from Headcount's idle timer, vanished from the `vanished` metadata, god from the invulnerable flag, jailed and muted from Headcount's own jail and mute (or the moderation plugin). `essentials`: EssentialsX. `essentials` is still accepted as the source's old name."
+   "trueWhen": "The player-state provider reports that state. With `included`, AFK comes from Headcount's idle timer, vanished from the `vanished` metadata, god from the invulnerable flag, and jailed and muted from Headcount's own jail and mute or the moderation plugin. With `essentials`, EssentialsX answers. The source's old name, `essentials`, still works."
   },
   {
    "source": "muted",
@@ -1740,7 +1740,7 @@
    "group": "Plugin hooks",
    "settingsText": "none",
    "settings": [],
-   "trueWhen": "The player joined through Geyser (Floodgate or Geyser is asked)."
+   "trueWhen": "The player joined through Geyser, as reported by Floodgate or Geyser."
   },
   {
    "source": "placeholder",
@@ -1798,7 +1798,7 @@
     "value",
     "range"
    ],
-   "trueWhen": "That live value is in range, e.g. `value: points`, `range: \">=10\"`."
+   "trueWhen": "That live value is in range, for example `value: points` with `range: \">=10\"`."
   },
   {
    "source": "in-trade",
@@ -1919,63 +1919,63 @@
    "group": "Built-in checks",
    "settingsText": "none",
    "settings": [],
-   "trueWhen": "Self-explanatory."
+   "trueWhen": "The player is in that state."
   },
   {
    "source": "flying",
    "group": "Built-in checks",
    "settingsText": "none",
    "settings": [],
-   "trueWhen": "Self-explanatory."
+   "trueWhen": "The player is in that state."
   },
   {
    "source": "swimming",
    "group": "Built-in checks",
    "settingsText": "none",
    "settings": [],
-   "trueWhen": "Self-explanatory."
+   "trueWhen": "The player is in that state."
   },
   {
    "source": "sneaking",
    "group": "Built-in checks",
    "settingsText": "none",
    "settings": [],
-   "trueWhen": "Self-explanatory."
+   "trueWhen": "The player is in that state."
   },
   {
    "source": "sprinting",
    "group": "Built-in checks",
    "settingsText": "none",
    "settings": [],
-   "trueWhen": "Self-explanatory."
+   "trueWhen": "The player is in that state."
   },
   {
    "source": "sleeping",
    "group": "Built-in checks",
    "settingsText": "none",
    "settings": [],
-   "trueWhen": "Self-explanatory."
+   "trueWhen": "The player is in that state."
   },
   {
    "source": "dead",
    "group": "Built-in checks",
    "settingsText": "none",
    "settings": [],
-   "trueWhen": "Self-explanatory."
+   "trueWhen": "The player is in that state."
   },
   {
    "source": "invisible",
    "group": "Built-in checks",
    "settingsText": "none",
    "settings": [],
-   "trueWhen": "Self-explanatory."
+   "trueWhen": "The player is in that state."
   },
   {
    "source": "op",
    "group": "Built-in checks",
    "settingsText": "none",
    "settings": [],
-   "trueWhen": "Self-explanatory."
+   "trueWhen": "The player is in that state."
   },
   {
    "source": "riding",
@@ -2091,14 +2091,14 @@
    "group": "Combinations",
    "settingsText": "none",
    "settings": [],
-   "trueWhen": "Always true or always false (handy for switching a gate off without editing every list)."
+   "trueWhen": "Always true or always false. Useful for switching a gate off without editing every list that uses it."
   },
   {
    "source": "never",
    "group": "Combinations",
    "settingsText": "none",
    "settings": [],
-   "trueWhen": "Always true or always false (handy for switching a gate off without editing every list)."
+   "trueWhen": "Always true or always false. Useful for switching a gate off without editing every list that uses it."
   }
  ],
  "formula": {
@@ -2334,13 +2334,13 @@
    "file": "config.yml",
    "path": "general.language",
    "default": "en_US",
-   "help": "Language file in plugins/Headcount/lang/ (without .yml)."
+   "help": "Language file in plugins/Headcount/lang/, without .yml."
   },
   {
    "file": "config.yml",
    "path": "general.date-format",
    "default": "\"yyyy-MM-dd HH:mm z\"",
-   "help": "How dates are written in messages (Java DateTimeFormatter pattern). Shown in the cycle time zone."
+   "help": "Date format for messages, as a Java DateTimeFormatter pattern. Dates show in the cycle time zone."
   },
   {
    "file": "config.yml",
@@ -2352,7 +2352,7 @@
    "file": "config.yml",
    "path": "general.time-units.shown",
    "default": "2",
-   "help": "How many units a duration shows, e.g. 2 -> \"3d 4h\", 3 -> \"3d 4h 12m\". Unit names are in the lang file."
+   "help": "How many units a duration shows. With 2 a duration reads \"3d 4h\", with 3 it reads \"3d 4h 12m\". Unit names are in the lang file."
   },
   {
    "file": "config.yml",
@@ -2364,7 +2364,7 @@
    "file": "config.yml",
    "path": "storage.file",
    "default": "headcount.db",
-   "help": "SQLite database file inside plugins/Headcount/. Every change is saved as it happens."
+   "help": "SQLite database file in plugins/Headcount/. Every change is saved as it happens."
   },
   {
    "file": "config.yml",
@@ -2376,25 +2376,25 @@
    "file": "config.yml",
    "path": "cycle.length-days",
    "default": "30",
-   "help": "Length of a cycle in days. A change applies from the next cycle, or a /hca reset cycle (the running cycle keeps its end)."
+   "help": "Length of a cycle in days. A change takes effect at the next cycle or the next /hca reset cycle. The running cycle keeps its end."
   },
   {
    "file": "config.yml",
    "path": "cycle.start-date",
    "default": "auto",
-   "help": "The day the first cycle starts, as YYYY-MM-DD, or \"auto\" to start immediately (aligned to end-time today). Before a configured future date, Headcount waits and no cycle runs."
+   "help": "The day the first cycle starts, as YYYY-MM-DD, or \"auto\" to start right away, lined up to end-time today. Until a future date arrives, no cycle runs."
   },
   {
    "file": "config.yml",
    "path": "cycle.end-time",
    "default": "\"00:00\"",
-   "help": "Exact time of day (24h HH:MM) cycles roll over."
+   "help": "Time of day cycles roll over, as 24-hour HH:MM."
   },
   {
    "file": "config.yml",
    "path": "cycle.time-zone",
    "default": "UTC",
-   "help": "Time zone for start-date and end-time. Any of: a region (America/Denver, Europe/London; follows daylight saving), an abbreviation (MST, EST, CET, ...; a fixed offset all year: MST is always UTC-7), an offset (GMT-7, UTC+5:30), or \"system\". (If the server was offline at a rollover, the next start ends the stored cycle and starts whichever cycle should be running now. Cycle numbers go up by exactly one at each end; /hca reset cycle keeps the number and /hca reset hard starts again at 1. Each run of a cycle also has an internal run ID, shown in /hca cycle info.)"
+   "help": "Time zone for start-date and end-time. Use a region like America/Denver or Europe/London (follows daylight saving), an abbreviation like MST or CET (a fixed offset all year, so MST is always UTC-7), an offset like GMT-7 or UTC+5:30, or \"system\". If the server was offline at a rollover, the next start ends the stored cycle and starts the one that should be running now. The cycle number goes up by one at each end. /hca reset cycle keeps the number and /hca reset hard starts again at 1. /hca cycle info also shows each cycle's internal run ID."
   },
   {
    "file": "config.yml",
@@ -2406,7 +2406,7 @@
    "file": "config.yml",
    "path": "activity.min-playtime",
    "default": "0",
-   "help": "Playtime during a cycle needed to count as active. 0 means joining once is enough. Only active players get a score, points and outcomes."
+   "help": "Playtime in a cycle needed to count as active. 0 means joining once is enough. Only active players get a score, points and outcomes."
   },
   {
    "file": "config.yml",
@@ -2424,19 +2424,19 @@
    "file": "config.yml",
    "path": "vault.size",
    "default": "27",
-   "help": "Slots in each vault. Up to 54 fits one screen; more than 54 is split into pages of 45. Size and starting heads only change at the start of the next cycle (or at a /hca reset cycle)."
+   "help": "Slots in each vault. Up to 54 fits on one screen. Bigger vaults are split into pages of 45. Size and starting heads change at the start of the next cycle or at a /hca reset cycle."
   },
   {
    "file": "config.yml",
    "path": "vault.starting-heads",
    "default": "27",
-   "help": "Heads of their own every player starts each cycle with (capped at the vault size). Extra starting heads from next-cycle actions (a shop purchase, the streak bonus) that don't fit are given as items instead."
+   "help": "How many of their own heads each player starts a cycle with, up to the vault size. Extra starting heads from next-cycle actions, like a shop purchase or the streak bonus, are given as items if they don't fit."
   },
   {
    "file": "config.yml",
    "path": "vault.max-size",
    "default": "270",
-   "help": "Largest size actions (next-cycle vault-size) may grow a vault to."
+   "help": "Largest size the next-cycle vault-size action can grow a vault to."
   },
   {
    "file": "config.yml",
@@ -2448,31 +2448,31 @@
    "file": "config.yml",
    "path": "vault.block-movement.statuses",
    "default": "[in-pvp, combat-tagged, creative-or-spectator, sleeping-or-dead]",
-   "help": "Statuses (statuses.yml) that stop a player moving heads in or out of their vault. Each has its own message (lang: gates.vault-move.<status>) and bypass permission (headcount.bypass.vault-move.<status>). Prefix a status with ! to block when it is NOT active."
+   "help": "Statuses (statuses.yml) that stop a player moving heads in or out of their vault. Each one has its own message, gates.vault-move.<status> in the lang file, and its own bypass permission, headcount.bypass.vault-move.<status>. Put ! before a status to block while it is NOT active."
   },
   {
    "file": "config.yml",
    "path": "vault.block-movement.block-opening",
    "default": "false",
-   "help": "true: the same statuses also stop the vault from opening at all (messages: gates.vault-open.<status>, bypass: headcount.bypass.vault-open.<status>). false: blocked players can still open and look."
+   "help": "Whether the same statuses also stop the vault from opening. With false, blocked players can still open it and look. Messages are gates.vault-open.<status> and the bypass is headcount.bypass.vault-open.<status>."
   },
   {
    "file": "config.yml",
    "path": "vault.allow-drop-key",
    "default": "false",
-   "help": "Allow the drop key (Q) on a vault slot to drop a head on the ground. Off by default: take it out first."
+   "help": "Whether the drop key (Q) on a vault slot drops the head on the ground. Normally players take it out first."
   },
   {
    "file": "config.yml",
    "path": "vault.duplicate-insert",
    "default": "reject",
-   "help": "A head whose ID is already in some vault can only be a copy (creative cloning). reject | allow"
+   "help": "Whether a head whose ID is already in a vault can go in another one: reject | allow A second head with the same ID can only be a copy, usually from creative cloning."
   },
   {
    "file": "config.yml",
    "path": "vault.save-player-data-after-change",
    "default": "true",
-   "help": "Save the player's own inventory to disk shortly after a vault change, so a crash cannot roll back only one side."
+   "help": "Save the player's inventory to disk shortly after a vault change, so a crash can't roll back just one side."
   },
   {
    "file": "config.yml",
@@ -2484,7 +2484,7 @@
    "file": "config.yml",
    "path": "vault.gui.title",
    "default": "\"<dark_gray><owner>'s Head Vault <gray>(<unique> unique, score <score>)\"",
-   "help": "<owner> <unique> <total> <size> <used> <page> <pages>, and <score>: the owner's score if the cycle ended now (shown as ? while the owner is offline). <score> uses score-colors below; <score:green:red:gray> picks the positive, negative and zero colours in place (any MiniMessage colour or tag, e.g. #ff8800 or gold). The title updates live while the vault is open (it is re-sent when its text changes)."
+   "help": "Vault window title. Variables: <owner> <unique> <total> <size> <used> <page> <pages> <score>. <score> is the owner's score if the cycle ended now, or ? while the owner is offline. It uses score-colors below, or write <score:green:red:gray> to pick the positive, negative and zero colors right there. Any MiniMessage color or tag works, like #ff8800 or gold. The title updates while the vault is open."
   },
   {
    "file": "config.yml",
@@ -2532,7 +2532,7 @@
    "file": "config.yml",
    "path": "vault.gui.filler",
    "default": "(section)",
-   "help": "Only used for vaults bigger than 54 slots (paged): the bottom row."
+   "help": "The bottom row of paged vaults (more than 54 slots)."
   },
   {
    "file": "config.yml",
@@ -2670,7 +2670,7 @@
    "file": "config.yml",
    "path": "heads.item.name",
    "default": "\"<yellow><owner>'s Head\"",
-   "help": "Variables: <owner> <owner_uuid> <cycle> <current_cycle> <head_id> <head_id_short> <created> <source>"
+   "help": "Name of a current economy head. Variables for the name and lore: <owner> <owner_uuid> <cycle> <current_cycle> <head_id> <head_id_short> <created> <source>"
   },
   {
    "file": "config.yml",
@@ -2682,7 +2682,7 @@
    "file": "config.yml",
    "path": "heads.item.expired-name",
    "default": "\"<gray><owner>'s Head <dark_gray>(expired)\"",
-   "help": "A head from an older cycle keeps its data and works as a normal head but is worthless."
+   "help": "Name of a head from an older cycle. It keeps its data and works as a normal head, but it's worthless."
   },
   {
    "file": "config.yml",
@@ -2694,7 +2694,7 @@
    "file": "config.yml",
    "path": "heads.item.defunct-name",
    "default": "\"<gray><owner>'s Head <dark_gray>(defunct)\"",
-   "help": "A defunct head: made before a /hca reset cycle or /hca reset hard that kept the old heads (keep-heads)."
+   "help": "Name of a defunct head, one made before a reset that kept the old heads (keep-heads)."
   },
   {
    "file": "config.yml",
@@ -2706,7 +2706,7 @@
    "file": "config.yml",
    "path": "heads.item.max-stack-size",
    "default": "1",
-   "help": "1 keeps every head in its own slot (each head has a unique ID anyway). 1-99."
+   "help": "Stack size for heads, 1-99. With 1 every head keeps its own slot. Each head has a unique ID either way."
   },
   {
    "file": "config.yml",
@@ -2718,7 +2718,7 @@
    "file": "config.yml",
    "path": "heads.item.item-model",
    "default": "\"\"",
-   "help": "Optional item model (namespace:key) for resource packs; leave empty for the normal head."
+   "help": "Item model (namespace:key) for resource packs. Leave empty for the normal head."
   },
   {
    "file": "config.yml",
@@ -2730,25 +2730,25 @@
    "file": "config.yml",
    "path": "heads.placed.preserve",
    "default": "true",
-   "help": "Keep economy data on heads placed as blocks and give it back whenever the block becomes an item again (breaking, explosions, pistons, physics, entities, fluids, or anything else that drops it)."
+   "help": "Keep economy data on heads placed as blocks, and give it back whenever the block drops as an item again."
   },
   {
    "file": "config.yml",
    "path": "heads.placed.creative-break",
    "default": "destroy",
-   "help": "Breaking a head in creative drops nothing in vanilla. destroy keeps that; drop gives the head back anyway."
+   "help": "What breaking a head block in creative does: destroy | drop destroy drops nothing, like vanilla. drop gives the head back anyway."
   },
   {
    "file": "config.yml",
    "path": "heads.placed.always-drop",
    "default": "true",
-   "help": "If an economy head block is removed and nothing dropped (explosion yield, a plugin removing drops), drop it."
+   "help": "Drop an economy head block that was removed without dropping anything, like from an explosion or a plugin."
   },
   {
    "file": "config.yml",
    "path": "heads.placed.untracked-blocks",
    "default": "strip",
-   "help": "Head blocks carrying economy data that Headcount never saw placed (world editor copies, copied block data) are treated as plain heads (strip) and logged as duplicates. allow trusts them."
+   "help": "How to treat head blocks with economy data that Headcount never saw placed: strip | allow These come from world editor copies or copied block data. strip turns them into plain heads and logs them as duplicates. allow trusts them."
   },
   {
    "file": "config.yml",
@@ -2766,13 +2766,13 @@
    "file": "config.yml",
    "path": "duplicates.remove-copies",
    "default": "false",
-   "help": "Remove extra copies found in an inventory (the copy already in a vault is kept). Off: only flag them."
+   "help": "Remove extra copies found in an inventory. The copy already in a vault is kept. With false they are only flagged."
   },
   {
    "file": "config.yml",
    "path": "duplicates.scan-on-inventory-close",
    "default": "true",
-   "help": "Scan the player's inventory for duplicates when they close any inventory."
+   "help": "Check a player's inventory for duplicates whenever they close any inventory."
   },
   {
    "file": "config.yml",
@@ -2784,7 +2784,7 @@
    "file": "config.yml",
    "path": "kills.enabled",
    "default": "true",
-   "help": "Killing a player drops a newly made head of the victim (current cycle) at the victim's location. It is not taken from their vault. The killer is whoever vanilla credits (projectiles and knock-into-lava count). Suicide gives nothing. The drop happens whether or not keepInventory is on."
+   "help": "Killing a player drops a new head of the victim where they died. The head is made fresh, not taken from their vault, and it drops even with keepInventory on. The killer is whoever vanilla credits, so projectiles and knocking someone into lava count. Suicide gives nothing."
   },
   {
    "file": "config.yml",
@@ -2796,7 +2796,7 @@
    "file": "config.yml",
    "path": "kills.heads-per-kill",
    "default": "1",
-   "help": "Heads dropped per kill (extra-heads actions add to this)."
+   "help": "Heads dropped per kill. extra-heads actions add to this."
   },
   {
    "file": "config.yml",
@@ -2808,13 +2808,13 @@
    "file": "config.yml",
    "path": "kills.killer-blocked-statuses",
    "default": "[]",
-   "help": "Statuses on the killer that stop a drop (e.g. creative-or-spectator)."
+   "help": "Statuses on the killer that stop a drop, like creative-or-spectator."
   },
   {
    "file": "config.yml",
    "path": "kills.killer-pickup-only",
    "default": "0s",
-   "help": "For this long only the killer can pick the head up (0 = anyone)."
+   "help": "How long only the killer can pick up the head. 0 lets anyone."
   },
   {
    "file": "config.yml",
@@ -2826,13 +2826,13 @@
    "file": "config.yml",
    "path": "points.rollover-percent",
    "default": "0",
-   "help": "A positive score gives that many points at a cycle's end, to spend during the next cycle. When that cycle ends, this percent of unspent points rolls over and the rest are gone."
+   "help": "Percent of unspent points kept when a cycle ends. The rest are gone. A positive score gives points at the end of a cycle, to spend during the next one."
   },
   {
    "file": "config.yml",
    "path": "points.earn-multiplier",
    "default": "1.0",
-   "help": "Points per score point (1.0 = a score of 7 gives 7 points). Rounded down."
+   "help": "Points per score point, rounded down. With 1.0 a score of 7 gives 7 points."
   },
   {
    "file": "config.yml",
@@ -2862,7 +2862,7 @@
    "file": "config.yml",
    "path": "gui.click-cooldown",
    "default": "150ms",
-   "help": "Minimum time between two button clicks in any Headcount menu (stops double purchases from fast clicks)."
+   "help": "Minimum time between two clicks in any Headcount menu. It stops fast clicks from buying something twice."
   },
   {
    "file": "config.yml",
@@ -2874,7 +2874,7 @@
    "file": "config.yml",
    "path": "placeholders.true-text",
    "default": "\"yes\"",
-   "help": "How true/false placeholders (status_..., active, ...) read."
+   "help": "Text that true/false placeholders show, such as the status placeholders and active."
   },
   {
    "file": "config.yml",
@@ -2898,7 +2898,7 @@
    "file": "config.yml",
    "path": "top.refresh-interval",
    "default": "30s",
-   "help": "How often the live leaderboard (/hc top, %headcount_top_...%, ranks in previews) refreshes."
+   "help": "How often the live leaderboard refreshes. It feeds /hc top, %headcount_top_...% and ranks in previews."
   },
   {
    "file": "config.yml",
@@ -2916,7 +2916,7 @@
    "file": "config.yml",
    "path": "history.gui.title",
    "default": "\"<dark_gray><player>'s History\"",
-   "help": "<player> <page>"
+   "help": "History window title. Variables: <player> <page>"
   },
   {
    "file": "config.yml",
@@ -2934,7 +2934,7 @@
    "file": "config.yml",
    "path": "history.gui.entry",
    "default": "(section)",
-   "help": "One item per past cycle. Variables: <cycle> <unique> <total> <own> <score> <earned> <spent> <rolled_over> <points_after> <streak> <rank> <outcomes> <playtime> <kills> <deaths> <trades> <ended> <player>"
+   "help": "The item for each past cycle. Variables: <cycle> <unique> <total> <own> <score> <earned> <spent> <rolled_over> <points_after> <streak> <rank> <outcomes> <playtime> <kills> <deaths> <trades> <ended> <player>"
   },
   {
    "file": "config.yml",
@@ -3036,13 +3036,13 @@
    "file": "config.yml",
    "path": "sidebar.enabled",
    "default": "true",
-   "help": "Server-wide switch. false removes Headcount's sidebar entirely so another scoreboard plugin can show Headcount's placeholders instead. Players toggle their own with /hc sidebar."
+   "help": "Turns Headcount's sidebar on for the server. Set false to show Headcount's placeholders in another scoreboard plugin instead. Players toggle their own with /hc sidebar."
   },
   {
    "file": "config.yml",
    "path": "sidebar.shown-for-new-players",
    "default": "false",
-   "help": "Whether a player's sidebar starts shown the first time they join (they can still hide it with /hc sidebar). Players who already joined keep their own choice."
+   "help": "Whether the sidebar starts shown for a player's first join. Players who already joined keep their choice."
   },
   {
    "file": "config.yml",
@@ -3060,7 +3060,7 @@
    "file": "config.yml",
    "path": "sidebar.lines",
    "default": "list of 8",
-   "help": "Up to 15 lines. Headcount placeholders and PlaceholderAPI placeholders work here."
+   "help": "Sidebar lines, up to 15. Headcount and PlaceholderAPI placeholders both work."
   },
   {
    "file": "config.yml",
@@ -3090,13 +3090,13 @@
    "file": "config.yml",
    "path": "audit.max-file-size-mb",
    "default": "10",
-   "help": "Files rotate daily and when they reach this size (minimum 0.0625 = 64 KB)."
+   "help": "Size in MB at which a log file rotates, at least 0.0625 (64 KB). Files also rotate daily."
   },
   {
    "file": "config.yml",
    "path": "audit.keep-days",
    "default": "90",
-   "help": "Delete files older than this many days (0 = keep forever). Checked on start, reload and each new day."
+   "help": "Delete files older than this many days. 0 keeps them forever. Checked on start, on reload and each new day."
   },
   {
    "file": "config.yml",
@@ -3120,7 +3120,7 @@
    "file": "config.yml",
    "path": "audit.log-each-cycle-start-head",
    "default": "true",
-   "help": "Log each head made at cycle start (one line per head) instead of one summary line."
+   "help": "Log each head made at cycle start on its own line, instead of one summary line."
   },
   {
    "file": "config.yml",
@@ -3132,7 +3132,7 @@
    "file": "config.yml",
    "path": "audit.types",
    "default": "(section)",
-   "help": "Switch individual event types off (all on by default)."
+   "help": "Turn single event types off. All are on by default."
   },
   {
    "file": "config.yml",
@@ -3312,7 +3312,7 @@
    "file": "config.yml",
    "path": "reset.delete-old-heads",
    "default": "true",
-   "help": "Every head made before a reset is worthless (it can't go in a vault and never counts). Each reset chooses what happens to them: add delete-heads or keep-heads to the command, or leave it out to use this default. delete (true): deleted wherever Headcount sees them: inventories and ender chests at the reset and on join, containers when opened, items picked up or dropped (a broken placed head), queued deliveries. keep (false):  they stay as defunct heads (heads.item.defunct-name and defunct-lore). The choice is stored with each reset, so changing this later doesn't change what earlier resets did."
+   "help": "Whether a reset deletes the heads made before it, when the command doesn't say delete-heads or keep-heads. Old heads are worthless either way: they can't go in a vault and never count. true:   they are deleted wherever Headcount finds them - inventories and ender chests at the reset and on join, containers when opened, items picked up or dropped, and queued deliveries. false:  they stay as defunct heads (heads.item.defunct-name and defunct-lore). Each reset stores its choice, so changing this later doesn't affect earlier resets."
   },
   {
    "file": "config.yml",
@@ -3324,13 +3324,13 @@
    "file": "config.yml",
    "path": "reset.hard.enabled",
    "default": "true",
-   "help": "/hca reset hard deletes every player's Headcount data and starts again from cycle 1, keeping these config files. It needs the headcount.admin.reset.hard permission (the console always has it)."
+   "help": "Allow /hca reset hard, which deletes every player's Headcount data and starts again from cycle 1. Config files are kept. It needs the headcount.admin.reset.hard permission, which the console always has."
   },
   {
    "file": "config.yml",
    "path": "reset.hard.confirmations",
    "default": "3",
-   "help": "How many times the admin must type a new random code to confirm (at least 1)."
+   "help": "How many new random codes the admin types to confirm, at least 1."
   },
   {
    "file": "config.yml",
@@ -3354,19 +3354,19 @@
    "file": "config.yml",
    "path": "hooks",
    "default": "(section)",
-   "help": "Hooks: action lists that run at moments in the cycle and in a player's time on the server. Every list uses the actions system (see actions.yml for every type and the common options). Cycle hooks (cycle-start, cycle-end, and each warning) have (cycle-start also runs after /hca reset cycle): global:      runs once for the server, with cycle-wide variables per-player:  runs once for each player with their own variables players:   all | active | inactive | online offline:   deliver (store it and run it on their next join) | skip expire-after-cycles: a stored hook older than this many cycles is dropped actions:   the list Global variables: <cycle> <cycle_start> <cycle_end> <time_left> <cycle_length> <active> <players> cycle-end adds: <average_score> <rewarded> <punished> <top_list> <top_N_name> <top_N_unique> <top_N_score> Per-player variables at cycle-end: <player> <unique> <total> <own> <score> <rank> <percentile> <streak> <streak_text> <points_earned> <points> <rolled_over> <tier> <outcomes> <playtime> <kills> <deaths> <trades> Player hooks (player:) run per player. When several run on one join the order is: delivered per-player cycle hooks, first-join, first-join-cycle, became-active, join. Variables: <player> <cycle> <time_left> <points> <streak> <streak_text>."
+   "help": "Hooks: action lists that run at set moments in the cycle and when players join. Each list uses the actions system. actions.yml has every type and the common options. Cycle hooks (cycle-start, cycle-end and each warning) have two parts. cycle-start also runs after /hca reset cycle. global:      runs once for the server, with cycle-wide variables per-player:  runs once for each player, with their own variables players:   all | active | inactive | online offline:   deliver (store it and run it when they next join) | skip expire-after-cycles: stored hooks older than this many cycles are dropped actions:   the list Global variables: <cycle> <cycle_start> <cycle_end> <time_left> <cycle_length> <active> <players> cycle-end adds: <average_score> <rewarded> <punished> <top_list> <top_N_name> <top_N_unique> <top_N_score> Per-player variables at cycle-end: <player> <unique> <total> <own> <score> <rank> <percentile> <streak> <streak_text> <points_earned> <points> <rolled_over> <tier> <outcomes> <playtime> <kills> <deaths> <trades> Player hooks (player:) run for one player. When several run on the same join, they go in this order: delivered per-player cycle hooks, first-join, first-join-cycle, became-active, join. Variables: <player> <cycle> <time_left> <points> <streak> <streak_text>"
   },
   {
    "file": "config.yml",
    "path": "hooks.join-delay",
    "default": "1s",
-   "help": "Wait this long after a join before running join hooks, so messages come after the join message."
+   "help": "Delay before join hooks run, so their messages come after the join message."
   },
   {
    "file": "config.yml",
    "path": "hooks.missed-warning-grace",
    "default": "5m",
-   "help": "A warning whose moment passed while the server was offline still fires if it is at most this late."
+   "help": "How late a warning can still fire if its moment passed while the server was offline."
   },
   {
    "file": "config.yml",
@@ -3480,7 +3480,7 @@
    "file": "config.yml",
    "path": "hooks.warnings",
    "default": "(section)",
-   "help": "Warnings before the end. Each needs 'before' (how long before the end it fires)."
+   "help": "Warnings before the end of a cycle. Each one needs 'before', how long before the end it fires."
   },
   {
    "file": "config.yml",
@@ -3636,19 +3636,19 @@
    "file": "integrations.yml",
    "path": "pvp",
    "default": "(section)",
-   "help": "PvP: the PvP toggle, the combat tag and new-player protection. They feed the in-pvp, combat-tagged and newbie-protected statuses (statuses.yml), which the default vault and trade rules use, and the pvp action."
+   "help": "PvP: the PvP toggle, the combat tag and new-player protection. These feed the in-pvp, combat-tagged and newbie-protected statuses (statuses.yml) used by the default vault and trade rules, and the pvp action."
   },
   {
    "file": "integrations.yml",
    "path": "pvp.provider",
    "default": "included",
-   "help": "included | pvpmanager | none included:   Headcount's own PvP (everything under 'included' below). It owns the /pvp command. pvpmanager: PvPManager does it all; the 'included' settings are ignored. none:       no PvP handling. Players can always fight (vanilla), the PvP statuses read false, and combat-tagged falls back to \"hit by or hit a player in the last 15s\" (statuses.yml)."
+   "help": "Which plugin handles PvP: included | pvpmanager | none included:   the built-in PvP, set up under 'included' below. It owns the /pvp command. pvpmanager: PvPManager does all of it, and the 'included' settings are ignored. none:       no PvP handling. Players can always fight, as in vanilla, and the PvP statuses read false. combat-tagged falls back to \"hit by or hit a player in the last 15s\" (statuses.yml)."
   },
   {
    "file": "integrations.yml",
    "path": "pvp.included",
    "default": "(section)",
-   "help": "---- Headcount's own PvP (provider: included) ----"
+   "help": "---- Built-in PvP (provider: included) ----"
   },
   {
    "file": "integrations.yml",
@@ -3660,13 +3660,13 @@
    "file": "integrations.yml",
    "path": "pvp.included.toggle.default",
    "default": "\"off\"",
-   "help": "PvP for players who never used /pvp: on | off. With off, players must opt in with /pvp before they can fight or be hit, which also keeps the default vault and trade rules (blocked while PvP is on) out of the way."
+   "help": "PvP for players who never used /pvp: on | off With off, players opt in with /pvp before they can fight or be hit. That also keeps the default vault and trade rules, which block players with PvP on, out of their way."
   },
   {
    "file": "integrations.yml",
    "path": "pvp.included.toggle.allow-toggle",
    "default": "true",
-   "help": "Players may switch their own PvP with /pvp (also needs the permission headcount.pvp, default everyone)."
+   "help": "Players can switch their own PvP with /pvp. They also need headcount.pvp, which everyone has by default."
   },
   {
    "file": "integrations.yml",
@@ -3684,7 +3684,7 @@
    "file": "integrations.yml",
    "path": "pvp.included.toggle.force-on-worlds",
    "default": "[]",
-   "help": "Worlds where PvP is always on, or always off, whatever each player chose. Exact world names."
+   "help": "Worlds where PvP is always on, whatever players chose, by exact world name. force-off-worlds keeps it off."
   },
   {
    "file": "integrations.yml",
@@ -3702,13 +3702,13 @@
    "file": "integrations.yml",
    "path": "pvp.included.newbie-protection.duration",
    "default": "10m",
-   "help": "New players can't attack or be attacked for this long after their first join (real time). 0 = off."
+   "help": "How long new players are protected after their first join, in real time. 0 turns it off. Protected players can't attack or be attacked."
   },
   {
    "file": "integrations.yml",
    "path": "pvp.included.newbie-protection.can-end-early",
    "default": "true",
-   "help": "A protected player may end it early with /pvp on."
+   "help": "A protected player can end it early with /pvp on."
   },
   {
    "file": "integrations.yml",
@@ -3720,7 +3720,7 @@
    "file": "integrations.yml",
    "path": "pvp.included.respawn-protection.duration",
    "default": "5s",
-   "help": "Nobody can hurt a player for this long after they respawn (attacking someone ends it). 0 = off."
+   "help": "How long nobody can hurt a player after they respawn. Attacking someone ends it. 0 turns it off."
   },
   {
    "file": "integrations.yml",
@@ -3732,7 +3732,7 @@
    "file": "integrations.yml",
    "path": "pvp.included.combat-tag.enabled",
    "default": "true",
-   "help": "A hit between two players puts them \"in combat\" (the combat-tagged status) for 'duration'; every new hit restarts it. Arrows, tridents, thrown potions, a player's TNT and their tamed pets count as their hits."
+   "help": "Turns on the combat tag. A hit between two players puts them in combat (the combat-tagged status) for 'duration', and each new hit starts it over. A player's arrows, tridents, thrown potions, TNT and tamed pets count as their hits."
   },
   {
    "file": "integrations.yml",
@@ -3744,19 +3744,19 @@
    "file": "integrations.yml",
    "path": "pvp.included.combat-tag.tag-attacker",
    "default": "true",
-   "help": "Who is tagged by a hit."
+   "help": "Tag the player who hits."
   },
   {
    "file": "integrations.yml",
    "path": "pvp.included.combat-tag.tag-victim",
    "default": "true",
-   "help": ""
+   "help": "Tag the player who is hit."
   },
   {
    "file": "integrations.yml",
    "path": "pvp.included.combat-tag.untag-on-death",
    "default": "true",
-   "help": "Dying ends the tag."
+   "help": "End the tag when the player dies."
   },
   {
    "file": "integrations.yml",
@@ -3767,7 +3767,7 @@
   {
    "file": "integrations.yml",
    "path": "pvp.included.combat-tag.block-flight",
-   "default": "true           # flying stops and can't start again (creative and spectator are never affected)",
+   "default": "true           # flying stops and can't start again (never affects creative or spectator)",
    "help": ""
   },
   {
@@ -3792,7 +3792,7 @@
    "file": "integrations.yml",
    "path": "pvp.included.combat-tag.blocked-commands",
    "default": "[spawn, home, homes, warp, warps, tpa, tpahere, tpaccept, tpyes, back, rtp, wild, ec, enderchest, hub, lobby]",
-   "help": "Commands that can't be used (no slash; namespaced forms like essentials:home are blocked too). Bypass for these and for teleports: headcount.bypass.combat-commands"
+   "help": "Commands that can't be used in combat, written without the slash. Namespaced forms like essentials:home are blocked too. Bypass for these and for teleports: headcount.bypass.combat-commands"
   },
   {
    "file": "integrations.yml",
@@ -3804,37 +3804,37 @@
    "file": "integrations.yml",
    "path": "pvp.included.combat-log.enabled",
    "default": "true",
-   "help": "Leaving the server while in combat. Being kicked or banned doesn't count. Bypass: headcount.bypass.combat-log"
+   "help": "Punish players who leave the server in combat. Kicks and bans don't count. Bypass: headcount.bypass.combat-log"
   },
   {
    "file": "integrations.yml",
    "path": "pvp.included.combat-log.punishment",
    "default": "kill",
-   "help": "kill: the player dies as they leave, so their items and XP drop where they stood. none: nothing happens to them; only 'actions' and 'broadcast' below."
+   "help": "What happens to the player who left: kill | none kill makes them die as they leave, so their items and XP drop where they stood. none only runs 'actions' and 'broadcast' below."
   },
   {
    "file": "integrations.yml",
    "path": "pvp.included.combat-log.credit-last-attacker",
    "default": "true",
-   "help": "The player who last hit them gets the kill, and with it the kill head drop (config.yml kills)."
+   "help": "Give the kill to the player who last hit them, along with the kill head drop (config.yml kills)."
   },
   {
    "file": "integrations.yml",
    "path": "pvp.included.combat-log.actions",
    "default": "[]",
-   "help": "Extra actions run on the player who left (any action from actions.yml; the ones that need the player online wait for their next join). For example: actions: - type: points amount: -5 - message: \"<red>You logged out during a fight and lost 5 points.\""
+   "help": "Extra actions to run on the player who left. Any action from actions.yml works. Actions that need the player online wait until they next join. For example: actions: - type: points amount: -5 - message: \"<red>You logged out during a fight and lost 5 points.\""
   },
   {
    "file": "integrations.yml",
    "path": "pvp.included.combat-log.broadcast",
    "default": "true",
-   "help": "Tell everyone else (lang: pvp.combat-log-broadcast)."
+   "help": "Tell everyone else. The message is pvp.combat-log-broadcast in the lang file."
   },
   {
    "file": "integrations.yml",
    "path": "pvp.included.messages",
    "default": "(section)",
-   "help": "How each kind of PvP message reaches the player. The texts are in lang/en_US.yml under pvp. channel: chat | actionbar | title | none sound:   a sound key (e.g. \"minecraft:block.note_block.bass\"), or \"\" for none. volume and pitch: 0-2. The same message is sent at most once a second to a player."
+   "help": "How each kind of PvP message reaches the player. The texts are in lang/en_US.yml under pvp. channel: chat | actionbar | title | none sound:   a sound key like \"minecraft:block.note_block.bass\", or \"\" for none. volume and pitch: 0-2. A player gets the same message at most once a second."
   },
   {
    "file": "integrations.yml",
@@ -3894,7 +3894,7 @@
    "file": "integrations.yml",
    "path": "pvp.included.messages.blocked-hit",
    "default": "(section)",
-   "help": "Your hit was stopped because someone has PvP off or is protected (pvp.blocked-hit.*)."
+   "help": "Your hit was stopped because the other player has PvP off or is protected (pvp.blocked-hit.*)."
   },
   {
    "file": "integrations.yml",
@@ -3912,7 +3912,7 @@
    "file": "integrations.yml",
    "path": "pvp.included.messages.blocked-action",
    "default": "(section)",
-   "help": "Something was refused: a blocked command, teleport, flight, pearl, /pvp during combat or a cooldown."
+   "help": "Something you tried was refused, like a blocked command or teleport, or /pvp during combat or a cooldown."
   },
   {
    "file": "integrations.yml",
@@ -3954,7 +3954,7 @@
    "file": "integrations.yml",
    "path": "pvp.pvpmanager.let-players-toggle",
    "default": "true",
-   "help": "PvPManager only lets players use /pvp with its permission pvpmanager.command.pvp, which is off by default, and players start with PvP on. Headcount's default rules block moving heads and trading while PvP is on, so with this on, every player may use /pvp (the permission's default becomes true; a player or group that is explicitly denied it in your permissions plugin stays denied). Set false to hand the permission out yourself."
+   "help": "Let every player use PvPManager's /pvp. PvPManager keeps its pvpmanager.command.pvp permission from players by default, and they start with PvP on. Headcount's default rules block moving heads and trading while PvP is on, so players need a way to turn it off. This sets the permission's default to true. Anyone your permissions plugin explicitly denies stays denied. Set false to hand out the permission yourself."
   },
   {
    "file": "integrations.yml",
@@ -3966,7 +3966,7 @@
    "file": "integrations.yml",
    "path": "placeholders.provider",
    "default": "included",
-   "help": "included | placeholderapi | none included:       Headcount's own %headcount_...% placeholders only (docs/placeholders.md lists them). placeholderapi: those plus every PlaceholderAPI placeholder, and %headcount_...% for other plugins. none:           no %...% placeholders at all, Headcount's own included (they show as written)."
+   "help": "Which placeholders work: included | placeholderapi | none included:       only Headcount's %headcount_...% placeholders (listed in docs/placeholders.md). placeholderapi: those plus every PlaceholderAPI placeholder, and %headcount_...% for other plugins. none:           no %...% placeholders at all, not even Headcount's. They show as written."
   },
   {
    "file": "integrations.yml",
@@ -3978,25 +3978,25 @@
    "file": "integrations.yml",
    "path": "placeholders.placeholderapi.register-expansion",
    "default": "true",
-   "help": "Register the %headcount_...% expansion so other plugins (scoreboards, tab, chat) can show Headcount's data."
+   "help": "Register the %headcount_...% expansion, so other plugins like scoreboards, tab and chat can show Headcount's data."
   },
   {
    "file": "integrations.yml",
    "path": "placeholders.placeholderapi.expansion-format",
    "default": "legacy",
-   "help": "How formatted values (like %headcount_title%) are given to other plugins: legacy | minimessage | plain"
+   "help": "How formatted values like %headcount_title% are passed to other plugins: legacy | minimessage | plain"
   },
   {
    "file": "integrations.yml",
    "path": "economy",
    "default": "(section)",
-   "help": "Money, for the money action. (Points, Headcount's own currency, need nothing.)"
+   "help": "Money, for the money action. Points are Headcount's own currency and need nothing."
   },
   {
    "file": "integrations.yml",
    "path": "economy.provider",
    "default": "vault",
-   "help": "vault | none. vault uses whatever economy plugin is behind Vault (EssentialsX, CMI, ...)."
+   "help": "Which economy the money action uses: vault | none vault uses whatever economy plugin is behind Vault, like EssentialsX or CMI."
   },
   {
    "file": "integrations.yml",
@@ -4008,7 +4008,7 @@
    "file": "integrations.yml",
    "path": "permissions.provider",
    "default": "included",
-   "help": "included | luckperms | vault | none included:  Headcount gives permission nodes itself (saved, and re-applied on every join). It can't do groups, tracks, prefixes or suffixes: those actions are skipped with a warning. Use luckperms or vault. luckperms: everything, with LuckPerms' own expiry on timed changes. vault:     through Vault's permission API (groups, prefixes and suffixes need a Vault chat plugin). none:      every permission action is skipped."
+   "help": "Which plugin handles permissions: included | luckperms | vault | none included:  Headcount sets permission nodes itself, saves them and re-applies them on every join. It can't do groups, tracks, prefixes or suffixes, so those actions are skipped with a warning. luckperms: everything, with LuckPerms' own expiry on timed changes. vault:     through Vault's permission API. Groups, prefixes and suffixes need a Vault chat plugin. none:      every permission action is skipped."
   },
   {
    "file": "integrations.yml",
@@ -4020,13 +4020,13 @@
    "file": "integrations.yml",
    "path": "permissions.luckperms.use-expiry",
    "default": "true",
-   "help": "Give timed changes LuckPerms' own expiry too, so they end even if Headcount is removed."
+   "help": "Give timed changes LuckPerms' own expiry too, so they still end if Headcount is removed."
   },
   {
    "file": "integrations.yml",
    "path": "permissions.luckperms.server-context",
    "default": "\"\"",
-   "help": "Optional \"server\" context for nodes Headcount adds (empty = global)."
+   "help": "\"server\" context for the nodes Headcount adds. Leave empty for global."
   },
   {
    "file": "integrations.yml",
@@ -4038,43 +4038,43 @@
    "file": "integrations.yml",
    "path": "moderation.provider",
    "default": "included",
-   "help": "included | litebans | libertybans | advancedban | essentials | commands | none included:    vanilla bans (the server's ban list), kicks, warnings (a message), and Headcount's own mute and jail (settings below). commands:    any moderation plugin, driven by the command templates under 'commands'. none:        every moderation action is skipped. A plugin that can't do one kind (LibertyBans and LiteBans have no jail) leaves that kind to 'included'."
+   "help": "Which plugin handles moderation: included | litebans | libertybans | advancedban | essentials | commands | none included:    vanilla bans (the server's ban list), kicks, warnings sent as a message, and the built-in mute and jail set up below. commands:    any moderation plugin, driven by the command templates under 'commands'. none:        every moderation action is skipped. If a plugin can't do one kind, like jail in LibertyBans and LiteBans, that kind goes to 'included'."
   },
   {
    "file": "integrations.yml",
    "path": "moderation.kinds",
    "default": "{}",
-   "help": "Give single kinds their own provider (same choices), e.g. bans by LibertyBans but jail by EssentialsX: kinds: jail: essentials Kinds: ban, mute, kick, warn, jail. Leave out a kind to use 'provider'."
+   "help": "A different provider for single kinds, with the same choices. For example, bans by LibertyBans but jail by EssentialsX: kinds: jail: essentials The kinds are ban, mute, kick, warn and jail. Kinds left out use 'provider'."
   },
   {
    "file": "integrations.yml",
    "path": "moderation.operator-name",
    "default": "Headcount",
-   "help": "Name shown as the punisher where the plugin supports it."
+   "help": "Name shown as the punisher, where the plugin supports it."
   },
   {
    "file": "integrations.yml",
    "path": "moderation.silent",
    "default": "false",
-   "help": "Hide punishment broadcasts where the plugin supports it."
+   "help": "Hide punishment broadcasts, if the plugin allows it."
   },
   {
    "file": "integrations.yml",
    "path": "moderation.included-jail",
    "default": "(section)",
-   "help": "Headcount's own jail (used by 'included', and for jail with any plugin that has none)."
+   "help": "The built-in jail, used by 'included' and for jail with any plugin that has none."
   },
   {
    "file": "integrations.yml",
    "path": "moderation.included-jail.location",
    "default": "\"\"",
-   "help": "world,x,y,z[,yaw,pitch]. Must be set for jail actions to work. E.g. \"world,0,64,0\""
+   "help": "Jail location as world,x,y,z[,yaw,pitch], like \"world,0,64,0\". Jail actions don't work until it is set."
   },
   {
    "file": "integrations.yml",
    "path": "moderation.included-jail.radius",
    "default": "8",
-   "help": "Jailed players further than this many blocks are pulled back."
+   "help": "Jailed players who get further away than this many blocks are pulled back."
   },
   {
    "file": "integrations.yml",
@@ -4086,13 +4086,13 @@
    "file": "integrations.yml",
    "path": "moderation.included-jail.allowed-commands",
    "default": "[msg, tell, r, hc, headcount]",
-   "help": "Commands jailed players may still use (everything else is blocked)."
+   "help": "Commands jailed players can still use. Everything else is blocked."
   },
   {
    "file": "integrations.yml",
    "path": "moderation.included-mute",
    "default": "(section)",
-   "help": "Headcount's own mute (used by 'included'): blocks chat and these commands."
+   "help": "The built-in mute, used by 'included'. It blocks chat and these commands."
   },
   {
    "file": "integrations.yml",
@@ -4104,7 +4104,7 @@
    "file": "integrations.yml",
    "path": "moderation.litebans-commands",
    "default": "(section)",
-   "help": "LiteBans' API cannot create punishments, so LiteBans is driven by its commands. Variables: <player> <uuid> <reason> <duration>"
+   "help": "Commands used for LiteBans, since its API can't create punishments. Variables: <player> <uuid> <reason> <duration>"
   },
   {
    "file": "integrations.yml",
@@ -4158,7 +4158,7 @@
    "file": "integrations.yml",
    "path": "moderation.commands",
    "default": "(section)",
-   "help": "Templates for provider 'commands'. Leave a kind empty if your plugin can't do it (it then goes to 'included'). Variables: <player> <uuid> <reason> <duration> <jail>"
+   "help": "Command templates for provider 'commands'. Leave a kind empty if your plugin can't do it, and 'included' handles it instead. Variables: <player> <uuid> <reason> <duration> <jail>"
   },
   {
    "file": "integrations.yml",
@@ -4236,13 +4236,13 @@
    "file": "integrations.yml",
    "path": "discord.provider",
    "default": "discordsrv",
-   "help": "discordsrv | none"
+   "help": "Which plugin sends Discord messages: discordsrv | none"
   },
   {
    "file": "integrations.yml",
    "path": "discord.default-channel",
    "default": "global",
-   "help": "DiscordSRV game channel used when an action doesn't name one."
+   "help": "DiscordSRV game channel for actions that don't name one."
   },
   {
    "file": "integrations.yml",
@@ -4254,19 +4254,19 @@
    "file": "integrations.yml",
    "path": "items.providers",
    "default": "[itemsadder, oraxen, nexo]",
-   "help": "Which of itemsadder, oraxen and nexo to use (the ones not installed are skipped). [] turns custom items off."
+   "help": "Custom item plugins to use, out of itemsadder, oraxen and nexo. Ones that aren't installed are skipped, and [] turns custom items off."
   },
   {
    "file": "integrations.yml",
    "path": "bedrock",
    "default": "(section)",
-   "help": "Bedrock players (through Geyser). Bedrock players get /trade accept instead of the chat link; every menu and the sidebar work for them. Also the bedrock status."
+   "help": "Bedrock players, through Geyser. They get /trade accept instead of the chat link, and every menu and the sidebar work for them. This also feeds the bedrock status."
   },
   {
    "file": "integrations.yml",
    "path": "bedrock.provider",
    "default": "floodgate",
-   "help": "floodgate | geyser | none. floodgate also knows players who have no Java account."
+   "help": "How Bedrock players are recognized: floodgate | geyser | none floodgate also knows players who have no Java account."
   },
   {
    "file": "integrations.yml",
@@ -4278,7 +4278,7 @@
    "file": "integrations.yml",
    "path": "player-state.provider",
    "default": "included",
-   "help": "included | essentials | none included:   AFK after 'afk.after' without activity; vanished from the \"vanished\" flag most vanish plugins set; god mode from the player's invulnerable flag; jailed and muted from Headcount's own jail and mute (or the moderation plugin, when it can tell). essentials: EssentialsX's own /afk, /vanish, /god, jail and mute. none:       all five read false."
+   "help": "Which plugin reports player states: included | essentials | none included:   AFK after 'afk.after' without activity, and vanished from the \"vanished\" flag most vanish plugins set. God mode comes from the player's invulnerable flag. Jailed and muted come from the built-in jail and mute, or from the moderation plugin when it can tell. essentials: EssentialsX's own /afk, /vanish, /god, jail and mute. none:       all five read false."
   },
   {
    "file": "integrations.yml",
@@ -4296,13 +4296,13 @@
    "file": "integrations.yml",
    "path": "player-state.included.afk.after",
    "default": "5m",
-   "help": "Time without moving, looking around, chatting, commands or clicking before a player is AFK. 0 = never."
+   "help": "How long a player goes without moving, looking around, chatting, using commands or clicking before they are AFK. 0 means never."
   },
   {
    "file": "integrations.yml",
    "path": "player-state.included.afk.looking-counts",
    "default": "true",
-   "help": "Turning the camera counts as activity."
+   "help": "Count turning the camera as activity."
   },
   {
    "file": "integrations.yml",
@@ -4338,7 +4338,7 @@
    "file": "statuses.yml",
    "path": "statuses.in-pvp",
    "default": "(section)",
-   "help": "This player's PvP is on (the /pvp toggle of the PvP provider in integrations.yml). While it is on, the default vault and trade rules block them. With provider none it reads false."
+   "help": "The player has PvP on, from the /pvp toggle of the PvP provider in integrations.yml. The default vault and trade rules block players while it's on. With provider none it is always false."
   },
   {
    "file": "statuses.yml",
@@ -4362,7 +4362,7 @@
    "file": "statuses.yml",
    "path": "statuses.combat-tagged",
    "default": "(section)",
-   "help": "In combat (the PvP provider's combat tag). With pvp provider none, falls back to recent-pvp-damage."
+   "help": "The player is in combat, from the PvP provider's combat tag. With provider none, recent-pvp-damage is used."
   },
   {
    "file": "statuses.yml",
@@ -4494,7 +4494,7 @@
    "file": "statuses.yml",
    "path": "statuses.vanished",
    "default": "(section)",
-   "help": "Vanished through any vanish plugin that sets the \"vanished\" metadata, or EssentialsX's /vanish when the player-state provider is essentials."
+   "help": "The player is vanished. Most vanish plugins set the \"vanished\" metadata this reads. With the essentials player-state provider, EssentialsX's /vanish counts too."
   },
   {
    "file": "statuses.yml",
@@ -4554,7 +4554,7 @@
    "file": "statuses.yml",
    "path": "statuses.afk",
    "default": "(section)",
-   "help": "AFK, from the player-state provider (integrations.yml): Headcount's own idle timer, or EssentialsX's /afk."
+   "help": "The player is AFK, from the player-state provider in integrations.yml: the built-in idle timer or EssentialsX's /afk."
   },
   {
    "file": "statuses.yml",
@@ -4680,7 +4680,7 @@
    "file": "trade.yml",
    "path": "request.vanished-status",
    "default": "vanished",
-   "help": "A target with this status (statuses.yml) is treated as offline, so vanished staff are never revealed."
+   "help": "Status (statuses.yml) that makes a target count as offline, so vanished staff aren't revealed."
   },
   {
    "file": "trade.yml",
@@ -4692,7 +4692,7 @@
    "file": "trade.yml",
    "path": "confirm.countdown",
    "default": "3s",
-   "help": "Once both players confirm, both sides lock and the trade happens after this countdown. Any change to either side clears both confirmations."
+   "help": "Countdown between both players confirming and the trade going through. Both sides are locked meanwhile. Any change to either side clears both confirmations."
   },
   {
    "file": "trade.yml",
@@ -4704,7 +4704,7 @@
    "file": "trade.yml",
    "path": "cooldown.duration",
    "default": "10s",
-   "help": "Time between trades for both players (bypass: headcount.bypass.trade.cooldown)."
+   "help": "Time both players wait before their next trade. Bypass: headcount.bypass.trade.cooldown"
   },
   {
    "file": "trade.yml",
@@ -4722,7 +4722,7 @@
    "file": "trade.yml",
    "path": "range.blocks",
    "default": "-1",
-   "help": "Maximum distance between the players in blocks, or -1 for no limit (bypass: headcount.bypass.trade.range)."
+   "help": "Maximum distance between the players in blocks. -1 means no limit. Bypass: headcount.bypass.trade.range"
   },
   {
    "file": "trade.yml",
@@ -4740,7 +4740,7 @@
    "file": "trade.yml",
    "path": "allowed-types.heads-for-heads",
    "default": "true",
-   "help": "\"Heads\" are economy heads of the current cycle; everything else (including expired heads) is an \"item\"."
+   "help": "Which kinds of trade are allowed. \"Heads\" are economy heads of the current cycle. Anything else, expired heads included, is an \"item\"."
   },
   {
    "file": "trade.yml",
@@ -4758,7 +4758,7 @@
    "file": "trade.yml",
    "path": "allowed-types.gifts",
    "default": "true",
-   "help": "One side offers nothing (a gift)."
+   "help": "Trades where one side offers nothing."
   },
   {
    "file": "trade.yml",
@@ -4770,19 +4770,19 @@
    "file": "trade.yml",
    "path": "limits.max-items",
    "default": "24",
-   "help": "Most item stacks one side may offer (heads not counted)."
+   "help": "Most item stacks one side can offer, not counting heads."
   },
   {
    "file": "trade.yml",
    "path": "limits.max-heads",
    "default": "24",
-   "help": "Most economy heads one side may offer."
+   "help": "Most economy heads one side can offer."
   },
   {
    "file": "trade.yml",
    "path": "limits.only-own-heads",
    "default": "false",
-   "help": "Only allow offering economy heads of your own head."
+   "help": "Players can only offer their own heads."
   },
   {
    "file": "trade.yml",
@@ -4800,43 +4800,43 @@
    "file": "trade.yml",
    "path": "statuses.block-request",
    "default": "[in-pvp, combat-tagged, creative-or-spectator, sleeping-or-dead]",
-   "help": "Statuses that stop a request being sent (checked on both players). Messages: gates.trade-send.<status> (you) and gates.trade-send-target.<status> (the other player). Bypass: headcount.bypass.trade-send.<status>."
+   "help": "Statuses that stop a request from being sent, checked on both players. The sender sees gates.trade-send.<status> or gates.trade-send-target.<status>, depending on who has it. Bypass: headcount.bypass.trade-send.<status>"
   },
   {
    "file": "trade.yml",
    "path": "statuses.block-accept",
    "default": "[in-pvp, combat-tagged, creative-or-spectator, sleeping-or-dead]",
-   "help": "Statuses that stop a request being accepted (checked on both players). Messages: gates.trade-accept.<status> / gates.trade-accept-target.<status>."
+   "help": "Statuses that stop a request from being accepted, checked on both players. Messages are gates.trade-accept.<status> and gates.trade-accept-target.<status>."
   },
   {
    "file": "trade.yml",
    "path": "statuses.cancel-open",
    "default": "[in-pvp, combat-tagged, creative-or-spectator, sleeping-or-dead]",
-   "help": "Statuses that cancel an open trade (checked on both players, every cancel.check-interval). Bypass: headcount.bypass.trade-cancel.<status>."
+   "help": "Statuses that cancel an open trade, checked on both players every cancel.check-interval. Bypass: headcount.bypass.trade-cancel.<status>"
   },
   {
    "file": "trade.yml",
    "path": "cancel",
    "default": "(section)",
-   "help": ""
+   "help": "When an open trade is cancelled, everything goes back to its owner. It always cancels if either player closes the screen, leaves, dies, changes world, goes out of range or gets a cancel status, and when the cycle ends or the server stops or reloads."
   },
   {
    "file": "trade.yml",
    "path": "cancel.on-teleport",
    "default": "true",
-   "help": "An open trade is cancelled (everything returned to its owner) if either player closes the screen, disconnects, is kicked or banned, dies, changes world, leaves range, gets a cancel status, the cycle ends, or the server stops or reloads. These add more cases:"
+   "help": "Also cancel when either player teleports."
   },
   {
    "file": "trade.yml",
    "path": "cancel.teleport-min-distance",
    "default": "0",
-   "help": "Teleports shorter than this (in the same world) do not cancel."
+   "help": "Teleports shorter than this many blocks, within the same world, don't cancel."
   },
   {
    "file": "trade.yml",
    "path": "cancel.on-gamemode-change",
    "default": "true",
-   "help": ""
+   "help": "Also cancel when either player's game mode changes."
   },
   {
    "file": "trade.yml",
@@ -4848,7 +4848,7 @@
    "file": "trade.yml",
    "path": "save-player-data-after-trade",
    "default": "true",
-   "help": "Save both players' inventories to disk right after a trade completes, and about a second after any item moves into or out of an offer, so a crash can neither duplicate nor lose offered items."
+   "help": "Save both players' inventories to disk when a trade completes, and about a second after any item moves in or out of an offer. A crash then can't duplicate or lose offered items."
   },
   {
    "file": "trade.yml",
@@ -4860,7 +4860,7 @@
    "file": "trade.yml",
    "path": "gui.title",
    "default": "\"<dark_gray>Trade with <other>\"",
-   "help": "Variables in all trade texts: <other> <seconds> <my_heads> <my_items> <their_heads> <their_items> <max_heads> <max_items>"
+   "help": "Trade window title. Every text in this menu can use <other> <seconds> <my_heads> <my_items> <their_heads> <their_items> <max_heads> <max_items>"
   },
   {
    "file": "trade.yml",
@@ -4872,7 +4872,7 @@
    "file": "trade.yml",
    "path": "gui.own-slots",
    "default": "[0-3, 9-12, 18-21, 27-30, 36-39, 45-48]",
-   "help": "Your offer (left) and the other player's offer (right). Both lists must be the same length."
+   "help": "Slots for your offer, on the left. other-slots holds the other player's offer. Both lists must be the same length."
   },
   {
    "file": "trade.yml",
@@ -5142,25 +5142,25 @@
    "file": "scoring.yml",
    "path": "formula",
    "default": "\"unique - ceil(active / 4)\"",
-   "help": "The formula. Normal math: + - * / % (remainder) ^ (power), parentheses, comparisons (< <= > >= == !=, which give 1 or 0), && || !, and \"condition ? a : b\". Functions: min(a, b, ...) max(...) avg(...) floor ceil round(x[, digits]) trunc abs sign pow(x, y) sqrt cbrt exp log(x[, base]) ln log10 log2 clamp(x, low, high) if(condition, a, b) sin cos tan Constants: pi e true false Variables: unique            unique heads in the vault (different owners; your own head counts once) total             total heads in the vault, duplicates included own               copies of your own head in the vault duplicates        total - unique vault_size        your vault slots this cycle;  vault_free  empty slots starting_heads    heads every vault started with this cycle active            active players this cycle;  players  everyone who has ever joined;  online  players online rank              your rank among active players by unique heads (1 = most; ties share a rank) percentile        your percentile among active players (100 = top, 0 = bottom) unique_avg unique_median unique_max unique_min unique_sum   over active players kills             kill heads you got this cycle;  deaths  kill heads others got from you trades            completed trades;  heads_in / heads_out  heads received / given through trades purchases         shop purchases this cycle;  points_spent  points spent this cycle points            points you hold now;  points_next  points already waiting for next cycle playtime          minutes played this cycle;  playtime_hours streak            +N for N positive cycles in a row, -N for N negative;  streak_positive / streak_negative last_score        last cycle's score (0 if none);  last_unique;  has_last  1 if there was a last score bonus             score bonus from actions (added after the formula unless add-bonus-after-formula is false) titles            titles you own cycle             the cycle ID;  cycle_length  days;  days_elapsed / days_left is_active         1 if you are active %any_placeholder% any numeric PlaceholderAPI placeholder, e.g. %statistic_player_kills% (offline players resolve whatever the placeholder supports; anything non-numeric counts as 0) Default: one point per unique head, minus a quarter of the active players (rounded up). With 12 active players, 3 unique heads scores 0 and 10 unique heads scores 7."
+   "help": "The score formula, worked out for each active player when a cycle ends. It takes normal math: + - * / % (remainder) ^ (power), parentheses, comparisons (< <= > >= == !=, which give 1 or 0), && || !, and \"condition ? a : b\". Functions: min(a, b, ...) max(...) avg(...) floor ceil round(x[, digits]) trunc abs sign pow(x, y) sqrt cbrt exp log(x[, base]) ln log10 log2 clamp(x, low, high) if(condition, a, b) sin cos tan Constants: pi e true false Variables: unique            unique heads in the vault, from different owners (your own head counts once) total             all heads in the vault, duplicates included own               copies of your own head in the vault duplicates        total - unique vault_size        your vault slots this cycle vault_free        empty vault slots starting_heads    heads every vault started with this cycle active            active players this cycle players           everyone who has ever joined online            players online now rank              your rank among active players by unique heads, 1 being the most (ties share a rank) percentile        your percentile among active players, from 0 at the bottom to 100 at the top unique_avg, unique_median, unique_max, unique_min, unique_sum unique heads over all active players kills             kill heads you got this cycle deaths            kill heads others got from you trades            completed trades heads_in          heads received through trades heads_out         heads given through trades purchases         shop purchases this cycle points_spent      points spent this cycle points            points you hold now points_next       points already waiting for next cycle playtime          minutes played this cycle playtime_hours    hours played this cycle streak            +N after N positive cycles in a row, -N after N negative ones streak_positive   the length of a positive streak, else 0 streak_negative   the length of a negative streak, else 0 last_score        last cycle's score, or 0 if there was none last_unique       last cycle's unique heads has_last          1 if there was a last score bonus             score bonus from actions (see add-bonus-after-formula) titles            titles you own cycle             the cycle ID cycle_length      cycle length in days days_elapsed      days since the cycle started days_left         days until it ends is_active         1 if you are active %any_placeholder% any numeric PlaceholderAPI placeholder, like %statistic_player_kills%. For offline players it gives whatever the placeholder supports. Anything that isn't a number counts as 0. Other formulas to try (copy one into 'formula'): Exponential, rewarding big collections:   floor(pow(unique, 1.5) / 2) - ceil(active / 4) Percent-based, compared to everyone:      round((percentile - 50) / 10) Rank-based, top 3 rewarded:               rank <= 3 ? 10 - rank * 2 : (percentile < 25 ? -3 : 0) Share of all active players collected:    round(unique / max(active, 1) * 10) - 5 Streak bonus on top of the default:       unique - ceil(active / 4) + min(streak_positive, 3) Punish hoarding your own head:            unique - ceil(active / 4) - floor(own / 10) Kills matter:                             unique + kills - deaths - ceil(active / 4) The default gives one point per unique head, minus a quarter of the active players rounded up. With 12 active players, 3 unique heads scores 0 and 10 unique heads scores 7."
   },
   {
    "file": "scoring.yml",
    "path": "rounding",
    "default": "floor",
-   "help": "Other ideas (copy one into 'formula'): Exponential, rewarding big collections:   floor(pow(unique, 1.5) / 2) - ceil(active / 4) Percent-based, compared to everyone:      round((percentile - 50) / 10) Rank-based, top 3 rewarded:               rank <= 3 ? 10 - rank * 2 : (percentile < 25 ? -3 : 0) Share of all active players collected:    round(unique / max(active, 1) * 10) - 5 Streak bonus on top of the default:       unique - ceil(active / 4) + min(streak_positive, 3) Punish hoarding your own head:            unique - ceil(active / 4) - floor(own / 10) Kills matter:                             unique + kills - deaths - ceil(active / 4) How the formula's result becomes a whole number: floor | round | ceil"
+   "help": "How the formula's result is rounded to a whole number: floor | round | ceil"
   },
   {
    "file": "scoring.yml",
    "path": "add-bonus-after-formula",
    "default": "true",
-   "help": "Add the 'score-bonus' action total after the formula and rounding. Set false if your formula uses 'bonus' itself."
+   "help": "Add the total from 'score-bonus' actions after the formula and rounding. Set false if your formula uses 'bonus'."
   },
   {
    "file": "scoring.yml",
    "path": "rank-mode",
    "default": "competition",
-   "help": "How ties rank: competition (10, 10, 8 -> 1, 1, 3) or dense (10, 10, 8 -> 1, 1, 2)."
+   "help": "How tied scores are ranked: competition | dense Scores of 10, 10 and 8 rank 1, 1, 3 with competition and 1, 1, 2 with dense."
   },
   {
    "file": "scoring.yml",
@@ -5172,19 +5172,19 @@
    "file": "scoring.yml",
    "path": "streaks.inactive",
    "default": "pause",
-   "help": "A streak counts consecutive cycles with a positive score, or with a negative score. When a player is inactive for a cycle: pause (keep the streak) | break (reset to 0)"
+   "help": "What a cycle without activity does to a streak: pause | break pause keeps the streak and break resets it to 0. A streak counts cycles in a row with a positive score, or in a row with a negative one."
   },
   {
    "file": "scoring.yml",
    "path": "streaks.zero-score",
    "default": "break",
-   "help": "A score of exactly 0: break | pause"
+   "help": "What a score of exactly 0 does to a streak: break | pause"
   },
   {
    "file": "outcomes.yml",
    "path": "mode",
    "default": "most-extreme",
-   "help": "all: a player gets every rule their score matches. most-extreme: only the most extreme matching rule in each group (a -12 gets \"severe\", not all three)."
+   "help": "Which matching rules a player gets. With all, they get every rule their score matches. With most-extreme, they get only the most extreme match in each group, so a score of -12 gets the severe penalty and not all three."
   },
   {
    "file": "outcomes.yml",
@@ -5196,7 +5196,7 @@
    "file": "outcomes.yml",
    "path": "rules.penalty-1",
    "default": "(section)",
-   "help": "---------------------------------------------------------------- punishments (mild by default)"
+   "help": "---------------------------------------------------------------- punishments"
   },
   {
    "file": "outcomes.yml",
@@ -5268,7 +5268,7 @@
    "file": "outcomes.yml",
    "path": "rules.ban-repeat-offenders",
    "default": "(section)",
-   "help": "Repeated failure: a ban for three negative cycles in a row. Disabled by default; enable with care."
+   "help": "Bans a player for a day after three negative cycles in a row. Off by default."
   },
   {
    "file": "outcomes.yml",
@@ -5328,7 +5328,7 @@
    "file": "outcomes.yml",
    "path": "rules.ban-extreme",
    "default": "(section)",
-   "help": "A permanent ban for extreme scores. Disabled by default."
+   "help": "Bans a player permanently for a score of -25 or lower. Off by default."
   },
   {
    "file": "outcomes.yml",
@@ -5453,7 +5453,7 @@
   {
    "file": "outcomes.yml",
    "path": "rules.streak-bonus.actions",
-   "default": "[message: \"<aqua><streak> good cycles in a row! +3 starting heads next cycle.\", type: next-cycle]",
+   "default": "[message: \"<aqua><streak> good cycles in a row. You start next cycle with 3 extra heads.\", type: next-cycle]",
    "help": ""
   },
   {
@@ -5472,19 +5472,19 @@
    "file": "shop.yml",
    "path": "settings.confirm-at-price",
    "default": "50",
-   "help": "Purchases at or above this price open a confirmation menu first (an entry can override with confirm: true/false)."
+   "help": "Price at which a purchase asks for confirmation first. An entry can override this with confirm: true or false."
   },
   {
    "file": "shop.yml",
    "path": "settings.new-player-score",
    "default": "0",
-   "help": "The \"last cycle score\" used for players with no previous cycle (new or inactive last cycle)."
+   "help": "Last-cycle score for players who don't have one, because they are new or were inactive."
   },
   {
    "file": "shop.yml",
    "path": "settings.stock-reset",
    "default": "cycle",
-   "help": "When global stock refills: cycle (every cycle) | never"
+   "help": "When global stock refills: cycle or never."
   },
   {
    "file": "shop.yml",
@@ -5496,7 +5496,7 @@
    "file": "shop.yml",
    "path": "gui.title",
    "default": "\"<dark_gray>Shop » <tier> <dark_gray>(<points> pts)\"",
-   "help": "Variables: <tier> <tier_id> <tier_number> <tiers> <page> <pages> <points> <last_score> <threshold> <needed>"
+   "help": "Menu title. Variables: <tier> <tier_id> <tier_number> <tiers> <page> <pages> <points> <last_score> <threshold> <needed>"
   },
   {
    "file": "shop.yml",
@@ -5669,7 +5669,7 @@
   {
    "file": "shop.yml",
    "path": "gui.buttons.info.lore",
-   "default": "[\"<gray>Tier: <tier> <dark_gray>(<tier_number>/<tiers>)\", \"<gray>Your last cycle score: <white><last_score>\", \"<gray>Points come from a positive score.\"]",
+   "default": "[\"<gray>Tier: <tier> <dark_gray>(<tier_number>/<tiers>)\", \"<gray>Your last cycle score: <white><last_score>\", \"<gray>You earn points with a positive score.\"]",
    "help": ""
   },
   {
@@ -5730,7 +5730,7 @@
    "file": "shop.yml",
    "path": "confirm-gui",
    "default": "(section)",
-   "help": "The confirmation menu for expensive purchases. The entry being bought is shown in the 'display' slot."
+   "help": "Confirmation menu for expensive purchases. The entry being bought is shown in the 'display' slot."
   },
   {
    "file": "shop.yml",
@@ -5832,7 +5832,7 @@
    "file": "shop.yml",
    "path": "default-states",
    "default": "(section)",
-   "help": "How entries look in each state, merged under every entry's own 'display' and 'display-states'. States: affordable, too-expensive, sold-out, locked, and optionally limit-reached, cooldown, unavailable (those three fall back to sold-out / too-expensive / too-expensive when not defined). Variables: <name> <price> <points> <missing> <stock> <purchases_left> <limit> <bought> <cooldown> <tier> <threshold>"
+   "help": "Default look of entries in each state. An entry's own 'display' and 'display-states' override these. The states are affordable, too-expensive, sold-out and locked, plus three optional ones. If left out, limit-reached looks like sold-out, and cooldown and unavailable look like too-expensive. Variables: <name> <price> <points> <missing> <stock> <purchases_left> <limit> <bought> <cooldown> <tier> <threshold>"
   },
   {
    "file": "shop.yml",
@@ -5885,7 +5885,7 @@
   {
    "file": "shop.yml",
    "path": "default-states.limit-reached.lore",
-   "default": "[\"<gray>Price: <gold><price> points\", \"<red>You already bought this <limit> time(s) this cycle.\"]",
+   "default": "[\"<gray>Price: <gold><price> points\", \"<red>You reached the limit of <limit> for this cycle.\"]",
    "help": ""
   },
   {
@@ -5909,7 +5909,7 @@
   {
    "file": "shop.yml",
    "path": "default-states.unavailable.lore",
-   "default": "[\"<gray>Price: <gold><price> points\", \"<red>You do not meet the requirements.\"]",
+   "default": "[\"<gray>Price: <gold><price> points\", \"<red>You don't meet the requirements for this.\"]",
    "help": ""
   },
   {
@@ -5940,7 +5940,7 @@
    "file": "shop.yml",
    "path": "tiers",
    "default": "(section)",
-   "help": "Tiers in order. 'threshold: none' is always unlocked. Tier settings: name, threshold (a last-cycle score, or none), pages (at least; entries can add more), enabled, entries. Entry settings: name                 how the entry is called in messages (default: its display name without formatting) enabled              false hides it page, slot           where it goes (page starts at 1) price                in points display              item definition (material, name, lore, item-model, glint, enchants, custom ...) display-states       per-state overrides (affordable, too-expensive, sold-out, locked, limit-reached, cooldown, unavailable) actions              what a purchase does limit-per-cycle      purchases per player per cycle (0 = no limit) stock                global stock (-1 = unlimited) cooldown             time between purchases per player conditions           extra requirements (see actions.yml) requires             titles: [..], purchases: [entry or tier.entry, ever], purchases-this-cycle: [..], permissions: [..] confirm              force the confirmation menu on (true) or off (false)"
+   "help": "The shop's tiers, in order. A tier with 'threshold: none' is always unlocked. Tier settings: name, threshold (a last-cycle score, or none), pages (the minimum; entries can add more), enabled and entries. Entry settings: name                 the entry's name in messages (default: its display name without formatting) enabled              false hides it page, slot           where it goes (page starts at 1) price                in points display              item definition (material, name, lore, item-model, glint, enchants, custom ...) display-states       per-state overrides (affordable, too-expensive, sold-out, locked, limit-reached, cooldown, unavailable) actions              what a purchase does limit-per-cycle      purchases per player per cycle (0 = no limit) stock                global stock (-1 = unlimited) cooldown             time between purchases per player conditions           extra requirements (see actions.yml) requires             titles: [..], purchases: [entry or tier.entry, ever], purchases-this-cycle: [..], permissions: [..] confirm              force the confirmation menu on (true) or off (false)"
   },
   {
    "file": "shop.yml",
@@ -6954,13 +6954,13 @@
    "file": "titles.yml",
    "path": "settings.none-text",
    "default": "\"\"",
-   "help": "%headcount_title% when nothing is equipped."
+   "help": "What %headcount_title% shows when nothing is equipped."
   },
   {
    "file": "titles.yml",
    "path": "settings.format",
    "default": "\"<title> \"",
-   "help": "How %headcount_title% wraps the title's display. <title> is the display text."
+   "help": "How %headcount_title% shows the equipped title. <title> is the title's display text."
   },
   {
    "file": "titles.yml",
@@ -6972,25 +6972,25 @@
    "file": "titles.yml",
    "path": "settings.permission-prefix",
    "default": "(section)",
-   "help": "Mirror the shown title into the permissions plugin as a prefix or suffix (legacy & colors are generated)."
+   "help": "Copies the shown title into your permissions plugin as a prefix or suffix, with colors converted to legacy &-codes."
   },
   {
    "file": "titles.yml",
    "path": "settings.permission-prefix.enabled",
    "default": "false",
-   "help": "Turning this on or off with /hca reload updates online players at once. Others are updated when they next join while it is on; a prefix left from before it was turned off can be removed with your permissions plugin."
+   "help": "Turns the prefix or suffix on. A change applied with /hca reload updates online players right away, and others when they next join while it is on. A prefix left over from before it was turned off has to be removed with your permissions plugin."
   },
   {
    "file": "titles.yml",
    "path": "settings.permission-prefix.type",
    "default": "prefix",
-   "help": "prefix | suffix"
+   "help": "Whether the title is set as a prefix or a suffix."
   },
   {
    "file": "titles.yml",
    "path": "settings.permission-prefix.priority",
    "default": "100",
-   "help": "Headcount owns every prefix (or suffix) at this priority; pick one nothing else uses."
+   "help": "Priority of the prefix or suffix. Headcount clears anything else at this priority, so pick one nothing else uses."
   },
   {
    "file": "titles.yml",
@@ -7002,7 +7002,7 @@
    "file": "titles.yml",
    "path": "titles",
    "default": "(section)",
-   "help": "Each title: display (MiniMessage, what players see), description (lore lines in the menu), icon (an item definition for the menu, see config.yml), enabled (false hides it). The key (champion, ...) is the ID used by /hca title, the grant-title action and shop requirements."
+   "help": "The titles players can own. Each key (champion, collector...) is the title's ID for /hca title, the grant-title action and shop requirements. display       what players see, in MiniMessage description   lore lines in the menu icon          the menu item, as an item definition (see config.yml) enabled       false hides the title"
   },
   {
    "file": "titles.yml",
@@ -7110,7 +7110,7 @@
    "file": "titles.yml",
    "path": "gui.title",
    "default": "\"<dark_gray>Your Titles\"",
-   "help": "<page>"
+   "help": "Menu title. Variables: <page>"
   },
   {
    "file": "titles.yml",
@@ -7122,7 +7122,7 @@
    "file": "titles.yml",
    "path": "gui.show-unowned",
    "default": "true",
-   "help": "Show titles the player does not own, as locked."
+   "help": "Show titles the player doesn't own, as locked."
   },
   {
    "file": "titles.yml",
@@ -7134,7 +7134,7 @@
    "file": "titles.yml",
    "path": "gui.title-item",
    "default": "(section)",
-   "help": "Look of each title (merged with the title's own 'icon'). States: owned, equipped, forced, locked. Variables: <title> <id> <description>"
+   "help": "How each title looks in the menu, combined with the title's own 'icon'. States: owned, equipped, forced, locked. Variables: <title> <id> <description>"
   },
   {
    "file": "titles.yml",
@@ -7211,7 +7211,7 @@
   {
    "file": "titles.yml",
    "path": "gui.title-item.locked.lore",
-   "default": "[\"\", \"<dark_gray>You do not own this title\"]",
+   "default": "[\"\", \"<dark_gray>You don't own this title\"]",
    "help": ""
   },
   {
@@ -7337,7 +7337,7 @@
   {
    "file": "actions.yml",
    "path": "lists.punish-mild",
-   "default": "[message: \"<red>Your score was <score>. A small penalty applies for a day.\", type: potion]",
+   "default": "[message: \"<red>Your score was <score>. You are slowed for a day of playtime.\", type: potion]",
    "help": "---------------------------------------------------------------- punishments (used by outcomes.yml)"
   },
   {
@@ -7379,7 +7379,7 @@
   {
    "file": "actions.yml",
    "path": "lists.punish-medium",
-   "default": "[message: \"<red>Your score was <score>. You are weakened for two days.\", type: potion]",
+   "default": "[message: \"<red>Your score was <score>. You are weakened and lose 2 hearts for two days of playtime.\", type: potion]",
    "help": ""
   },
   {
@@ -7439,7 +7439,7 @@
   {
    "file": "actions.yml",
    "path": "lists.punish-severe",
-   "default": "[message: \"<dark_red>Your score was <score>. You are marked for the whole cycle.\", dunce-cap, type: glowing]",
+   "default": "",
    "help": ""
   },
   {
@@ -7512,7 +7512,7 @@
    "file": "actions.yml",
    "path": "lists.mystery-box",
    "default": "[type: random]",
-   "help": "A random reward, as an example of 'random'."
+   "help": "An example of the random type: one of three rewards, picked by weight."
   },
   {
    "file": "actions.yml",
@@ -7654,7 +7654,7 @@
   },
   {
    "title": "Everyone fights by default, with a longer combat tag",
-   "text": "With PvP on by default, the default vault and trade rules (blocked while `in-pvp`) apply to everyone until they turn it off. Remove `in-pvp` from `vault.block-movement.statuses` and the trade statuses if you don't want that.",
+   "text": "With PvP on by default, the default vault and trade blocks for `in-pvp` apply to everyone until they turn PvP off. If you don't want that, remove `in-pvp` from `vault.block-movement.statuses` and from the trade statuses.",
    "yaml": [
     "# integrations.yml\npvp:\n  included:\n    toggle:\n      default: \"on\"\n    combat-tag:\n      duration: 30s\n      block-elytra: true\n      block-ender-pearls: true\n    messages:\n      countdown: bossbar\n"
    ]

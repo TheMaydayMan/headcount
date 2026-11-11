@@ -1,12 +1,12 @@
 # ============================================================================================
 #  Headcount - statuses.yml
-#  Named player states and how to detect each one. Nothing here blocks anything by itself: other files use
-#  these names (vault, trade, conditions, deny lists...), and every status is also a placeholder,
-#  %headcount_status_<name>%, so other plugins can read it.
+#  Named player states and how each one is detected. A status does nothing by itself. The vault and trade
+#  rules, conditions and deny lists in other files refer to statuses by name. Each status is also a
+#  placeholder, %headcount_status_<name>%, that other plugins can read.
 #
-#  Each status has a 'source' plus that source's settings, and optionally:
-#    fallback:     another status to use when this source cannot answer (its plugin is missing)
-#    unavailable:  true/false to use instead when there is no fallback (default false)
+#  Each status has a 'source' plus that source's settings. It can also have:
+#    fallback:     another status to use when the source can't answer, usually because its plugin is missing
+#    unavailable:  true or false, used when there is no fallback (default false)
 #    description:  a note for yourself
 #  In any list of statuses, "!name" means "not name".
 #
@@ -20,7 +20,7 @@
 #    permission       permission: node
 #    metadata         key: name (true when any value is truthy), optional value: text to match
 #    flag             flag: name (set by the flag action)
-#    pvp-damage       dealt or took damage from a player recently. direction: dealt | took | either, seconds: 15
+#    pvp-damage       dealt or took player damage recently. direction: dealt | took | either, seconds: 15
 #    recent-damage    took any damage recently. seconds: 10
 #    mob-damage       took damage from a hostile mob recently. seconds: 10
 #    nearby-player    radius: 16, status: (optional, the other player must have it), min: 1, visible-only: true
@@ -30,7 +30,7 @@
 #    food             below: 6, or range
 #    on-fire, in-lava, in-water, gliding, flying, swimming, sneaking, sprinting, sleeping, dead, invisible, op, bedrock
 #    falling          distance: 4 (blocks fallen so far)
-#    riding           vehicles: [] (empty = any vehicle; else entity types like horse, boat, minecart)
+#    riding           vehicles: [] (entity types like horse, boat, minecart, or empty for any vehicle)
 #    gamemode         modes: [creative, spectator]
 #    world            worlds: [world_nether]
 #    joined-recently  seconds: 30
@@ -47,10 +47,6 @@
 #    all-of / any-of  statuses: [a, b, "!c"]
 #    not              status: a
 #    always / never
-#
-#  Where text lives: this file holds text you design (menu titles, item names and lore, and the messages inside
-#  action lists). Everything Headcount itself says (command replies, errors, confirmations, help, effect
-#  descriptions) is in lang/en_US.yml.
 # ============================================================================================
 config-version: 2
 
@@ -60,14 +56,14 @@ settings:
   placeholder-false: "false"
 
 statuses:
-  # This player's PvP is on (the /pvp toggle of the PvP provider in integrations.yml). While it is on, the
-  # default vault and trade rules block them. With provider none it reads false.
+  # The player has PvP on, from the /pvp toggle of the PvP provider in integrations.yml.
+  # The default vault and trade rules block players while it's on. With provider none it is always false.
   in-pvp:
     source: pvp
     check: pvp-enabled
     unavailable: false
 
-  # In combat (the PvP provider's combat tag). With pvp provider none, falls back to recent-pvp-damage.
+  # The player is in combat, from the PvP provider's combat tag. With provider none, recent-pvp-damage is used.
   combat-tagged:
     source: pvp
     check: combat-tagged
@@ -97,8 +93,8 @@ statuses:
   dead:
     source: dead
 
-  # Vanished through any vanish plugin that sets the "vanished" metadata, or EssentialsX's /vanish when the
-  # player-state provider is essentials.
+  # The player is vanished. Most vanish plugins set the "vanished" metadata this reads. With the essentials
+  # player-state provider, EssentialsX's /vanish counts too.
   vanished:
     source: any-of
     statuses: [vanished-metadata, vanished-essentials]
@@ -112,7 +108,8 @@ statuses:
     check: vanished
     unavailable: false
 
-  # AFK, from the player-state provider (integrations.yml): Headcount's own idle timer, or EssentialsX's /afk.
+  # The player is AFK, from the player-state provider in integrations.yml: the built-in idle timer or
+  # EssentialsX's /afk.
   afk:
     source: player-state
     check: afk
@@ -141,7 +138,7 @@ statuses:
 
   # Examples you can adapt (uncomment to use):
   #
-  # Any other PvP or combat plugin through PlaceholderAPI, e.g. a combat-log plugin exposing %combatlogx_in_combat%:
+  # Any other PvP or combat plugin through PlaceholderAPI, like a combat-log plugin with %combatlogx_in_combat%:
   # combat-logged:
   #   source: placeholder
   #   placeholder: "%combatlogx_in_combat%"
