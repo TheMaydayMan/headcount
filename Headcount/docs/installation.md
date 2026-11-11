@@ -32,6 +32,7 @@ Replace the jar and restart the server. Don't use `/reload`. Your files are kept
 
 - `integrations.yml` was rewritten around `included`, a plugin, or `none`. Old files still load, with `auto` picking the installed plugin and logging a warning, but the new PvP, permissions and AFK options only exist in the new file. The default is now `pvp.provider: included`, so if you used PvPManager, set `pvp.provider: pvpmanager` or remove PvPManager.
 - `config.yml` gained `reset:`, `heads.item.defunct-name`, `heads.item.defunct-lore`, `vault.gui.score-colors` and `sidebar.shown-for-new-players`. If you want `<score>` in the vault title or the gray cycle number on old heads, copy those lines from the bundled file.
+- The default economy was rebalanced (the Balance section of the changelog lists every value). Your files keep the values you have. To play with the new balance, move your config files out of `plugins/Headcount/` and restart so Headcount writes fresh ones, then copy back what you had customized. Options that are missing from your files now fall back to the new defaults, so for example the sidebar starts on for new players.
 - Every file is now `config-version: 2`. The full list of changes is in [CHANGELOG.md](../CHANGELOG.md).
 
 ## Building from source

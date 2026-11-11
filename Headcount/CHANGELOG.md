@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.1.0 (not released yet)
+## 1.1.0 (2026-11-11)
 
 Restart the server after installing it instead of using `/reload`. The database upgrades itself on the first start. Every config file is now `config-version: 2`, and the start-up warning names any files that are older. [installation.md](docs/installation.md#updating) says what to copy into existing configs.
 
@@ -42,7 +42,7 @@ Restart the server after installing it instead of using `/reload`. The database 
 - Every file's comments were revised. config.yml has a quick start, there are references for item definitions and menus, and options that were missing from the comments are now documented.
 
 ### Balance
-The bundled game was reworked so it plays well from 2 to 100 active players. Existing servers keep their own config files, so none of this changes a running server. To try the new defaults, compare your files with the bundled ones, or apply a preset from [examples.md](docs/examples.md), which now has weekly, monthly, hardcore PvP, cozy and big-server setups.
+The bundled game was reworked so it plays well from 2 to 100 active players. Existing servers keep their own config files and the values in them. To try the new defaults, compare your files with the bundled ones, or apply a preset from [examples.md](docs/examples.md), which now has weekly, monthly, hardcore PvP, cozy and big-server setups. Options missing from a file now fall back to the new values instead of the old ones.
 
 config.yml
 - `cycle.length-days` 30 to 14: a player who logs on twice a week still gets several sessions to trade, and results come often enough to feel tied to what they did.
