@@ -1,7 +1,10 @@
-// Shared components: elements, buttons, fields bound to config paths, Minecraft-style previews (text, item
-// tooltips, chest menus), drawers, dialogs, toasts.
-import { renderMini, esc, materialLook, prettyMaterial, parseDuration, formatDuration, dumpEntry, dumpList, readYaml, isObj } from "./core.js";
+// Shared components: elements, icons, controls that fit each kind of setting, the settings row bound to a config
+// path, Minecraft previews (text, tooltips, chests), drawers, dialogs, popovers and toasts.
+import { renderMini, materialLook, prettyMaterial, parseDuration, formatDuration, dumpEntry, dumpList, readYaml, isObj, MC_COLORS, stripMini } from "./core.js";
 import * as S from "./store.js";
+import { spec as specFor } from "./schema.js";
+import { sprite, face, knownItems, haveTextures, playSound, soundKeys } from "./sprites.js";
+export { sprite, face };
 
 export function el(tag, attrs = {}, ...kids) {
   // A node, text or list where the attributes go is content (el("div", child) works too).
@@ -11,7 +14,7 @@ export function el(tag, attrs = {}, ...kids) {
     if (v === null || v === undefined || v === false) continue;
     if (k === "class") n.className = v;
     else if (k === "html") n.innerHTML = v;
-    else if (k === "style" && typeof v === "object") Object.assign(n.style, v);
+    else if (k === "style" && typeof v === "object") { for (const [sk, sv] of Object.entries(v)) if (sv !== null && sv !== undefined) sk.startsWith("--") ? n.style.setProperty(sk, sv) : (n.style[sk] = sv); }
     else if (k.startsWith("on") && typeof v === "function") n.addEventListener(k.slice(2), v);
     else n.setAttribute(k, v === true ? "" : v);
   }
@@ -19,9 +22,59 @@ export function el(tag, attrs = {}, ...kids) {
   return n;
 }
 export const frag = (...kids) => { const f = document.createDocumentFragment(); for (const k of kids.flat(Infinity)) if (k != null && k !== false) f.append(k.nodeType ? k : document.createTextNode(String(k))); return f; };
+
+// ---------------------------------------------------------------- icons (interface only; game things use sprites)
+const PATHS = {
+  search: "M11 18a7 7 0 1 1 0-14 7 7 0 0 1 0 14zM20 20l-4-4",
+  undo: "M9 14L4 9l5-5M4 9h10a6 6 0 0 1 0 12h-3",
+  redo: "M15 14l5-5-5-5M20 9H10a6 6 0 0 0 0 12h3",
+  close: "M6 6l12 12M18 6L6 18",
+  plus: "M12 5v14M5 12h14",
+  trash: "M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3",
+  copy: "M9 9h11v11H9zM5 15H4V4h11v1",
+  grip: "M9 6h.01M15 6h.01M9 12h.01M15 12h.01M9 18h.01M15 18h.01",
+  reset: "M4 12a8 8 0 1 0 3-6.3M4 4v4h4",
+  info: "M12 21a9 9 0 1 1 0-18 9 9 0 0 1 0 18zM12 11v6M12 7.5v.01",
+  right: "M9 6l6 6-6 6",
+  down: "M6 9l6 6 6-6",
+  left: "M15 6l-6 6 6 6",
+  sun: "M12 17a5 5 0 1 0 0-10 5 5 0 0 0 0 10zM12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4",
+  moon: "M20 14.5A8 8 0 1 1 9.5 4 6.5 6.5 0 0 0 20 14.5z",
+  auto: "M12 21a9 9 0 1 1 0-18 9 9 0 0 1 0 18zM12 3v18",
+  power: "M12 3v8M6.3 6.3a8 8 0 1 0 11.4 0",
+  menu: "M4 7h16M4 12h16M4 17h16",
+  play: "M8 5l11 7-11 7z",
+  check: "M5 12l5 5 9-10",
+  edit: "M4 20h4L19 9l-4-4L4 16v4zM14 6l4 4",
+  up: "M12 19V5M6 11l6-6 6 6",
+  dn: "M12 5v14M6 13l6 6 6-6",
+  dots: "M5 12h.01M12 12h.01M19 12h.01",
+  file: "M6 3h8l4 4v14H6zM14 3v4h4",
+  link: "M10 14l4-4M8 12l-2 2a3 3 0 0 0 4 4l2-2M16 12l2-2a3 3 0 0 0-4-4l-2 2",
+  paint: "M4 20l4-1 11-11-3-3L5 16zM14 6l3 3",
+};
+export function icon(name, cls = "") {
+  const s = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  s.setAttribute("viewBox", "0 0 24 24");
+  s.setAttribute("class", "ic " + cls);
+  s.setAttribute("aria-hidden", "true");
+  const p = document.createElementNS("http://www.w3.org/2000/svg", "path");
+  p.setAttribute("d", PATHS[name] || "");
+  if (name === "grip" || name === "dots") { p.setAttribute("stroke-width", "3.2"); }
+  s.append(p);
+  return s;
+}
+export const iconBtn = (name, title, onclick, cls = "") => el("button", { class: "iconbtn " + cls, title, "aria-label": title, onclick }, icon(name));
+
 export const btn = (label, onclick, cls = "") => el("button", { class: "btn " + cls, onclick }, label);
 export const badge = (text, cls = "") => el("span", { class: "badge " + cls }, text);
-export const sectionTitle = (t, ...extra) => el("div", { class: "section-title" }, t, ...extra);
+export const sectionTitle = (t, ...extra) => el("h2", { class: "section-title" }, t, ...extra);
+/** A titled group of settings: a heading and a sheet of rows. */
+export function group(title, ...rows) {
+  const [t, side] = Array.isArray(title) ? title : [title, null];
+  return el("section", { class: "group" }, t ? el("header", {}, el("h2", {}, t), side ? el("div", { class: "side" }, side) : null) : null, el("div", { class: "sheet" }, rows));
+}
+export const subhead = (t) => el("div", { class: "sub-h" }, t);
 
 /** Sample values used to preview text: variables (<player>) and placeholders (%headcount_x% as "%x"). */
 export const SAMPLE = {
@@ -29,110 +82,118 @@ export const SAMPLE = {
   score: 4, unique: 7, total: 21, own: 9, size: 27, used: 21, rank: 2, percentile: 80, streak: 2, streak_text: "2 positive", time_left: "4d 6h",
   cycle_start: "2026-11-01 00:00", cycle_end: "2026-12-01 00:00", cycle_length: 30, active: 12, players: 18, seconds: 12, countdown: "58s",
   countdown_clock: "0:58", duration: "30m", remaining: "12m", price: 10, name: "Speed for 30 minutes", tier: "Uncommon", reason: "Testing",
-  head_id_short: "3f9a1c2e", head_id: "3f9a1c2e-…", created: "2026-11-10 14:02", source: "cycle-start", page: 1, pages: 2, amount: 3,
+  head_id_short: "3f9a1c2e", head_id: "3f9a1c2e-0b4d", created: "2026-11-10 14:02", source: "cycle-start", page: 1, pages: 2, amount: 3,
   title: "<gold>[Champion]", description: "Finished a cycle in the top 3.", status: "in-pvp", command: "/home", state: "on", tagged: "no",
   "%cycle": 3, "%unique": 7, "%total": 21, "%score": 4, "%points": 12, "%streak_text": "2 positive", "%time_left": "4d 6h", "%vault_size": 27,
   "%rank": 2, "%title": "[Champion]", "%points_next": 0, "%active": 12,
 };
 export const prefix = () => S.lang("prefix") ?? "";
 
+/** Fills in variables whose sample is itself formatted text (like <tier> or <title>) before rendering. */
+export const expandVars = (src, vars) => String(src ?? "").replace(/<([a-z_]+)>/g, (m, k) => (typeof vars?.[k] === "string" && vars[k].includes("<") ? vars[k] : m));
+const mini = (src, vars, more = {}) => { const all = { ...SAMPLE, ...(vars || {}) }; return renderMini(expandVars(src, all), { vars: all, prefix: prefix(), ...more }); };
 /** A Minecraft text preview of MiniMessage. */
 export function mcText(src, opts = {}) {
-  return el("div", { class: "mc " + (opts.class || ""), html: renderMini(src ?? "", { vars: { ...SAMPLE, ...(opts.vars || {}) }, prefix: prefix() }) });
+  return el("div", { class: "mc " + (opts.class || ""), html: mini(src, opts.vars) });
 }
 export const miniInline = (src, vars) => el("span", { class: "mcline", html: renderMini(src ?? "", { vars: { ...SAMPLE, ...(vars || {}) }, prefix: prefix(), base: "#3f3f3f" }) });
+/** Rendered text for light interface surfaces: the MiniMessage colours, without the pixel font. */
+export const miniLabel = (src, vars) => el("span", { class: "mlabel", html: renderMini(src ?? "", { vars: { ...SAMPLE, ...(vars || {}) }, prefix: prefix(), base: "currentColor" }) });
 
-/** An item tile (colored by material) with an optional count. */
-export function itemTile(spec, opts = {}) {
-  const mat = isObj(spec) ? spec.material || (spec.head || spec.custom ? "PLAYER_HEAD" : "STONE") : spec;
-  const look = materialLook(mat);
-  const t = el("div", { class: "tile" + (isObj(spec) && spec.glint ? " glint" : ""), style: { background: look.color }, title: prettyMaterial(mat) }, look.glyph);
-  if (opts.size) Object.assign(t.style, { width: opts.size + "px", height: opts.size + "px", fontSize: Math.round(opts.size / 2) + "px" });
-  return t;
-}
+/** Text without formatting, with sample values in place of variables. */
+export const plain = (src) => stripMini(String(src ?? "").replace(/<([a-z_]+)>/g, (m, k) => (SAMPLE[k] !== undefined ? stripMini(String(SAMPLE[k])) : m)));
+/** An item tile (kept for older pages): the item's sprite. */
+export function itemTile(spec, opts = {}) { return sprite(spec, opts.size || 32); }
 
 /** The in-game item tooltip: name and lore lines. */
 export function tooltip(name, lore, vars) {
   const box = el("div", { class: "tooltip-mc" });
-  box.append(el("div", { class: "ln", html: renderMini(name ?? "", { vars: { ...SAMPLE, ...(vars || {}) }, base: "#FFFFFF" }) }));
-  for (const l of [].concat(lore || [])) for (const part of String(l).split("\n")) box.append(el("div", { class: "ln", html: renderMini(part, { vars: { ...SAMPLE, ...(vars || {}) }, base: "#AA00AA" }) }));
+  box.append(el("div", { class: "ln", html: mini(name, vars, { base: "#FFFFFF" }) }));
+  for (const l of [].concat(lore || [])) for (const part of String(l).split("\n")) box.append(el("div", { class: "ln", html: mini(part, vars, { base: "#AA00AA" }) || "&nbsp;" }));
   return box;
 }
 
 let tipEl = null;
 /** Shows `content()` next to the mouse while hovering `target`. */
 export function hoverTip(target, content) {
-  target.addEventListener("mouseenter", () => {
-    tipEl?.remove();
-    tipEl = el("div", { class: "floattip" }, content());
-    document.body.append(tipEl);
-  });
+  target.addEventListener("mouseenter", () => { tipEl?.remove(); tipEl = el("div", { class: "floattip" }, content()); document.body.append(tipEl); });
   target.addEventListener("mousemove", (e) => {
     if (!tipEl) return;
     const w = tipEl.offsetWidth, h = tipEl.offsetHeight;
-    tipEl.style.left = Math.min(window.innerWidth - w - 8, e.clientX + 16) + "px";
-    tipEl.style.top = Math.min(window.innerHeight - h - 8, e.clientY + 12) + "px";
+    tipEl.style.left = Math.max(4, Math.min(window.innerWidth - w - 8, e.clientX + 14)) + "px";
+    tipEl.style.top = Math.max(4, Math.min(window.innerHeight - h - 8, e.clientY - 26)) + "px";
   });
   target.addEventListener("mouseleave", () => { tipEl?.remove(); tipEl = null; });
 }
+export const clearTip = () => { tipEl?.remove(); tipEl = null; };
 
 /**
- * A chest menu. slots(i) returns {item, tip, onclick, cls, count} or null for an empty slot. Optional drag between
- * slots: onDrop(from, to).
+ * A chest screen. slots(i) returns {item, tip, onclick, cls, count, title, draggable} or null for an empty slot.
+ * Optional drag between slots: onDrop(from, to). opts.paint(i, down) makes slots paintable by dragging the mouse.
  */
 export function chest(rows, titleSrc, slots, opts = {}) {
   const grid = el("div", { class: "slots" });
-  let dragFrom = null;
+  let dragFrom = null, painting = false;
   for (let i = 0; i < rows * 9; i++) {
     const s = slots(i) || {};
     const cell = el("div", { class: "slot " + (s.cls || ""), title: s.title || null, "data-slot": i });
-    if (s.item) cell.append(itemTile(s.item));
+    if (s.item) cell.append(sprite(s.item, 32));
     if (s.count > 1) cell.append(el("span", { class: "cnt" }, s.count));
+    if (opts.numbers) cell.append(el("span", { class: "num" }, i));
     if (s.tip) hoverTip(cell, s.tip);
-    cell.addEventListener("click", () => s.onclick ? s.onclick(i) : opts.onEmpty?.(i));
+    if (opts.paint) {
+      cell.addEventListener("mousedown", (e) => { e.preventDefault(); painting = true; opts.paint(i, cell); });
+      cell.addEventListener("mouseenter", () => { if (painting) opts.paint(i, cell, true); });
+    } else cell.addEventListener("click", () => { clearTip(); s.onclick ? s.onclick(i) : opts.onEmpty?.(i); });
     if (opts.onDrop) {
-      if (s.draggable) { cell.draggable = true; cell.addEventListener("dragstart", (e) => { dragFrom = i; e.dataTransfer.effectAllowed = "move"; }); }
+      if (s.draggable) { cell.draggable = true; cell.addEventListener("dragstart", (e) => { clearTip(); dragFrom = i; e.dataTransfer.effectAllowed = "move"; e.dataTransfer.setData("text/plain", String(i)); }); }
       cell.addEventListener("dragover", (e) => { if (dragFrom !== null) { e.preventDefault(); cell.classList.add("drop"); } });
       cell.addEventListener("dragleave", () => cell.classList.remove("drop"));
       cell.addEventListener("drop", (e) => { e.preventDefault(); cell.classList.remove("drop"); if (dragFrom !== null && dragFrom !== i) opts.onDrop(dragFrom, i); dragFrom = null; });
+      cell.addEventListener("dragend", () => { dragFrom = null; });
     }
     grid.append(cell);
   }
-  return el("div", { class: "chest" }, el("div", { class: "ctitle" }, miniInline(titleSrc, opts.vars)), grid);
+  if (opts.paint) window.addEventListener("mouseup", () => { if (painting) { painting = false; opts.paintEnd?.(); } });
+  const box = el("div", { class: "chest", style: { "--rows": rows } }, el("div", { class: "ctop" }), el("div", { class: "cbot" }),
+    el("div", { class: "ctitle", html: mini(titleSrc, opts.vars, { base: "#404040" }) }), grid);
+  return el("div", { class: "chest-wrap" }, box);
 }
 
-// ---------------------------------------------------------------- toasts, dialogs, drawers
-export function toast(msg, kind = "") {
+// ---------------------------------------------------------------- toasts, dialogs, drawers, popovers
+export function toast(msg, kind = "", action) {
   let box = document.querySelector(".toasts");
-  if (!box) { box = el("div", { class: "toasts" }); document.body.append(box); }
-  const t = el("div", { class: "toast " + kind }, msg);
+  if (!box) { box = el("div", { class: "toasts", role: "status" }); document.body.append(box); }
+  const t = el("div", { class: "toast " + kind }, el("span", {}, msg), action ? el("button", { onclick: () => { t.remove(); action.run(); } }, action.label) : null);
   box.append(t);
-  setTimeout(() => t.remove(), kind === "err" ? 9000 : 4500);
+  setTimeout(() => t.remove(), kind === "err" ? 9000 : action ? 8000 : 4200);
 }
 
 export function confirmDialog(title, body, { ok = "OK", danger = false, cancel = "Cancel" } = {}) {
   return new Promise((resolve) => {
     const scrim = el("div", { class: "scrim" });
-    const close = (v) => { scrim.remove(); m.remove(); document.removeEventListener("keydown", key); resolve(v); };
-    const key = (e) => { if (e.key === "Escape") close(false); if (e.key === "Enter") close(true); };
-    const m = el("div", { class: "modal" }, el("h3", {}, title), typeof body === "string" ? el("p", { class: "muted" }, body) : body,
-      el("div", { class: "row", style: { justifyContent: "flex-end", marginTop: "14px" } }, btn(cancel, () => close(false)), btn(ok, () => close(true), danger ? "danger" : "primary")));
+    const close = (v) => { scrim.remove(); m.remove(); document.removeEventListener("keydown", key, true); resolve(v); };
+    const key = (e) => { if (e.key === "Escape") { e.stopPropagation(); close(false); } if (e.key === "Enter") { e.preventDefault(); close(true); } };
+    const okBtn = btn(ok, () => close(true), danger ? "danger" : "primary");
+    const m = el("div", { class: "modal", role: "dialog", "aria-modal": "true" }, el("h3", {}, title), body ? (typeof body === "string" ? el("p", { class: "muted" }, body) : body) : null,
+      el("div", { class: "acts" }, btn(cancel, () => close(false)), okBtn));
     scrim.addEventListener("click", () => close(false));
-    document.addEventListener("keydown", key);
+    document.addEventListener("keydown", key, true);
     document.body.append(scrim, m);
+    setTimeout(() => okBtn.focus(), 20);
   });
 }
 
 export function promptDialog(title, label, value = "", { ok = "OK", check } = {}) {
   return new Promise((resolve) => {
-    const inp = el("input", { type: "text", value });
-    const err = el("div", { class: "small", style: { color: "var(--bad)", minHeight: "18px", marginTop: "4px" } });
+    const inp = el("input", { type: "text", value, spellcheck: "false" });
+    const err = el("div", { class: "small", style: { color: "var(--bad)", minHeight: "20px", marginTop: "6px" } });
     const scrim = el("div", { class: "scrim" });
     const close = (v) => { scrim.remove(); m.remove(); resolve(v); };
     const done = () => { const v = inp.value.trim(); const problem = check?.(v); if (problem) { err.textContent = problem; return; } close(v); };
-    inp.addEventListener("keydown", (e) => { if (e.key === "Enter") done(); if (e.key === "Escape") close(null); });
-    const m = el("div", { class: "modal" }, el("h3", {}, title), el("div", { class: "muted small", style: { marginBottom: "6px" } }, label), inp, err,
-      el("div", { class: "row", style: { justifyContent: "flex-end", marginTop: "10px" } }, btn("Cancel", () => close(null)), btn(ok, done, "primary")));
+    inp.addEventListener("keydown", (e) => { if (e.key === "Enter") done(); if (e.key === "Escape") { e.stopPropagation(); close(null); } });
+    const m = el("div", { class: "modal", role: "dialog", "aria-modal": "true" }, el("h3", {}, title), label ? el("label", { class: "muted", style: { display: "block", marginBottom: "8px" } }, label) : null, inp, err,
+      el("div", { class: "acts", style: { marginTop: "8px" } }, btn("Cancel", () => close(null)), btn(ok, done, "primary")));
     scrim.addEventListener("click", () => close(null));
     document.body.append(scrim, m);
     setTimeout(() => { inp.focus(); inp.select(); }, 20);
@@ -140,51 +201,91 @@ export function promptDialog(title, label, value = "", { ok = "OK", check } = {}
 }
 
 let openDrawer = null;
-export function drawer(title, body, { footer, onClose, subtitle } = {}) {
-  closeDrawer();
+export function drawer(title, body, { footer, onClose, subtitle, wide } = {}) {
+  closeDrawer(true);
   const scrim = el("div", { class: "scrim" });
-  const d = el("div", { class: "drawer" },
-    el("header", {}, el("div", { class: "grow" }, el("h2", {}, title), subtitle ? el("div", { class: "muted small" }, subtitle) : null), el("button", { class: "iconbtn", title: "Close (Esc)", onclick: () => closeDrawer() }, "✕")),
+  const d = el("div", { class: "drawer" + (wide ? " wide" : ""), role: "dialog", "aria-label": typeof title === "string" ? title : "Editor" },
+    el("header", {}, el("div", { class: "grow" }, el("h2", {}, title), subtitle ? el("div", { class: "sub" }, subtitle) : null), iconBtn("close", "Close (Esc)", () => closeDrawer())),
     el("div", { class: "db" }, body), footer ? el("footer", {}, footer) : null);
   scrim.addEventListener("click", () => closeDrawer());
   document.body.append(scrim, d);
-  openDrawer = { close: () => { scrim.remove(); d.remove(); onClose?.(); } };
+  openDrawer = { close: (silent) => { scrim.remove(); d.remove(); if (!silent) onClose?.(); }, el: d };
   return openDrawer;
 }
-export function closeDrawer() { if (openDrawer) { const o = openDrawer; openDrawer = null; o.close(); return true; } return false; }
+/** Closes the open drawer. silent skips its onClose (when another drawer or page replaces it). */
+export function closeDrawer(silent) { closePop(); if (openDrawer) { const o = openDrawer; openDrawer = null; o.close(silent === true); return true; } return false; }
 
-// ---------------------------------------------------------------- controls
-export function switchCtl(checked, onChange) {
-  const cb = el("input", { type: "checkbox" });
+let openPopEl = null, popCleanup = null;
+/** A small panel next to an element. Closes on outside click or Escape. */
+export function popover(anchor, content, { cls = "pop", width } = {}) {
+  closePop();
+  const p = el("div", { class: cls }, content);
+  if (width) p.style.width = width;
+  document.body.append(p);
+  const r = anchor.getBoundingClientRect();
+  const w = p.offsetWidth, h = p.offsetHeight;
+  let x = Math.min(window.innerWidth - w - 12, Math.max(12, r.left));
+  let y = r.bottom + 6;
+  if (y + h > window.innerHeight - 12) y = Math.max(12, r.top - h - 6);
+  p.style.left = x + "px"; p.style.top = y + "px";
+  const away = (e) => { if (!p.contains(e.target) && !anchor.contains(e.target)) closePop(); };
+  const esc = (e) => { if (e.key === "Escape") { e.stopPropagation(); closePop(); anchor.focus?.(); } };
+  setTimeout(() => document.addEventListener("mousedown", away), 0);
+  document.addEventListener("keydown", esc, true);
+  openPopEl = p;
+  popCleanup = () => { document.removeEventListener("mousedown", away); document.removeEventListener("keydown", esc, true); };
+  return p;
+}
+export function closePop() { if (openPopEl) { openPopEl.remove(); openPopEl = null; popCleanup?.(); popCleanup = null; return true; } return false; }
+
+// ---------------------------------------------------------------- basic controls
+export function switchCtl(checked, onChange, label) {
+  const cb = el("input", { type: "checkbox", role: "switch", "aria-label": label || null });
   cb.checked = !!checked;
   cb.addEventListener("change", () => onChange(cb.checked));
   return el("label", { class: "switch" }, cb, el("span"));
 }
 export function seg(options, value, onChange) {
-  const box = el("div", { class: "seg" });
+  const box = el("div", { class: "seg", role: "radiogroup" });
   const draw = (v) => {
     box.innerHTML = "";
     for (const o of options) {
       const [val, label] = Array.isArray(o) ? o : [o, o];
-      box.append(el("button", { class: String(val) === String(v) ? "on" : "", onclick: () => { draw(val); onChange(val); } }, label));
+      box.append(el("button", { type: "button", role: "radio", "aria-checked": String(String(val) === String(v)), class: String(val) === String(v) ? "on" : "", onclick: () => { draw(val); onChange(val); } }, label));
     }
   };
   draw(value);
   return box;
 }
-export function chips(items, onChange, { placeholder, suggestions } = {}) {
+export function select(options, value, onChange, { placeholder } = {}) {
+  const s = el("select", { onchange: (e) => onChange(e.target.value) });
+  if (placeholder !== undefined) s.append(el("option", { value: "" }, placeholder));
+  let found = false;
+  for (const o of options) {
+    if (o && o.group) { s.append(el("optgroup", { label: o.group }, o.items.map((x) => { const [v, l] = Array.isArray(x) ? x : [x, x]; if (String(v) === String(value)) found = true; return el("option", { value: v, selected: String(v) === String(value) }, l); }))); continue; }
+    const [v, l] = Array.isArray(o) ? o : [o, o];
+    if (String(v) === String(value)) found = true;
+    s.append(el("option", { value: v, selected: String(v) === String(value) }, l));
+  }
+  if (!found && value !== undefined && value !== null && value !== "") s.append(el("option", { value, selected: true }, String(value)));
+  return s;
+}
+/** A list of short values as removable chips. suggestions turn the input into a pick list. */
+export function chips(items, onChange, { placeholder, suggestions, render } = {}) {
   const list = (items || []).map(String);
   const box = el("div", { class: "chips" });
   const dl = suggestions ? el("datalist", { id: "dl" + Math.random().toString(36).slice(2) }, suggestions.map((s) => el("option", { value: s }))) : null;
   const draw = () => {
     box.innerHTML = "";
-    list.forEach((it, idx) => box.append(el("span", { class: "chip" }, it, el("button", { title: "Remove", onclick: () => { list.splice(idx, 1); onChange(list.slice()); draw(); } }, "×"))));
-    const inp = el("input", { type: "text", placeholder: placeholder || (list.length ? "add…" : "type and press Enter"), list: dl?.id });
+    list.forEach((it, idx) => box.append(el("span", { class: "chip" }, render ? render(it) : it, el("button", { type: "button", title: "Remove " + it, "aria-label": "Remove " + it, onclick: () => { list.splice(idx, 1); onChange(list.slice()); draw(); } }, icon("close")))));
+    const inp = el("input", { type: "text", placeholder: placeholder || (list.length ? "Add" : "Type and press Enter"), list: dl?.id, spellcheck: "false" });
+    const add = () => { const v = inp.value.trim().replace(/,$/, ""); if (!v) return; list.push(v); onChange(list.slice()); draw(); box.querySelector("input").focus(); };
     inp.addEventListener("keydown", (ev) => {
-      if ((ev.key === "Enter" || ev.key === ",") && inp.value.trim()) { ev.preventDefault(); list.push(inp.value.trim()); onChange(list.slice()); draw(); box.querySelector("input").focus(); }
+      if ((ev.key === "Enter" || ev.key === ",") && inp.value.trim()) { ev.preventDefault(); add(); }
       if (ev.key === "Backspace" && !inp.value && list.length) { list.pop(); onChange(list.slice()); draw(); box.querySelector("input").focus(); }
     });
-    inp.addEventListener("change", () => { if (suggestions?.includes(inp.value.trim())) { list.push(inp.value.trim()); onChange(list.slice()); draw(); } });
+    inp.addEventListener("change", () => { if (suggestions?.includes(inp.value.trim())) add(); });
+    inp.addEventListener("blur", () => { if (inp.value.trim()) add(); });
     box.append(inp);
     if (dl) box.append(dl);
   };
@@ -192,6 +293,31 @@ export function chips(items, onChange, { placeholder, suggestions } = {}) {
   return box;
 }
 
+/** Status names as chips, picked from statuses.yml; each can be flipped to "not". */
+export function statusPicker(items, onChange, { single = false } = {}) {
+  const names = Object.keys(S.get("statuses.yml", "statuses") || {});
+  const list = (items || []).map(String);
+  const box = el("div", { class: "chips" });
+  const draw = () => {
+    box.innerHTML = "";
+    list.forEach((it, idx) => {
+      const neg = it.startsWith("!");
+      const nm = it.replace(/^!/, "");
+      const known = names.includes(nm) || ["always", "never"].includes(nm);
+      box.append(el("span", { class: "chip" + (neg ? " neg" : ""), title: known ? null : "Not in statuses.yml" },
+        el("button", { type: "button", title: neg ? "Matches when it is NOT active. Click for active." : "Matches when active. Click for not active.", onclick: () => { list[idx] = neg ? nm : "!" + nm; onChange(single ? list[0] : list.slice()); draw(); }, style: { padding: "0 2px", fontWeight: 600 } }, neg ? "not" : ""),
+        el("span", { style: known ? null : { color: "var(--bad)" } }, nm),
+        el("button", { type: "button", "aria-label": "Remove " + nm, onclick: () => { list.splice(idx, 1); onChange(single ? undefined : list.slice()); draw(); } }, icon("close"))));
+    });
+    if (single && list.length) return;
+    const free = names.filter((n) => !list.some((x) => x.replace(/^!/, "") === n));
+    box.append(select(free, "", (v) => { if (v) { list.push(v); onChange(single ? v : list.slice()); draw(); } }, { placeholder: list.length ? "Add a status" : "Pick a status" }));
+  };
+  draw();
+  return box;
+}
+
+// ---------------------------------------------------------------- pickers
 export const MATERIALS = ["PLAYER_HEAD", "SKELETON_SKULL", "DIAMOND", "DIAMOND_BLOCK", "DIAMOND_SWORD", "EMERALD", "GOLD_INGOT", "GOLD_BLOCK", "IRON_INGOT",
   "NETHERITE_INGOT", "NETHER_STAR", "TOTEM_OF_UNDYING", "SHIELD", "CHEST", "ENDER_CHEST", "BARREL", "SHULKER_BOX", "NAME_TAG", "PAPER", "BOOK", "WRITABLE_BOOK",
   "CLOCK", "COMPASS", "ARROW", "SPECTRAL_ARROW", "BARRIER", "FEATHER", "SUGAR", "COOKED_BEEF", "BREAD", "GOLDEN_APPLE", "ENCHANTED_GOLDEN_APPLE", "POTION",
@@ -202,7 +328,176 @@ export const MATERIALS = ["PLAYER_HEAD", "SKELETON_SKULL", "DIAMOND", "DIAMOND_B
   "LAPIS_LAZULI", "EMERALD_BLOCK", "IRON_BLOCK", "COPPER_INGOT", "TRIDENT", "BOW", "CROSSBOW", "NETHERITE_SWORD", "BLAZE_POWDER", "GHAST_TEAR"];
 const matList = el("datalist", { id: "materials" }, MATERIALS.map((m) => el("option", { value: m })));
 document.body.append(matList);
+const allMaterials = () => { const k = knownItems(); return k.length ? k.map((x) => x.toUpperCase()) : MATERIALS; };
 
+/** Opens the item grid next to `anchor`; onPick(MATERIAL). */
+export function pickMaterial(anchor, current, onPick) {
+  const q = el("input", { type: "search", placeholder: "Search items", spellcheck: "false" });
+  const grid = el("div", { class: "pgrid" });
+  const foot = el("div", { class: "pfoot" });
+  const all = allMaterials();
+  const draw = () => {
+    grid.innerHTML = "";
+    const s = q.value.trim().toUpperCase().replace(/\s+/g, "_");
+    const hits = s ? all.filter((m) => m.includes(s)).sort((a, b) => (a.startsWith(s) ? 0 : 1) - (b.startsWith(s) ? 0 : 1) || a.length - b.length) : MATERIALS.filter((m) => all.includes(m) || !haveTextures());
+    for (const m of hits.slice(0, 240)) grid.append(el("button", { type: "button", title: prettyMaterial(m), class: m === String(current).toUpperCase() ? "on" : "", onclick: () => { closePop(); onPick(m); } }, sprite(m, 32)));
+    foot.textContent = s ? (hits.length ? `${hits.length} match${hits.length === 1 ? "" : "es"}` + (hits.length > 240 ? ", showing 240" : "") : "No item by that name. Press Enter to use it anyway.") : "Common picks. Type to search every item.";
+  };
+  q.addEventListener("input", draw);
+  q.addEventListener("keydown", (e) => { if (e.key === "Enter") { const first = grid.querySelector("button"); if (first && q.value.trim()) first.click(); else if (q.value.trim()) { closePop(); onPick(q.value.trim().toUpperCase().replace(/\s+/g, "_")); } } });
+  const p = popover(anchor, el("div", { style: { display: "contents" } }, q, grid, foot), { cls: "picker" });
+  draw();
+  setTimeout(() => q.focus(), 10);
+  return p;
+}
+export function materialCtl(value, onChange, { allowEmpty } = {}) {
+  const b = el("button", { type: "button", class: "matbtn" });
+  const draw = (v) => { b.innerHTML = ""; b.append(v ? sprite(v, 30) : el("span", { class: "sprite flat", style: { "--s": "30px", "--c": "transparent" } }), el("span", { class: "nm" }, v ? prettyMaterial(v) : "Pick an item")); };
+  draw(value);
+  b.addEventListener("click", () => pickMaterial(b, value, (m) => { value = m; draw(m); onChange(m); }));
+  if (!allowEmpty || !value) return b;
+  return el("div", { class: "row" }, b, iconBtn("close", "Clear", () => { value = undefined; draw(undefined); onChange(undefined); }, "sm"));
+}
+export function materialsCtl(items, onChange) {
+  const list = (items || []).map(String);
+  const box = el("div", { class: "chips" });
+  const draw = () => {
+    box.innerHTML = "";
+    list.forEach((m, i) => box.append(el("span", { class: "chip" }, sprite(m, 16), prettyMaterial(m), el("button", { type: "button", "aria-label": "Remove", onclick: () => { list.splice(i, 1); onChange(list.slice()); draw(); } }, icon("close")))));
+    const add = el("button", { type: "button", class: "btn ghost small" }, icon("plus"), list.length ? "Add" : "Add an item");
+    add.addEventListener("click", () => pickMaterial(add, "", (m) => { if (!list.includes(m)) list.push(m); onChange(list.slice()); draw(); }));
+    box.append(add);
+  };
+  draw();
+  return box;
+}
+
+/** A sound key with search over every Minecraft sound, and a play button. */
+export function soundCtl(value, onChange, { pitch, volume } = {}) {
+  const inp = el("input", { type: "text", value: value || "", placeholder: "No sound", spellcheck: "false", style: { fontFamily: "var(--mono)", fontSize: "13.5px" } });
+  const play = iconBtn("play", "Play", async () => { if (!(await playSound(inp.value, { pitch: pitch?.(), volume: volume?.() }))) toast("Can't play that sound here.", "err"); }, "sm");
+  inp.addEventListener("input", () => onChange(inp.value.trim()));
+  inp.addEventListener("focus", async () => {
+    const keys = await soundKeys();
+    if (!keys.length) return;
+    const list = el("div", { class: "plist" });
+    const draw = () => {
+      list.innerHTML = "";
+      const s = inp.value.trim().replace(/^minecraft:/, "").toLowerCase();
+      const hits = (s ? keys.filter((k) => k.includes(s)) : keys.filter((k) => /^(ui|block\.note_block|entity\.experience_orb|entity\.player\.levelup|item\.armor)/.test(k))).slice(0, 80);
+      for (const k of hits) list.append(el("button", { type: "button", onmousedown: (e) => e.preventDefault(), onclick: () => { inp.value = "minecraft:" + k; onChange(inp.value); playSound(k, { pitch: pitch?.() }); closePop(); } }, k,
+        el("small", { onclick: (e) => { e.stopPropagation(); playSound(k); } }, icon("play"))));
+    };
+    draw();
+    inp.oninput = () => { onChange(inp.value.trim()); draw(); };
+    popover(inp, list, { cls: "picker" });
+  });
+  return el("div", { class: "row", style: { flexWrap: "nowrap" } }, inp, play, value ? iconBtn("close", "No sound", () => { inp.value = ""; onChange(""); }, "sm") : null);
+}
+
+/** Minecraft's named colours as swatches. */
+export function colorCtl(value, onChange, { names } = {}) {
+  const box = el("div", { class: "swatches", role: "radiogroup" });
+  const BOSS = { pink: "#ec6fd0", blue: "#3fa9f5", red: "#ec3d3d", green: "#5ae35a", yellow: "#f2e84b", purple: "#a35ce6", white: "#f5f5f5" };
+  const list = names || Object.keys(MC_COLORS).filter((n) => !/grey/.test(n));
+  const draw = (v) => {
+    box.innerHTML = "";
+    for (const n of list) box.append(el("button", { type: "button", role: "radio", "aria-checked": String(n === v), title: n.replace(/_/g, " "), "aria-label": n.replace(/_/g, " "), class: n === v ? "on" : "", style: { background: BOSS[n] && names ? BOSS[n] : MC_COLORS[n] || n }, onclick: () => { draw(n); onChange(n); } }));
+  };
+  draw(value);
+  return box;
+}
+
+/** Time zones: every IANA zone the browser knows, plus the fixed forms Headcount reads. */
+export function zoneCtl(value, onChange) {
+  let zones = [];
+  try { zones = Intl.supportedValuesOf("timeZone"); } catch (e) { zones = ["UTC", "Europe/London", "America/New_York"]; }
+  zones = ["UTC", "system", ...zones.filter((z) => z !== "UTC")];
+  const inp = el("input", { type: "text", value: value ?? "UTC", spellcheck: "false", style: { maxWidth: "280px" } });
+  const open = () => {
+    const list = el("div", { class: "plist" });
+    const draw = () => {
+      list.innerHTML = "";
+      const s = inp.value.trim().toLowerCase().replace(/ /g, "_");
+      const hits = (zones.some((z) => z.toLowerCase() === s) ? zones : zones.filter((z) => z.toLowerCase().includes(s))).slice(0, 120);
+      for (const z of hits) list.append(el("button", { type: "button", onmousedown: (e) => e.preventDefault(), onclick: () => { inp.value = z; onChange(z); closePop(); } }, z.replace(/_/g, " "), el("small", {}, zoneNow(z))));
+      if (!hits.length) list.append(el("div", { class: "pfoot" }, "Fixed offsets like UTC+5:30 or MST work too."));
+    };
+    draw();
+    inp.oninput = () => { onChange(inp.value.trim()); draw(); };
+    popover(inp, list, { cls: "picker" });
+  };
+  inp.addEventListener("focus", open);
+  return inp;
+}
+function zoneNow(z) {
+  try { return new Intl.DateTimeFormat(undefined, { timeZone: z === "system" ? undefined : z, hour: "2-digit", minute: "2-digit" }).format(new Date()); } catch (e) { return ""; }
+}
+
+const UNITS = [["ms", "milliseconds", 1], ["s", "seconds", 1000], ["m", "minutes", 60000], ["h", "hours", 3600000], ["d", "days", 86400000], ["w", "weeks", 604800000]];
+/** A duration as a number and a unit. Writes the plugin's short form ("30s", "10m"). */
+export function durationCtl(value, onChange, { zero, units } = {}) {
+  const ms = parseDuration(String(value ?? 0));
+  const list = UNITS.filter(([u]) => (units || ["s", "m", "h", "d"]).includes(u) || (u === "ms" && /ms$/.test(String(value))) || (u === "w" && /w/.test(String(value))));
+  let unit = list[list.length - 1];
+  if (isFinite(ms)) { for (const u of [...list].reverse()) if (ms % u[2] === 0) { unit = u; break; } if (ms === 0) unit = list.find((u) => u[0] === "s") || list[0]; }
+  const num = el("input", { type: "number", min: 0, step: "any", value: isFinite(ms) ? ms / unit[2] : "" });
+  const sel = el("select", {}, list.map(([u, name]) => el("option", { value: u, selected: u === unit[0] }, name)));
+  const note = el("span", { class: "note-inline" });
+  const showNote = () => { note.textContent = zero && +num.value === 0 ? zero : ""; };
+  const write = () => {
+    if (num.value === "" || isNaN(+num.value)) return;
+    const n = +num.value;
+    showNote();
+    onChange(n === 0 && typeof value === "number" ? 0 : String(Math.round(n * 1000) / 1000) + sel.value);
+  };
+  num.addEventListener("input", write); sel.addEventListener("change", write);
+  showNote();
+  const bad = !isFinite(ms) && value !== undefined ? el("div", { class: "err" }, `"${value}" isn't a duration`) : null;
+  return el("div", { class: "row" }, el("div", { class: "unit" }, num, sel), note, bad);
+}
+export function numberCtl(value, onChange, { unit, min, max, step, slider } = {}) {
+  const inp = el("input", { type: "number", value: value ?? "", min, max, step: step ?? "any" });
+  inp.addEventListener("input", () => { if (inp.value.trim() !== "" && !isNaN(+inp.value)) { onChange(+inp.value); if (r) r.value = inp.value; } });
+  const box = unit ? el("div", { class: "unit" }, inp, el("span", {}, unit)) : inp;
+  let r = null;
+  if (slider) {
+    r = el("input", { type: "range", min: slider[0], max: slider[1], step: step ?? 1, value: value ?? 0, "aria-label": "Slider" });
+    r.addEventListener("input", () => { inp.value = r.value; onChange(+r.value); });
+    return el("div", { class: "slider-row" }, box, r);
+  }
+  return box;
+}
+
+/**
+ * MiniMessage text. Shows the text as it looks in game; the source is edited right above it. Lists (lore, multi-line
+ * messages) are one line per row.
+ */
+export function miniCtl(value, onChange, { multiline, list, vars, placeholder, preview = true, emptyText } = {}) {
+  const isList = list || Array.isArray(value);
+  const text = isList ? [].concat(value ?? []).join("\n") : String(value ?? "");
+  const multi = isList || multiline || text.includes("\n");
+  const inp = multi ? el("textarea", { rows: Math.max(1, text.split("\n").length), spellcheck: "false", placeholder: placeholder || "" }) : el("input", { type: "text", spellcheck: "false", placeholder: placeholder || "" });
+  inp.value = text;
+  const out = el("div", { class: "rendered", "data-empty": emptyText || "" });
+  const all = { ...SAMPLE, ...(vars || {}) };
+  // Variables whose sample is itself formatted text (like <title>) are expanded before rendering.
+  const expand = (l) => l.replace(/<([a-z_]+)>/g, (m, k) => (typeof all[k] === "string" && all[k].includes("<") ? all[k] : m));
+  const draw = () => {
+    if (multi) inp.rows = Math.max(1, inp.value.split("\n").length);
+    out.innerHTML = "";
+    const lines = inp.value.split("\n");
+    if (!inp.value && !isList) { out.classList.add("blank"); return; }
+    out.classList.remove("blank");
+    for (const l of lines) out.append(el("div", { class: "mc", html: renderMini(expand(l), { vars: all, prefix: prefix() }) || "&nbsp;" }));
+  };
+  inp.addEventListener("input", () => { draw(); onChange(isList ? (inp.value === "" ? [] : inp.value.split("\n")) : inp.value); });
+  out.addEventListener("click", () => inp.focus());
+  draw();
+  return el("div", { class: "mtext" }, inp, preview ? out : null);
+}
+
+// ---------------------------------------------------------------- the settings row
 /** Options listed in a help text like "included | pvpmanager | none" that contain the value. */
 export function optionsFromHelp(help, value) {
   for (const m of String(help || "").matchAll(/([A-Za-z0-9_.\-]+(?:\s*\|\s*[A-Za-z0-9_.\-]+)+)/g)) {
@@ -223,127 +518,112 @@ export function fromYamlText(t) {
   if (!t.trim()) return [];
   return readYaml(t);
 }
+const show = (v) => (v === undefined ? "not set" : isObj(v) ? "a section" : Array.isArray(v) ? (v.length ? v.join(", ") : "empty") : v === "" ? "empty" : String(v));
+
+/** The detail behind a setting, on demand: where it lives, its default and the comment in the file. */
+function aboutPop(anchor, file, path, help, d) {
+  popover(anchor, el("div", {},
+    el("div", { class: "k" }, file + "  " + path),
+    d !== undefined ? el("div", { class: "defv" }, "Default: ", el("code", {}, show(d).slice(0, 80))) : null,
+    help ? el("pre", {}, help) : null));
+}
 
 /**
- * A form row bound to a config option. opts: label, help, type (bool | number | enum | duration | text | mini |
- * multiline | list | yaml | material | time | date), options, min, max, step, suffix, placeholder, suggestions,
- * onChange(value). The row shows its default with a reset, and marks unsaved changes.
+ * A settings row bound to a config option. The control comes from the option's spec (schema.js) or opts: label,
+ * hint, type (bool | seg | select | number | duration | time | date | zone | mini | lore | text | mono | list |
+ * statuses | status | material | materials | sound | color | bosscolor | yaml), options, unit, min, max, step, slider,
+ * zero, placeholder, vars, onChange(value), render(ctl) for extra content.
  */
 export function field(file, path, opts = {}) {
-  const e = S.entry(file, path);
+  const sp = { ...specFor(file, path), ...opts };
   const value = S.get(file, path);
   const d = S.def(file, path);
-  const probe = value !== undefined ? value : d;
-  const help = opts.help ?? e?.help ?? S.doc(file)?.defParsed.index.get(path)?.help ?? "";
-  let type = opts.type;
+  const v0 = value !== undefined ? value : d !== undefined ? d : sp.default;
+  const help = S.entry(file, path)?.help || S.doc(file)?.defParsed.index.get(path)?.help || "";
+  let type = sp.type;
   if (!type) {
-    if (typeof probe === "boolean") type = "bool";
-    else if (typeof probe === "number") type = "number";
-    else if (Array.isArray(probe) && probe.every((x) => !isObj(x) && !Array.isArray(x))) type = "list";
-    else if (isObj(probe) || Array.isArray(probe)) type = "yaml";
-    else if (opts.options || optionsFromHelp(help, probe)) type = "enum";
-    else if (typeof probe === "string" && /^\d+(\.\d+)?(ms|s|m|h|d|w)/.test(probe) && !isNaN(parseDuration(probe))) type = "duration";
-    else if (looksMini(probe)) type = "mini";
+    if (typeof v0 === "boolean") type = "bool";
+    else if (typeof v0 === "number") type = "number";
+    else if (Array.isArray(v0) && v0.every((x) => !isObj(x) && !Array.isArray(x))) type = v0.some(looksMini) ? "lore" : "list";
+    else if (isObj(v0) || Array.isArray(v0)) type = "yaml";
+    else if (sp.options || optionsFromHelp(help, v0)) type = (sp.options || optionsFromHelp(help, v0)).length <= 4 ? "seg" : "select";
+    else if (typeof v0 === "string" && /^\d+(\.\d+)?(ms|s|m|h|d|w)/.test(v0) && !isNaN(parseDuration(v0))) type = "duration";
+    else if (looksMini(v0)) type = "mini";
     else type = "text";
   }
-  const row = el("div", { class: "field" + (opts.stack ? " stack" : ""), "data-key": file + "#" + path });
-  const keyName = path.split(".").pop();
-  const label = el("div", {}, el("div", { class: "lbl" }, opts.label || humanize(keyName), opts.label ? el("code", {}, keyName) : null));
-  if (help && opts.help !== false) label.append(el("div", { class: "help" }, help));
+  const key = path.split(".").pop();
+  const row = el("div", { class: "field" + (sp.stack || ["lore", "yaml"].includes(type) && sp.stack !== false ? " stack" : "") + (type === "bool" ? " inline" : ""), "data-key": file + "#" + path });
+  const write = (v) => { S.set(file, path, v); refresh(); sp.onChange?.(v); };
+  const aboutBtn = el("button", { type: "button", class: "about", title: "About this setting", "aria-label": "About " + (sp.label || key) }, icon("info"));
+  aboutBtn.addEventListener("click", () => aboutPop(aboutBtn, file, path, help, d));
+  const resetBtn = el("button", { type: "button", class: "about", title: "Reset to the default", "aria-label": "Reset to the default" }, icon("reset"));
+  resetBtn.addEventListener("click", () => { S.set(file, path, JSON.parse(JSON.stringify(d))); const n = field(file, path, opts); row.replaceWith(n); sp.onChange?.(d); });
+  const lab = el("div", { class: "lab" }, el("label", { class: "name" }, sp.label || humanize(key)), aboutBtn, resetBtn, sp.hint ? el("div", { class: "hint" }, sp.hint) : null);
   const ctl = el("div", { class: "ctl" });
-  const meta = el("div", { class: "meta" });
-  const write = (v) => { S.set(file, path, v); refresh(); opts.onChange?.(v); };
-  const cur = () => S.get(file, path);
-  let preview = null;
-  const v0 = value !== undefined ? value : d;
   switch (type) {
-    case "bool": {
-      const lab = el("span", { class: "muted small", style: { marginLeft: "8px" } }, v0 ? "on" : "off");
-      ctl.append(el("div", { class: "row" }, switchCtl(!!v0, (c) => { lab.textContent = c ? "on" : "off"; write(c); }), lab));
-      break;
-    }
-    case "number": {
-      const inp = el("input", { type: "number", value: v0 ?? "", min: opts.min, max: opts.max, step: opts.step ?? "any" });
-      inp.addEventListener("input", () => { if (inp.value.trim() !== "" && !isNaN(+inp.value)) write(+inp.value); });
-      ctl.append(opts.suffix ? el("span", { class: "suffix" }, inp, el("span", {}, opts.suffix)) : inp);
-      if (opts.slider) {
-        const r = el("input", { type: "range", min: opts.min ?? 0, max: opts.max ?? 100, step: opts.step ?? 1, value: v0 ?? 0, style: { width: "100%", marginTop: "6px" } });
-        r.addEventListener("input", () => { inp.value = r.value; write(+r.value); });
-        inp.addEventListener("input", () => { r.value = inp.value; });
-        ctl.append(r);
-      }
-      break;
-    }
-    case "enum": {
-      const options = opts.options || optionsFromHelp(help, v0) || [String(v0)];
-      // "" clears the option (the default applies); "true"/"false" are written as YAML booleans.
+    case "bool": ctl.append(switchCtl(!!v0, (c) => write(c), sp.label || key)); break;
+    case "seg":
+    case "select": {
+      const options = sp.options || optionsFromHelp(help, v0) || [String(v0)];
       const conv = (v) => (v === "" ? undefined : v === "true" ? true : v === "false" ? false : typeof d === "number" && !isNaN(+v) ? +v : v);
-      if (options.length <= 5 && !opts.select) ctl.append(seg(options, String(v0 ?? ""), (v) => write(conv(v))));
-      else ctl.append(el("select", { onchange: (ev) => write(conv(ev.target.value)) }, options.map((o) => { const [val, lab] = Array.isArray(o) ? o : [o, o]; return el("option", { value: val, selected: String(val) === String(v0) }, lab); })));
+      ctl.append(type === "seg" ? seg(options, String(v0 ?? ""), (v) => write(conv(v))) : select(options, String(v0 ?? ""), (v) => write(conv(v))));
       break;
     }
-    case "list": {
-      ctl.append(chips(Array.isArray(v0) ? v0 : [], (items) => write(items), { suggestions: opts.suggestions, placeholder: opts.placeholder }));
+    case "number": ctl.append(numberCtl(v0, write, sp)); break;
+    case "duration": ctl.append(durationCtl(v0, write, sp)); break;
+    case "time": {
+      const t = el("input", { type: "time", value: String(v0 ?? "00:00") });
+      t.addEventListener("input", () => { if (t.value) write(t.value); });
+      ctl.append(t);
       break;
     }
+    case "date": {
+      const t = el("input", { type: "date", value: String(v0 ?? "") });
+      t.addEventListener("input", () => { if (t.value) write(t.value); });
+      ctl.append(t);
+      break;
+    }
+    case "zone": ctl.append(zoneCtl(v0, write)); break;
+    case "mini": ctl.append(miniCtl(v0, write, { vars: sp.vars, placeholder: sp.placeholder, emptyText: file.startsWith("lang/") ? "Empty: never sent" : "" })); break;
+    case "lore": ctl.append(miniCtl(Array.isArray(v0) ? v0 : v0 ? [v0] : [], write, { list: true, vars: sp.vars })); break;
+    case "list": ctl.append(chips(Array.isArray(v0) ? v0 : [], write, { suggestions: sp.suggestions, placeholder: sp.placeholder })); break;
+    case "statuses": ctl.append(statusPicker(Array.isArray(v0) ? v0 : [], write)); break;
+    case "status": ctl.append(select(["", ...Object.keys(S.get("statuses.yml", "statuses") || {})].map((n) => [n, n || "None"]), String(v0 ?? ""), (v) => write(v || ""))); break;
+    case "material": ctl.append(materialCtl(v0, write)); break;
+    case "materials": ctl.append(materialsCtl(Array.isArray(v0) ? v0 : [], write)); break;
+    case "sound": ctl.append(soundCtl(v0, write, sp)); break;
+    case "color": ctl.append(colorCtl(String(v0 ?? ""), write)); break;
+    case "bosscolor": ctl.append(colorCtl(String(v0 ?? ""), write, { names: ["pink", "blue", "red", "green", "yellow", "purple", "white"] })); break;
     case "yaml": {
       const ta = el("textarea", { spellcheck: "false", rows: Math.min(16, Math.max(3, toYamlText(v0).split("\n").length + 1)) });
       ta.value = toYamlText(v0);
-      const err = el("div", { class: "small", style: { color: "var(--bad)" } });
-      ta.addEventListener("input", () => { try { const v = fromYamlText(ta.value); err.textContent = ""; write(v); } catch (x) { err.textContent = "Not valid yet: " + x.message; } });
+      const err = el("div", { class: "err" });
+      ta.addEventListener("input", () => { try { const v = fromYamlText(ta.value); err.textContent = ""; write(v); } catch (x) { err.textContent = "Not valid YAML yet: " + x.message; } });
       ctl.append(ta, err);
       break;
     }
-    case "multiline":
-    case "mini":
-    case "text":
-    case "material":
-    case "duration":
-    case "time":
-    case "date": {
-      const multi = type === "multiline" || (typeof v0 === "string" && v0.includes("\n"));
-      const inp = multi ? el("textarea", { rows: 3 }) : el("input", { type: type === "time" ? "time" : type === "date" ? "date" : "text", spellcheck: "false", placeholder: opts.placeholder || "", list: type === "material" ? "materials" : opts.list || null });
+    default: {
+      const inp = el("input", { type: "text", spellcheck: "false", placeholder: sp.placeholder || "", style: type === "mono" ? { fontFamily: "var(--mono)", fontSize: "13.5px" } : null });
       inp.value = v0 ?? "";
-      const hint = el("span", { class: "small muted" });
-      const upd = () => {
-        if (type === "duration") { const ms = parseDuration(inp.value); hint.textContent = isNaN(ms) ? "not a duration (30s, 10m, 2h, 3d, 1w, 1h30m)" : "= " + formatDuration(ms); hint.style.color = isNaN(ms) ? "var(--bad)" : ""; }
-        if (preview) preview.innerHTML = renderMini(inp.value, { vars: { ...SAMPLE, ...(opts.vars || {}) }, prefix: prefix() });
-        if (tileBox) { tileBox.innerHTML = ""; tileBox.append(itemTile(inp.value, { size: 26 })); }
-      };
-      let tileBox = null;
-      if (type === "material") { tileBox = el("span"); ctl.append(el("div", { class: "row", style: { flexWrap: "nowrap" } }, tileBox, inp)); } else ctl.append(inp);
-      if (type === "duration") ctl.append(hint);
-      if (type === "mini" || opts.preview) { preview = el("div", { class: "mc", style: { marginTop: "6px" } }); ctl.append(preview); }
-      inp.addEventListener("input", () => { upd(); write(inp.value); });
-      upd();
-      break;
+      inp.addEventListener("input", () => write(inp.value));
+      ctl.append(inp);
     }
-    default: ctl.append(el("div", { class: "muted" }, String(v0)));
   }
-  ctl.append(meta);
-  row.append(label, ctl);
+  if (sp.render) ctl.append(sp.render());
+  row.append(lab, ctl);
   function refresh() {
-    meta.innerHTML = "";
-    const now = cur();
-    const unsaved = JSON.stringify(now) !== JSON.stringify(S.savedValue(file, path));
-    row.classList.toggle("unsaved", unsaved);
-    if (unsaved) meta.append(badge("unsaved", "warn"));
-    if (d !== undefined && JSON.stringify(now) !== JSON.stringify(d)) {
-      const show = isObj(d) || Array.isArray(d) ? (Array.isArray(d) && d.every((x) => !isObj(x)) ? "[" + d.join(", ") + "]" : "(a block)") : JSON.stringify(d);
-      meta.append(el("span", {}, "default: ", el("code", {}, show.length > 60 ? show.slice(0, 57) + "…" : show)),
-        el("button", { onclick: () => { S.set(file, path, JSON.parse(JSON.stringify(d))); row.replaceWith(field(file, path, opts)); } }, "reset"));
-    }
-    if (value === undefined && d !== undefined) meta.append(el("span", {}, "not in your file yet (the default applies)"));
+    const now = S.get(file, path);
+    row.classList.toggle("unsaved", JSON.stringify(now) !== JSON.stringify(S.savedValue(file, path)));
+    resetBtn.hidden = d === undefined || JSON.stringify(now ?? d) === JSON.stringify(d);
   }
   refresh();
   return row;
 }
-export const humanize = (k) => String(k).replace(/[-_]/g, " ").replace(/^\w/, (c) => c.toUpperCase());
+export const humanize = (k) => String(k).replace(/[-_]/g, " ").replace(/\bpvp\b/gi, "PvP").replace(/\bafk\b/gi, "AFK").replace(/^\w/, (c) => c.toUpperCase());
 
-/** A group of fields for every option under a section (skipping some), for the "All options" parts of pages. */
+/** Rows for every option under a section, except those in `skip` (for parts no page lays out by hand). */
 export function allFields(file, base, { skip = [], deep = true } = {}) {
-  const box = el("div");
-  const d = S.doc(file);
+  const box = el("div", { class: "sheet" });
   const seen = new Set();
   const keysOf = (p) => {
     const a = S.get(file, p), b = S.def(file, p);
@@ -355,16 +635,13 @@ export function allFields(file, base, { skip = [], deep = true } = {}) {
       if (skip.some((s) => path === s || path.startsWith(s + "."))) continue;
       if (seen.has(path)) continue; seen.add(path);
       const v = S.get(file, path) ?? S.def(file, path);
-      if (isObj(v) && deep && depth < 4) {
-        const g = el("div", { style: { margin: "10px 0 4px" } }, el("div", { class: "small", style: { fontWeight: 700, color: "var(--muted)", textTransform: "uppercase", letterSpacing: ".05em" } }, path));
-        const help = d.parsed.index.get(path)?.help || d.defParsed.index.get(path)?.help;
-        if (help) g.append(el("div", { class: "small muted", style: { whiteSpace: "pre-wrap" } }, help));
-        box.append(g);
-        walk(path, depth + 1);
-      } else box.append(field(file, path));
+      const sp = specFor(file, path);
+      if (isObj(v) && deep && depth < 4 && !sp.type) { box.append(subhead(sp.label || humanize(k))); walk(path, depth + 1); }
+      else box.append(field(file, path));
     }
   };
   walk(base, 0);
+  if (!box.children.length) return el("div");
   return box;
 }
 
@@ -378,9 +655,13 @@ export function highlight(key) {
   return true;
 }
 
+/** Each page's icon: a Minecraft item. */
 export const ICONS = {
-  home: "⌂", live: "◉", players: "☻", cycle: "◷", trophy: "♛", history: "☰", audit: "⌕", effects: "✧", console: "›_",
-  vault: "▣", score: "∑", outcome: "⚖", shop: "⛁", title: "✎", trade: "⇄", status: "◐", plug: "⚙", hook: "⚓", sidebar: "▤", menu: "▦",
-  lang: "✉", reset: "↺", learn: "✿", guide: "➜", recipe: "✚", glossary: "Aa", docs: "❏", why: "?", cmd: "/", ph: "%", action: "⚡",
-  formula: "ƒ", mini: "✐", options: "≡", problems: "⚠", review: "✓", backups: "⧖", io: "⇅", raw: "{ }",
+  home: "filled_map", live: "beacon", players: "player_head", cycle: "clock", trophy: "gold_ingot", history: "book", audit: "spyglass", effects: "potion",
+  console: "command_block", vault: "ender_chest", score: "experience_bottle", outcome: "totem_of_undying", shop: "emerald", title: "name_tag", trade: "bundle",
+  status: "redstone_torch", plug: "comparator", hook: "tripwire_hook", sidebar: "oak_sign", menu: "chest", lang: "writable_book", reset: "crafting_table",
+  learn: "enchanted_book", guide: "map", recipe: "knowledge_book", glossary: "written_book", docs: "bookshelf", why: "iron_door", cmd: "chain_command_block",
+  ph: "item_frame", action: "firework_rocket", formula: "brewing_stand", mini: "glow_ink_sac", options: "chiseled_bookshelf", problems: "barrier",
+  review: "feather", backups: "barrel", io: "hopper", raw: "paper",
 };
+export { stripMini };

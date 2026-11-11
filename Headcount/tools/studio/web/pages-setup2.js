@@ -1,25 +1,27 @@
-// Set up pages, part 2: Shop, Titles, Trading, Statuses, Integrations, Hooks & actions, Sidebar, Menus, Messages,
-// Resets & safety, and the per-file editor.
-import { el, btn, badge, field, allFields, sectionTitle, mcText, miniInline, tooltip, itemTile, chest, seg, switchCtl, chips, drawer, closeDrawer, toast,
-  promptDialog, confirmDialog, hoverTip, SAMPLE, ICONS, humanize, toYamlText, fromYamlText } from "./ui.js";
-import { isObj, clone, expandSlots, compressSlots, renderMini, stripMini, parseDuration, formatDuration } from "./core.js";
+// Set up pages, part 2: Shop, Titles, Trading, Statuses, Integrations, Hooks, Sidebar, Menus, Messages, General,
+// and the per-file editor.
+import { plain, el, btn, icon, iconBtn, field, group, subhead, allFields, mcText, miniInline, tooltip, chest, seg, select, switchCtl, chips, drawer, closeDrawer, toast,
+  promptDialog, confirmDialog, hoverTip, sprite, SAMPLE, ICONS, humanize, toYamlText, fromYamlText, miniCtl, numberCtl, materialCtl, statusPicker, highlight } from "./ui.js";
+import { isObj, clone, expandSlots, compressSlots, renderMini, stripMini, parseDuration, formatDuration, prettyMaterial } from "./core.js";
 import * as S from "./store.js";
-import { editActions, summarize, listUsages, listNames } from "./actions.js";
-import { pageHead, C } from "./pages-setup.js";
+import { actionList, editActions, summarize, listUsages, listNames, conditionsCtl } from "./actions.js";
+import { pageHead, C, layout, preview, mcName } from "./pages-setup.js";
+import { playSound } from "./sprites.js";
 
-const go = (h) => { location.hash = h; };
-const link = (text, hash, key) => el("a", { href: hash, onclick: (e) => { e.preventDefault(); window.studio.go(hash, key); } }, text);
+const go = (h, key) => window.studio.go(h, key);
 const idCheck = (exists) => (v) => !/^[a-z0-9][a-z0-9_-]*$/i.test(v) ? "Use letters, numbers, dashes and underscores." : exists(v) ? "That ID is taken." : null;
+const doneFooter = (...left) => el("div", { class: "row", style: { width: "100%" } }, ...left, el("span", { class: "grow" }), btn("Done", () => closeDrawer(), "primary"));
 
 // ============================================================================================
-//  Menus: a chest preview of any menu layout (rows, title, filler, buttons)
+//  Menus: shared by the menu editor and every page that previews a menu
 // ============================================================================================
-function buttonItem(b) {
+function buttonItem(b, state) {
   if (!isObj(b)) return null;
+  if (state && isObj(b[state])) return { ...b, ...b[state] };
   for (const st of ["unconfirmed", "idle", "owned"]) if (isObj(b[st])) return { ...b, ...b[st] };
   return b;
 }
-export function menuSlots(file, base, vars) {
+export function menuSlots(file, base) {
   const L = S.get(file, base) || S.def(file, base) || {};
   const rows = Math.max(1, Math.min(6, +L.rows || 6));
   const size = rows * 9;
@@ -32,463 +34,671 @@ export function menuSlots(file, base, vars) {
   const fill = expandSlots(L["filler-slots"], size);
   return { L, rows, size, buttons, fill };
 }
-/** A clickable chest preview of a menu. extra(i) can put items in slots (entries, offers). */
-export function menuChest(file, base, { extra, vars, onButton, onFill, onEmpty, onDrop } = {}) {
-  const { L, rows, size, buttons, fill } = menuSlots(file, base, vars);
+const isFiller = (fill, rows, i) => fill === "empty" ? true : fill === "border" ? (Math.floor(i / 9) === 0 || Math.floor(i / 9) === rows - 1 || i % 9 === 0 || i % 9 === 8) : fill === "none" ? false : fill.includes(i);
+/** A chest preview of a menu. extra(i) can put items in slots (entries, offers). */
+export function menuChest(file, base, { extra, vars, onButton, onEmpty, onDrop, paint, paintEnd, numbers, overlay } = {}) {
+  const { L, rows, buttons, fill } = menuSlots(file, base);
   const filler = isObj(L.filler) ? L.filler : { material: "GRAY_STAINED_GLASS_PANE" };
-  const isFill = (i) => fill === "empty" || fill === "border" ? (fill === "border" ? (Math.floor(i / 9) === 0 || Math.floor(i / 9) === rows - 1 || i % 9 === 0 || i % 9 === 8) : true) : fill === "none" ? false : fill.includes(i);
   return chest(rows, L.title ?? "", (i) => {
+    const o = overlay?.(i) || "";
     const x = extra?.(i);
-    if (x) return x;
-    if (buttons[i]) { const { id, b } = buttons[i]; return { item: b, title: id, tip: () => tooltip(b.name ?? id, b.lore, vars), onclick: () => onButton?.(id) }; }
-    if (isFill(i) && !(fill === "empty" && extra)) return { item: filler, cls: "dim", title: "filler (click to toggle)", onclick: () => onFill?.(i, true) };
-    return { onclick: () => (onEmpty ? onEmpty(i) : onFill?.(i, false)) };
-  }, { vars, onDrop });
-}
-function editMenu(file, base, title) {
-  const body = el("div");
-  const draw = () => {
-    body.innerHTML = "";
-    const L = S.get(file, base) || {};
-    const prev = el("div", { style: { margin: "6px 0 14px" } });
-    const redraw = () => { prev.innerHTML = ""; prev.append(menuChest(file, base, {
-      onButton: (id) => editButton(id),
-      onFill: (i, on) => {
-        const { fill, size } = menuSlots(file, base);
-        if (!Array.isArray(fill)) { toast("Filler slots are '" + fill + "'. Switch them to a list below to paint slots.", "info"); return; }
-        const set = new Set(fill); on ? set.delete(i) : set.add(i);
-        S.set(file, base + ".filler-slots", compressSlots([...set].filter((s) => s < size)));
-        redraw();
-      } })); };
-    redraw();
-    body.append(el("div", { class: "small muted" }, "Hover a slot to preview, click a button to edit it, click empty or filler slots to paint the filler."), prev,
-      field(file, base + ".title", { label: "Title", type: "mini", onChange: redraw }), field(file, base + ".rows", { label: "Rows", type: "number", min: 1, max: 6, onChange: redraw }),
-      el("div", { class: "field" }, el("div", {}, el("div", { class: "lbl" }, "Filler slots"), el("div", { class: "help" }, "Which slots show the filler item.")),
-        el("div", { class: "ctl" }, seg([["list", "Painted slots"], ["empty", "Every empty slot"], ["border", "The border"], ["none", "None"]], Array.isArray(L["filler-slots"]) ? "list" : L["filler-slots"] ?? "empty",
-          (m) => { S.set(file, base + ".filler-slots", m === "list" ? [] : m); draw(); }))),
-      el("details", { class: "more" }, el("summary", {}, "Filler item"), allFields(file, base + ".filler")),
-      sectionTitle("Buttons"), el("div", { class: "row" }, Object.keys(L.buttons || {}).map((id) => btn(id, () => editButton(id), "small"))),
-      el("details", { class: "more" }, el("summary", {}, "Every option in this menu"), allFields(file, base, { skip: [base + ".buttons", base + ".title", base + ".rows", base + ".filler-slots", base + ".filler"] })));
-  };
-  const editButton = (id) => drawer("Button: " + id, el("div", {}, el("div", { class: "row", style: { marginBottom: "8px" } }, btn("← Back to " + title, () => editMenu(file, base, title))), allFields(file, base + ".buttons." + id)), { subtitle: file + " › " + base + ".buttons." + id });
-  drawer(title, body, { subtitle: file + " › " + base });
-  draw();
+    if (x) return { ...x, cls: (x.cls || "") + " " + o };
+    if (buttons[i]) { const { id, b } = buttons[i]; return { item: b, title: id, cls: o, tip: () => tooltip(b.name ?? id, b.lore, vars), onclick: () => onButton?.(id, i), draggable: !!onDrop && b.slot !== undefined }; }
+    if (isFiller(fill, rows, i) && !(fill === "empty" && extra)) return { item: filler, cls: "dim " + o, onclick: () => onEmpty?.(i) };
+    return { cls: o, onclick: () => onEmpty?.(i) };
+  }, { vars, onDrop, paint, paintEnd, numbers });
 }
 
-const MENUS = [["Vault", "config.yml", "vault.gui"], ["History", "config.yml", "history.gui"], ["Trade", "trade.yml", "gui"], ["Shop", "shop.yml", "gui"],
-  ["Shop confirmation", "shop.yml", "confirm-gui"], ["Titles", "titles.yml", "gui"]];
-function menusPage(root) {
-  root.append(pageHead("Menus", "Every Headcount menu as it looks in game. Click one to edit its title, rows, filler and buttons."));
-  const g = el("div", { class: "grid g2" });
-  for (const [name, file, base] of MENUS) {
-    g.append(el("div", { class: "card click", onclick: () => editMenu(file, base, name + " menu") }, el("h3", {}, name), el("div", { class: "small muted", style: { marginBottom: "10px" } }, file + " › " + base),
-      el("div", { style: { transform: "scale(.82)", transformOrigin: "top left", height: (menuSlots(file, base).rows * 42 + 40) * 0.82 + "px" } }, menuChest(file, base, {}))));
-  }
-  root.append(g);
+const MENUS = [
+  { id: "vault", name: "Vault", file: "config.yml", base: "vault.gui", icon: "ender_chest", vars: { owner: "Steve", unique: 7, total: 21, size: 27, used: 21, score: 4, page: 1, pages: 1 } },
+  { id: "history", name: "History", file: "config.yml", base: "history.gui", icon: "book", areas: [["entry-slots", "Cycles", "paint-area"]], vars: { player: "Steve", page: 1, pages: 2 } },
+  { id: "shop", name: "Shop", file: "shop.yml", base: "gui", icon: "emerald", vars: { tier: "<white>Common", points: 12, tier_number: 1, tiers: 4, last_score: 6, target_tier: "Uncommon", threshold: 5, needed: 0 } },
+  { id: "confirm", name: "Purchase", file: "shop.yml", base: "confirm-gui", icon: "lime_concrete", vars: { name: "Speed for 30 minutes", price: 3, points: 12 } },
+  { id: "trade", name: "Trade", file: "trade.yml", base: "gui", icon: "bundle", areas: [["own-slots", "Your offer", "paint-own"], ["other-slots", "Their offer", "paint-other"]], vars: { other: "Alex", my_heads: 2, max_heads: 24, my_items: 1, max_items: 24, their_heads: 1, their_items: 0, seconds: 3 } },
+  { id: "titles", name: "Titles", file: "titles.yml", base: "gui", icon: "name_tag", areas: [["title-slots", "Titles", "paint-area"]], vars: { page: 1, pages: 1 } },
+];
+const BUTTON_STATES = { confirm: ["unconfirmed", "confirmed"], "other-status": ["unconfirmed", "confirmed"], countdown: ["idle", "running"] };
+
+function menusPage(root, params) {
+  const m = MENUS.find((x) => x.id === params[0]) || MENUS[0];
+  root.append(pageHead("Menus"));
+  root.append(el("div", { class: "tabs", role: "tablist" }, MENUS.map((x) => el("button", { role: "tab", class: x.id === m.id ? "on" : "", onclick: () => go("#/menus/" + x.id) }, sprite(x.icon, 18), x.name))));
+  let tool = "select", selected = params[1] || null, numbers = false;
+  const left = el("div");
+  const aside = el("div", { style: { display: "grid", gap: "22px" } });
+  const { file, base } = m;
+  const drawChest = () => {
+    left.innerHTML = "";
+    const { fill } = menuSlots(file, base);
+    const tools = [["select", "Buttons"], ["filler", "Filler"], ...(m.areas || []).map(([k, n]) => [k, n])];
+    const areaSets = Object.fromEntries((m.areas || []).map(([k]) => [k, new Set(expandSlots(S.get(file, base + "." + k) ?? S.def(file, base + "." + k), 54) === "empty" ? [] : expandSlots(S.get(file, base + "." + k) ?? S.def(file, base + "." + k), 54))]));
+    const overlay = (i) => (m.areas || []).filter(([k]) => areaSets[k].has(i)).map(([, , c]) => c).join(" ") + (selected && menuSlots(file, base).buttons[i]?.id === selected ? " sel" : "");
+    let paintTo = null;
+    const paint = tool === "select" ? null : (i, cell, cont) => {
+      if (tool === "filler") {
+        const cur = menuSlots(file, base).fill;
+        if (!Array.isArray(cur)) { toast("The filler covers " + (cur === "empty" ? "every empty slot" : cur === "border" ? "the border" : "nothing") + ". Pick \"Painted slots\" under Filler to paint it."); return; }
+        const set = new Set(cur);
+        if (!cont) paintTo = !set.has(i);
+        paintTo ? set.add(i) : set.delete(i);
+        S.set(file, base + ".filler-slots", compressSlots([...set]), file + base + "#paint");
+      } else {
+        const set = areaSets[tool];
+        if (!cont) paintTo = !set.has(i);
+        paintTo ? set.add(i) : set.delete(i);
+        S.set(file, base + "." + tool, compressSlots([...set]), file + base + "#paint" + tool);
+      }
+      drawChest();
+    };
+    const extra = (i) => {
+      if (m.id === "trade") { if (areaSets["own-slots"].has(i) && i === [...areaSets["own-slots"]].sort((a, b) => a - b)[0]) return { item: "PLAYER_HEAD", count: 2 }; if (areaSets["other-slots"].has(i) && i === [...areaSets["other-slots"]].sort((a, b) => a - b)[0]) return { item: "DIAMOND", count: 3 }; if (areaSets["own-slots"].has(i) || areaSets["other-slots"].has(i)) return { onclick: () => {} }; }
+      if (m.id === "titles" && areaSets["title-slots"].has(i)) { const t = Object.entries(S.get("titles.yml", "titles") || {})[[...areaSets["title-slots"]].sort((a, b) => a - b).indexOf(i)]; return t ? { item: t[1]?.icon || "NAME_TAG", tip: () => tooltip(t[1]?.display, t[1]?.description) } : { onclick: () => {} }; }
+      if (m.id === "history" && areaSets["entry-slots"].has(i)) { const k = [...areaSets["entry-slots"]].sort((a, b) => a - b).indexOf(i); const e = S.get(file, base + ".entry") || {}; return k < 3 ? { item: { ...e, ...(e[["positive", "negative", "zero"][k]] || {}) }, tip: () => tooltip(e.name, e.lore, { cycle: 3 - k, ended: "2026-11-01", unique: 7, score: [4, -2, 0][k], rank: 2, earned: 4, spent: 2, streak: 1, outcomes: "none" }) } : { onclick: () => {} }; }
+      if (m.id === "confirm" && menuSlots(file, base).buttons[i]?.id === "display") return { item: "SUGAR", tip: () => tooltip("<aqua>Speed for 30 minutes", []), onclick: () => pick(i) };
+      return null;
+    };
+    const pick = (i) => { selected = menuSlots(file, base).buttons[i]?.id || null; drawChest(); drawAside(); };
+    left.append(el("div", { class: "row", style: { marginBottom: "12px" } }, el("span", { class: "muted" }, "Click to"), seg(tools.map(([k, n]) => [k, k === "select" ? "Pick buttons" : "Paint " + n.toLowerCase()]), tool, (v) => { tool = v; drawChest(); }),
+      el("span", { class: "grow" }), el("label", { class: "switchrow" }, switchCtl(numbers, (v) => { numbers = v; drawChest(); }, "Slot numbers"), "Slot numbers")),
+      menuChest(file, base, { vars: m.vars, extra, overlay, numbers, paint, paintEnd: () => drawAside(),
+        onButton: (id) => { selected = id; drawChest(); drawAside(); },
+        onEmpty: () => { selected = null; drawChest(); drawAside(); },
+        onDrop: tool === "select" ? (from, to) => { const b = menuSlots(file, base).buttons[from]; if (!b) return; S.set(file, base + ".buttons." + b.id + ".slot", to); selected = b.id; drawChest(); drawAside(); } : null }),
+      el("div", { class: "small faint", style: { marginTop: "8px" } }, tool === "select" ? "Drag a button to move it." : "Drag across slots to paint them."));
+    const btns = el("div", { class: "items", style: { marginTop: "22px" } });
+    for (const [id, b] of Object.entries(S.get(file, base + ".buttons") || {})) {
+      const it = buttonItem(b);
+      btns.append(el("div", { class: "item" + (id === selected ? " sel" : "") + (b?.enabled === false ? " off" : ""), onclick: () => { selected = id; drawChest(); drawAside(); } }, it?.material ? sprite(it, 28) : sprite("structure_void", 28),
+        el("div", { class: "main" }, el("div", { class: "t1" }, humanize(id)), el("div", { class: "t2" }, plain(it?.name ?? "") || "Shows the item for sale")),
+        el("div", { class: "end" }, b?.slots ? "Slots " + [].concat(b.slots).join(", ") : b?.slot !== undefined ? "Slot " + b.slot : "", b?.enabled === false ? el("div", {}, "Hidden") : null)));
+    }
+    left.append(el("section", { class: "group", style: { marginTop: "26px" } }, el("header", {}, el("h2", {}, "Buttons")), btns));
+  };
+  const drawAside = () => {
+    aside.innerHTML = "";
+    if (selected && S.get(file, base + ".buttons." + selected) !== undefined) aside.append(buttonEditor(file, base + ".buttons." + selected, selected, () => drawChest()));
+    const L = S.get(file, base) || {};
+    const mode = Array.isArray(L["filler-slots"]) ? "list" : L["filler-slots"] ?? "empty";
+    aside.append(group("Menu", field(file, base + ".title", { vars: m.vars, onChange: drawChest }), field(file, base + ".rows", { onChange: () => { drawChest(); } }),
+      el("div", { class: "field", "data-key": file + "#" + base + ".filler-slots" }, el("div", { class: "lab" }, el("span", { class: "name" }, "Filler")), el("div", { class: "ctl" },
+        seg([["list", "Painted slots"], ["empty", "Empty slots"], ["border", "Border"], ["none", "None"]], mode, (v) => { S.set(file, base + ".filler-slots", v === "list" ? [] : v); if (v === "list") tool = "filler"; drawChest(); drawAside(); }))),
+      field(file, base + ".filler.material", { label: "Filler item", onChange: drawChest }), field(file, base + ".filler.name", { label: "Filler name" })));
+    if (m.id === "vault") aside.append(group("Score in the title", field(file, base + ".score-colors.positive", { onChange: drawChest }), field(file, base + ".score-colors.negative", { onChange: drawChest }), field(file, base + ".score-colors.zero", { onChange: drawChest })),
+      group("Slots beyond the vault size", field(file, base + ".locked-slot.material", { onChange: drawChest }), field(file, base + ".locked-slot.name")));
+    if (m.id === "history") aside.append(group("Each cycle", field(file, base + ".entry.material", { onChange: drawChest }), field(file, base + ".entry.name", { onChange: drawChest, vars: { cycle: 3 } }), field(file, base + ".entry.lore", { vars: { cycle: 3, ended: "2026-11-01", unique: 7, score: 4, rank: 2, earned: 4, spent: 2, streak: 1, outcomes: "none" } }),
+      field(file, base + ".entry.positive.material", { label: "Positive score", onChange: drawChest }), field(file, base + ".entry.negative.material", { label: "Negative score", onChange: drawChest }), field(file, base + ".entry.zero.material", { label: "Zero", onChange: drawChest }),
+      field(file, base + ".entry.inactive.material", { label: "Not active", onChange: drawChest }), field(file, base + ".entry.inactive.lore", { label: "Not active lore" })));
+    if (m.id === "titles") aside.append(titleItemEditor(drawChest));
+    const known = ["title", "rows", "filler", "filler-slots", "buttons", "score-colors", "locked-slot", "entry", "entry-slots", "own-slots", "other-slots", "title-slots", "title-item"];
+    const rest = allFields(file, base, { skip: known.map((k) => base + "." + k) });
+    if (rest.children.length) aside.append(el("section", { class: "group" }, el("header", {}, el("h2", {}, "Other")), rest));
+  };
+  drawChest(); drawAside();
+  root.append(layout(left, aside, true));
 }
+function buttonEditor(file, base, id, redraw) {
+  const b = S.get(file, base) || {};
+  const states = BUTTON_STATES[id]?.filter((s) => isObj(b[s])) || [];
+  let state = states[0] || "";
+  const body = el("div", { class: "sheet" });
+  const draw = () => {
+    body.innerHTML = "";
+    body.append(field(file, base + ".enabled", { label: "Shown", type: "bool", onChange: redraw }));
+    if (Array.isArray(b.slots)) body.append(field(file, base + ".slots", { label: "Slots", type: "list", onChange: redraw }));
+    else if (b.slot !== undefined) body.append(field(file, base + ".slot", { onChange: redraw }));
+    const ib = state ? base + "." + state : base;
+    if (id === "display" && !b.material) { body.append(el("div", { class: "pad", style: { padding: "12px 18px" } }, el("span", { class: "muted" }, "Shows the item being bought."))); return; }
+    body.append(field(file, ib + ".material", { onChange: () => { redraw(); draw(); } }), field(file, ib + ".name", { onChange: redraw }), field(file, ib + ".lore"));
+    const mat = S.get(file, ib + ".material") ?? b.material;
+    if (String(mat).toUpperCase() === "PLAYER_HEAD") body.append(field(file, ib + ".head", { hint: "viewer shows the player's own head." }));
+    body.append(field(file, ib + ".glint", { onChange: redraw }));
+  };
+  draw();
+  return el("section", { class: "group" }, el("header", {}, el("h2", {}, humanize(id)), states.length ? el("div", { class: "side" }, seg(states.map((s) => [s, humanize(s)]), state, (v) => { state = v; draw(); })) : null), body);
+}
+function titleItemEditor(redraw) {
+  const base = "gui.title-item";
+  let state = "owned";
+  const body = el("div", { class: "sheet" });
+  const draw = () => {
+    body.innerHTML = "";
+    body.append(field("titles.yml", "gui.show-unowned"), field("titles.yml", base + ".material", { label: "Item", onChange: redraw }), field("titles.yml", base + ".name", { label: "Name", vars: { title: "<gold>[Champion]" } }));
+    body.append(subhead(humanize(state) + " titles"), field("titles.yml", base + "." + state + ".material", { label: "Item instead" }), field("titles.yml", base + "." + state + ".glint"), field("titles.yml", base + "." + state + ".lore"));
+  };
+  draw();
+  return el("section", { class: "group" }, el("header", {}, el("h2", {}, "Each title"), el("div", { class: "side" }, seg([["owned", "Owned"], ["equipped", "Equipped"], ["forced", "Forced"], ["locked", "Locked"]], state, (v) => { state = v; draw(); }))), body);
+}
+const layoutBtn = (id) => btn([sprite("chest", 18), "Menu layout"], () => go("#/menus/" + id), "ghost");
 
 // ============================================================================================
 //  Shop
 // ============================================================================================
-const STATES = ["affordable", "too-expensive", "sold-out", "limit-reached", "cooldown", "unavailable", "locked"];
+const STATES = [["affordable", "Can buy"], ["too-expensive", "Too expensive"], ["sold-out", "Sold out"], ["limit-reached", "Limit reached"], ["cooldown", "Cooling down"], ["unavailable", "Needs something"], ["locked", "Tier locked"]];
 function shopPage(root, params) {
   const tiers = () => Object.keys(S.get("shop.yml", "tiers") || {});
   let tier = params[0] && tiers().includes(params[0]) ? params[0] : tiers()[0];
   let page = 1, state = "affordable";
-  root.append(pageHead("Shop", "Tiers unlock with last cycle's score. Drag items between slots, click one to edit it, click an empty slot to add one.",
-    btn("＋ New tier", async () => {
-      const id = await promptDialog("New tier", "Tier ID:", "epic", { check: idCheck((v) => tiers().includes(v)) });
-      if (!id) return;
-      S.set("shop.yml", "tiers." + id, { name: "<light_purple>" + humanize(id), threshold: 30, entries: {} });
-      location.hash = "#/shop/" + id; window.studio.refresh();
-    })));
-  const tabs = el("div", { class: "row", style: { marginBottom: "12px" } });
-  const body = el("div", { class: "split" });
+  const newTier = async () => {
+    const id = await promptDialog("New tier", "A short ID, like epic:", "epic", { check: idCheck((v) => tiers().includes(v)) });
+    if (!id) return;
+    S.set("shop.yml", "tiers." + id, { name: "<light_purple>" + humanize(id), threshold: 30, entries: {} });
+    tier = id; draw();
+  };
+  root.append(pageHead("Shop", null, layoutBtn("shop")));
+  const tabs = el("div", { class: "tabs", role: "tablist" });
+  const body = el("div");
   root.append(tabs, body);
+  const thr = (T) => (T?.threshold === "none" || T?.threshold === undefined ? "Always open" : "Score " + T.threshold + " or more");
   const draw = () => {
     tabs.innerHTML = "";
     for (const t of tiers()) {
       const T = S.get("shop.yml", "tiers." + t) || {};
-      tabs.append(el("button", { class: "btn" + (t === tier ? " primary" : ""), onclick: () => { tier = t; page = 1; draw(); } }, miniInline(T.name || t), " ", el("span", { class: "small", style: { opacity: 0.7 } }, T.threshold === "none" || T.threshold === undefined ? "always" : "≥ " + T.threshold)));
+      const first = Object.values(T.entries || {})[0];
+      tabs.append(el("button", { role: "tab", class: t === tier ? "on" : "", onclick: () => { tier = t; page = 1; draw(); } }, first?.display ? sprite(first.display, 20) : null, stripMini(T.name || t), el("small", {}, thr(T))));
     }
+    tabs.append(el("button", { onclick: newTier, title: "New tier" }, icon("plus"), "Tier"));
     body.innerHTML = "";
-    if (!tier) { body.append(el("div", { class: "empty" }, "No tiers.")); return; }
-    const T = S.get("shop.yml", "tiers." + tier) || {};
+    if (!tier) { body.append(el("div", { class: "empty" }, "No tiers yet. ", btn("Add one", newTier, "primary"))); return; }
+    const base = "tiers." + tier;
+    const T = S.get("shop.yml", base) || {};
     const entries = Object.entries(T.entries || {});
     const pages = Math.max(+T.pages || 1, ...entries.map(([, e]) => +e?.page || 1));
     const { size } = menuSlots("shop.yml", "gui");
     const at = {};
     for (const [id, e] of entries) if ((+e?.page || 1) === page) at[+e?.slot || 0] = [id, e];
     const ds = S.get("shop.yml", "default-states") || {};
-    const vars = (e) => ({ name: e?.name || stripMini(e?.display?.name || ""), price: e?.price ?? 0, points: 12, missing: Math.max(0, (e?.price ?? 0) - 12), stock: e?.stock ?? "∞",
-      purchases_left: e?.["limit-per-cycle"] ? e["limit-per-cycle"] : "∞", limit: e?.["limit-per-cycle"] ?? "∞", bought: 0, cooldown: e?.cooldown ?? "0s", tier: T.name, threshold: T.threshold, tier_number: tiers().indexOf(tier) + 1, tiers: tiers().length, page, pages, last_score: 6, needed: 0 });
-    const left = el("div");
-    const ctl = el("div", { class: "row", style: { marginBottom: "10px" } }, el("span", { class: "small muted" }, "Show items as:"), el("select", { onchange: (e) => { state = e.target.value; draw(); } }, STATES.map((s) => el("option", { value: s, selected: s === state }, s))),
-      pages > 1 || true ? el("span", { class: "row gap-s" }, el("span", { class: "small muted" }, "Page"), seg([...Array(pages + 1).keys()].slice(1).map((n) => [n, String(n)]), page, (n) => { page = +n; draw(); }),
-        btn("＋ page", () => { S.set("shop.yml", "tiers." + tier + ".pages", pages + 1); page = pages + 1; draw(); }, "small ghost")) : null);
-    const grid = menuChest("shop.yml", "gui", {
-      vars: vars({}),
-      extra: (i) => {
-        const hit = at[i];
-        if (!hit) return null;
-        const [id, e] = hit;
-        const look = { ...(isObj(e?.display) ? e.display : {}), ...(isObj(ds[state]) ? ds[state] : {}), ...(isObj(e?.["display-states"]?.[state]) ? e["display-states"][state] : {}) };
-        const lore = [...[].concat(e?.display?.lore || []), ...[].concat((isObj(e?.["display-states"]?.[state]) && e["display-states"][state].lore) || ds[state]?.lore || [])];
-        return { item: { ...look, material: look.material || e?.display?.material || "PAPER" }, draggable: true, title: id, tip: () => tooltip(look.name ?? e?.display?.name ?? id, lore, vars(e)), onclick: () => editEntry(id), cls: "sel" };
-      },
-      onEmpty: (i) => addEntry(i),
-      onButton: () => editMenu("shop.yml", "gui", "Shop menu"),
-      onDrop: (from, to) => {
-        const a = at[from];
-        if (!a) return;
-        const b = at[to];
-        S.set("shop.yml", `tiers.${tier}.entries.${a[0]}.slot`, to);
-        if (b) S.set("shop.yml", `tiers.${tier}.entries.${b[0]}.slot`, from);
-        draw();
-      },
-    });
-    left.append(ctl, grid, el("div", { class: "small muted", style: { marginTop: "8px" } }, entries.length + " items in this tier. Buttons and filler come from the shop menu (", link("edit menu", "#/menus"), ")."));
-    const right = el("div", { class: "sticky" }, el("div", { class: "card" }, el("h4", {}, "Tier"),
-      field("shop.yml", `tiers.${tier}.name`, { label: "Name", type: "mini", onChange: () => draw() }),
-      field("shop.yml", `tiers.${tier}.threshold`, { label: "Unlocks at last-cycle score", type: "text", help: "A score, or none (always unlocked)." }),
-      el("div", { class: "row", style: { marginTop: "10px" } }, btn("Delete tier", async () => {
-        if (await confirmDialog("Delete the tier " + tier + "?", `Its ${entries.length} items are removed too (undo with Ctrl+Z).`, { ok: "Delete", danger: true })) { S.remove("shop.yml", "tiers." + tier); tier = tiers()[0]; draw(); }
-      }, "danger small"))),
-      el("details", { class: "card more", style: { marginTop: "14px" } }, el("summary", {}, "Shop settings"), allFields("shop.yml", "settings")),
-      el("details", { class: "card more", style: { marginTop: "14px" } }, el("summary", {}, "How states look (default-states)"), allFields("shop.yml", "default-states")));
-    body.append(left, right);
+    const vars = (e) => ({ name: e?.name || stripMini(e?.display?.name || ""), price: e?.price ?? 0, points: 12, missing: Math.max(0, (e?.price ?? 0) - 12), stock: e?.stock === undefined || e?.stock < 0 ? "unlimited" : e.stock,
+      purchases_left: e?.["limit-per-cycle"] ? e["limit-per-cycle"] : "unlimited", limit: e?.["limit-per-cycle"] ?? "unlimited", bought: 0, cooldown: e?.cooldown ?? "0s", tier: T.name, threshold: T.threshold, tier_number: tiers().indexOf(tier) + 1, tiers: tiers().length, page, pages, last_score: 6, needed: 0 });
+    const look = (e) => {
+      const o = { ...(isObj(e?.display) ? e.display : {}), ...(isObj(ds[state]) ? ds[state] : {}), ...(isObj(e?.["display-states"]?.[state]) ? e["display-states"][state] : {}) };
+      o.lore = [...[].concat(e?.display?.lore || []), ...[].concat((isObj(e?.["display-states"]?.[state]) && e["display-states"][state].lore) || ds[state]?.lore || [])];
+      o.material ||= e?.display?.material || "PAPER";
+      return o;
+    };
+    const grid = menuChest("shop.yml", "gui", { vars: vars({}),
+      extra: (i) => { const hit = at[i]; if (!hit) return null; const [id, e] = hit; const L = look(e); return { item: L, draggable: true, title: id, tip: () => tooltip(L.name ?? id, L.lore, vars(e)), onclick: () => editEntry(id), cls: e?.enabled === false ? "dim" : "" }; },
+      onEmpty: (i) => addEntry(i), onButton: () => go("#/menus/shop"),
+      onDrop: (from, to) => { const a = at[from]; if (!a) return; const b = at[to]; S.set("shop.yml", `${base}.entries.${a[0]}.slot`, to); if (b) S.set("shop.yml", `${base}.entries.${b[0]}.slot`, from); draw(); } });
+    const left = el("div", {},
+      el("div", { class: "row", style: { marginBottom: "12px" } }, el("span", { class: "muted" }, "Show items as"), select(STATES, state, (v) => { state = v; draw(); }), el("span", { class: "grow" }),
+        pages > 1 ? el("span", { class: "row gap-s" }, el("span", { class: "muted" }, "Page"), seg([...Array(pages).keys()].map((n) => [n + 1, String(n + 1)]), page, (n) => { page = +n; draw(); })) : null,
+        btn([icon("plus"), "Page"], () => { S.set("shop.yml", base + ".pages", pages + 1); page = pages + 1; draw(); }, "ghost small")),
+      grid, el("div", { class: "small faint", style: { marginTop: "8px" } }, "Drag items to move them. Click an empty slot to add one."));
+    const list = el("div", { class: "items" });
+    for (const [id, e] of entries) list.append(el("div", { class: "item" + (e?.enabled === false ? " off" : ""), onclick: () => editEntry(id) }, sprite(e?.display || "PAPER", 28),
+      el("div", { class: "main" }, el("div", { class: "t1" }, stripMini(e?.display?.name || id)), el("div", { class: "t2" }, (Array.isArray(e?.actions) ? e.actions : e?.actions ? [e.actions] : []).map(summarize).join(", "))),
+      el("div", { class: "end" }, (e?.price ?? 0) + " points", el("div", {}, "Page " + (e?.page || 1) + ", slot " + (e?.slot ?? 0)))));
+    list.append(el("button", { class: "addrow", onclick: () => { const free = [...Array(size).keys()].find((i) => !at[i] && !menuSlots("shop.yml", "gui").buttons[i] && !isFiller(menuSlots("shop.yml", "gui").fill, menuSlots("shop.yml", "gui").rows, i)); addEntry(free ?? 0); } }, icon("plus"), "New item"));
+    left.append(el("section", { class: "group", style: { marginTop: "26px" } }, el("header", {}, el("h2", {}, "Items in " + stripMini(T.name || tier))), list));
+    const aside = el("div", { style: { display: "grid", gap: "4px" } },
+      group(["Tier", iconBtn("trash", "Delete this tier", async () => { if (await confirmDialog("Delete the tier " + tier + "?", `Its ${entries.length} items go too. Undo brings them back.`, { ok: "Delete", danger: true })) { S.remove("shop.yml", base); tier = tiers()[0]; draw(); } }, "sm")],
+        field("shop.yml", base + ".name", { label: "Name", onChange: draw }), thresholdRow(base, draw), field("shop.yml", base + ".enabled", { label: "Open", type: "bool" })),
+      group("Shop", field("shop.yml", "settings.confirm-at-price"), field("shop.yml", "settings.new-player-score"), field("shop.yml", "settings.stock-reset")),
+      statesEditor());
+    body.append(layout(left, aside, true));
   };
   const addEntry = async (slot) => {
-    const id = await promptDialog("New shop item", `Item ID (slot ${slot}, page ${page}):`, "new-item", { check: idCheck((v) => S.get("shop.yml", `tiers.${tier}.entries.${v}`)) });
+    const id = await promptDialog("New shop item", "A short ID, like golden-apple:", "new-item", { check: idCheck((v) => S.get("shop.yml", `tiers.${tier}.entries.${v}`)) });
     if (!id) return;
     S.set("shop.yml", `tiers.${tier}.entries.${id}`, { page, slot, price: 5, display: { material: "PAPER", name: "<white>" + humanize(id) }, actions: [{ message: "<green>Thanks for buying!" }] });
     draw(); editEntry(id);
   };
-  const editEntry = (id) => {
-    const base = `tiers.${tier}.entries.${id}`;
-    const titles = Object.keys(S.get("titles.yml", "titles") || {});
-    const allEntries = Object.entries(S.get("shop.yml", "tiers") || {}).flatMap(([t, T]) => Object.keys(T?.entries || {}).map((e) => e));
-    const prev = el("div");
-    const drawPrev = () => { const e = S.get("shop.yml", base) || {}; prev.innerHTML = ""; prev.append(el("div", { class: "row", style: { alignItems: "flex-start" } }, itemTile(e.display || "PAPER", { size: 44 }), tooltip(e.display?.name ?? id, e.display?.lore, { price: e.price }))); };
-    drawPrev();
-    const body = el("div", {}, prev,
-      el("div", { class: "row", style: { margin: "12px 0" } }, btn("⚡ Edit what it does", () => editActions("shop.yml", base + ".actions", { title: "Buying " + id, hint: "Runs on purchase. Variables: <player> <price> <points> <name> …" }), "primary"),
-        btn("Rename", async () => { const n = await promptDialog("Rename", "New ID:", id); if (n && n !== id) { S.rename("shop.yml", base, n); closeDrawer(); draw(); } }),
-        btn("Delete", async () => { if (await confirmDialog("Delete " + id + "?", "Undo with Ctrl+Z.", { ok: "Delete", danger: true })) { S.remove("shop.yml", base); closeDrawer(); draw(); } }, "danger")),
-      sectionTitle("Price and limits"),
-      field("shop.yml", base + ".price", { label: "Price", type: "number", suffix: "points", min: 0 }),
-      field("shop.yml", base + ".limit-per-cycle", { label: "Limit per player per cycle", type: "number", min: 0, help: "0 = no limit." }),
-      field("shop.yml", base + ".stock", { label: "Stock (everyone together)", type: "number", help: "-1 = unlimited." }),
-      field("shop.yml", base + ".cooldown", { label: "Cooldown per player", type: "duration", placeholder: "e.g. 1d" }),
-      field("shop.yml", base + ".confirm", { label: "Ask to confirm", type: "enum", options: [["", "price decides"], ["true", "always"], ["false", "never"]] }),
-      sectionTitle("Looks"),
-      field("shop.yml", base + ".display.material", { label: "Item", type: "material", onChange: drawPrev }),
-      field("shop.yml", base + ".display.name", { label: "Name", type: "mini", onChange: drawPrev }),
-      field("shop.yml", base + ".display.lore", { label: "Lore", type: "yaml", onChange: drawPrev }),
-      field("shop.yml", base + ".display.glint", { label: "Glint", type: "bool", onChange: drawPrev }),
-      sectionTitle("Requirements"),
-      field("shop.yml", base + ".requires.titles", { label: "Owns titles", type: "list", suggestions: titles }),
-      field("shop.yml", base + ".requires.purchases", { label: "Bought before", type: "list", suggestions: allEntries }),
-      field("shop.yml", base + ".requires.purchases-this-cycle", { label: "Bought this cycle", type: "list", suggestions: allEntries }),
-      field("shop.yml", base + ".requires.permissions", { label: "Has permissions", type: "list" }),
-      el("details", { class: "more" }, el("summary", {}, "Everything else"), allFields("shop.yml", base, { skip: [base + ".actions", base + ".display", base + ".requires", base + ".price", base + ".limit-per-cycle", base + ".stock", base + ".cooldown", base + ".confirm"] })));
-    drawer("Shop item: " + id, body, { subtitle: "shop.yml › " + base, onClose: () => draw() });
+  const editEntry = (id, t = tier) => entryEditor(t, id, draw);
+  draw();
+  if (params[1] && S.get("shop.yml", `tiers.${tier}.entries.${params[1]}`)) editEntry(params[1]);
+}
+function thresholdRow(base, redraw) {
+  const v = S.get("shop.yml", base + ".threshold");
+  const always = v === undefined || v === "none";
+  const row = el("div", { class: "field", "data-key": "shop.yml#" + base + ".threshold" }, el("div", { class: "lab" }, el("span", { class: "name" }, "Opens for")),
+    el("div", { class: "ctl" }, seg([["none", "Everyone"], ["score", "By score"]], always ? "none" : "score", (m) => { S.set("shop.yml", base + ".threshold", m === "none" ? "none" : 10); redraw(); }),
+      always ? null : numberCtl(+v, (n) => S.set("shop.yml", base + ".threshold", n), { unit: "or more", step: 1 })));
+  row.classList.toggle("unsaved", JSON.stringify(v) !== JSON.stringify(S.savedValue("shop.yml", base + ".threshold")));
+  return row;
+}
+function statesEditor() {
+  let st = "affordable";
+  const body = el("div", { class: "sheet" });
+  const draw = () => {
+    body.innerHTML = "";
+    body.append(field("shop.yml", "default-states." + st + ".material", { label: "Item instead", hint: "Empty: the item's own." }), field("shop.yml", "default-states." + st + ".glint"),
+      field("shop.yml", "default-states." + st + ".lore", { label: "Lore added", vars: { price: 3, stock: "unlimited", purchases_left: 5, missing: 2, limit: 5, cooldown: "2h", threshold: 10 } }));
   };
   draw();
+  return el("section", { class: "group" }, el("header", {}, el("h2", {}, "Item lore by state")), el("div", { style: { marginBottom: "10px" } }, select(STATES, st, (v) => { st = v; draw(); })), body);
+}
+function entryEditor(tier, id, redraw) {
+  const base = `tiers.${tier}.entries.${id}`;
+  const titles = Object.keys(S.get("titles.yml", "titles") || {});
+  const allEntries = Object.entries(S.get("shop.yml", "tiers") || {}).flatMap(([, T]) => Object.keys(T?.entries || {}));
+  const prev = el("div");
+  const drawPrev = () => {
+    const e = S.get("shop.yml", base) || {};
+    prev.innerHTML = "";
+    prev.append(el("div", { class: "mcscene", style: { minHeight: "0", gap: "14px", alignItems: "flex-start", marginBottom: "20px" } }, sprite(e.display || "PAPER", 48),
+      tooltip(e.display?.name ?? id, [...[].concat(e.display?.lore || []), ...[].concat(S.get("shop.yml", "default-states.affordable.lore") || [])], { price: e.price ?? 0, stock: e.stock === undefined || e.stock < 0 ? "unlimited" : e.stock, purchases_left: e["limit-per-cycle"] || "unlimited" })));
+  };
+  drawPrev();
+  const e0 = S.get("shop.yml", base) || {};
+  const stockRow = el("div", { class: "field", "data-key": "shop.yml#" + base + ".stock" }, el("div", { class: "lab" }, el("span", { class: "name" }, "Stock"), el("div", { class: "hint" }, "Shared by everyone.")),
+    el("div", { class: "ctl" }, el("div", { class: "row" }, seg([["inf", "Unlimited"], ["n", "Limited"]], e0.stock === undefined || e0.stock < 0 ? "inf" : "n", (m) => { S.set("shop.yml", base + ".stock", m === "inf" ? (e0.stock === undefined ? undefined : -1) : 10); entryEditor(tier, id, redraw); }),
+      e0.stock !== undefined && e0.stock >= 0 ? numberCtl(e0.stock, (n) => S.set("shop.yml", base + ".stock", n), { min: 0, step: 1 }) : null)));
+  const limitRow = el("div", { class: "field", "data-key": "shop.yml#" + base + ".limit-per-cycle" }, el("div", { class: "lab" }, el("span", { class: "name" }, "Per player each cycle")),
+    el("div", { class: "ctl" }, el("div", { class: "row" }, seg([["0", "No limit"], ["n", "Up to"]], e0["limit-per-cycle"] ? "n" : "0", (m) => { S.set("shop.yml", base + ".limit-per-cycle", m === "0" ? (e0["limit-per-cycle"] === undefined ? undefined : 0) : 1); entryEditor(tier, id, redraw); }),
+      e0["limit-per-cycle"] ? numberCtl(e0["limit-per-cycle"], (n) => S.set("shop.yml", base + ".limit-per-cycle", n), { min: 1, step: 1 }) : null)));
+  const confirmV = e0.confirm === undefined ? "" : String(e0.confirm);
+  const body = el("div", {}, prev,
+    group("Price", field("shop.yml", base + ".price", { label: "Price", type: "number", unit: "points", min: 0, step: 1, onChange: drawPrev }), limitRow, stockRow,
+      field("shop.yml", base + ".cooldown", { label: "Wait between purchases", type: "duration", zero: "None" }),
+      el("div", { class: "field" }, el("div", { class: "lab" }, el("span", { class: "name" }, "Ask to confirm")), el("div", { class: "ctl" }, seg([["", "From the shop's price"], ["true", "Always"], ["false", "Never"]], confirmV, (v) => S.set("shop.yml", base + ".confirm", v === "" ? undefined : v === "true"))))),
+    group("Item", field("shop.yml", base + ".display.material", { onChange: () => { drawPrev(); entryEditor(tier, id, redraw); } }), field("shop.yml", base + ".display.name", { onChange: drawPrev, vars: { price: e0.price } }),
+      field("shop.yml", base + ".display.lore", { onChange: drawPrev }), field("shop.yml", base + ".display.glint", { onChange: drawPrev }),
+      String(e0.display?.material).toUpperCase() === "PLAYER_HEAD" ? field("shop.yml", base + ".display.head", { hint: "viewer shows the buyer's own head." }) : null,
+      field("shop.yml", base + ".name", { label: "Name in messages", type: "text", placeholder: stripMini(e0.display?.name || id) }), field("shop.yml", base + ".enabled", { label: "For sale", type: "bool" })),
+    el("section", { class: "group" }, el("header", {}, el("h2", {}, "What buying it does")), actionList("shop.yml", base + ".actions", { vars: { price: e0.price } })),
+    group("Who can buy it", field("shop.yml", base + ".requires.titles", { label: "Owns these titles", type: "list", suggestions: titles }), field("shop.yml", base + ".requires.purchases", { label: "Bought before", type: "list", suggestions: allEntries }),
+      field("shop.yml", base + ".requires.purchases-this-cycle", { label: "Bought this cycle", type: "list", suggestions: allEntries }), field("shop.yml", base + ".requires.permissions", { label: "Has permissions", type: "list" }),
+      el("div", { class: "field stack" }, el("div", { class: "lab" }, el("span", { class: "name" }, "Only when")), el("div", { class: "ctl" }, conditionsCtl("shop.yml", base + ".conditions")))),
+    group("Place", field("shop.yml", base + ".page", { label: "Page", type: "number", min: 1, step: 1 }), field("shop.yml", base + ".slot", { onChange: redraw })));
+  const rest = allFields("shop.yml", base, { skip: ["actions", "display.material", "display.name", "display.lore", "display.glint", "display.head", "requires", "price", "limit-per-cycle", "stock", "cooldown", "confirm", "conditions", "page", "slot", "name", "enabled"].map((k) => base + "." + k) });
+  if (rest.children.length) body.append(el("section", { class: "group" }, el("header", {}, el("h2", {}, "Other settings")), rest));
+  drawer(stripMini(e0.display?.name || id), body, { subtitle: "Shop item " + id + " in " + tier, wide: true, onClose: redraw,
+    footer: doneFooter(
+      btn("Rename", async () => { const n = await promptDialog("Rename", "New ID:", id, { check: idCheck(() => false) }); if (n && n !== id) { S.rename("shop.yml", base, n); entryEditor(tier, n, redraw); } }, "ghost"),
+      btn([icon("trash"), "Delete"], async () => { if (await confirmDialog("Delete " + id + "?", "Undo brings it back.", { ok: "Delete", danger: true })) { S.remove("shop.yml", base); closeDrawer(); } }, "ghost danger")) });
 }
 
 // ============================================================================================
 //  Titles
 // ============================================================================================
-function titlesPage(root) {
-  root.append(pageHead("Titles", "Titles players own and equip with /hc titles. They show through %headcount_title% and, if you like, as a LuckPerms prefix.",
-    btn("＋ New title", async () => {
-      const id = await promptDialog("New title", "Title ID:", "hero", { check: idCheck((v) => S.get("titles.yml", "titles." + v)) });
-      if (!id) return;
-      S.set("titles.yml", "titles." + id, { display: "<aqua>[" + humanize(id) + "]", description: ["<gray>How to earn it."], icon: { material: "NAME_TAG" } });
-      window.studio.refresh();
-    }, "primary")));
-  const fmt = () => S.get("titles.yml", "settings.format") ?? "<title> ";
-  const g = el("div", { class: "grid g3" });
-  for (const [id, t] of Object.entries(S.get("titles.yml", "titles") || {})) {
-    g.append(el("div", { class: "card click", onclick: () => edit(id) }, el("div", { class: "row" }, itemTile(t?.icon || "NAME_TAG"), el("div", { class: "grow" }, mcText(t?.display || id)), t?.enabled === false ? badge("off", "plain") : null),
-      el("div", { class: "mc small", style: { marginTop: "8px" }, html: renderMini(fmt().replace("<title>", t?.display || id) + "<white>Steve<gray>: gg!", { vars: SAMPLE }) }),
-      el("div", { class: "small muted", style: { marginTop: "6px" } }, [].concat(t?.description || []).map(stripMini).join(" "))));
-  }
+function titlesPage(root, params) {
+  const add = async () => {
+    const id = await promptDialog("New title", "A short ID, like hero:", "hero", { check: idCheck((v) => S.get("titles.yml", "titles." + v)) });
+    if (!id) return;
+    S.set("titles.yml", "titles." + id, { display: "<aqua>[" + humanize(id) + "]", description: ["<gray>How to earn it."], icon: { material: "NAME_TAG" } });
+    draw(); edit(id);
+  };
+  root.append(pageHead("Titles", null, layoutBtn("titles")));
+  const listBox = el("div");
+  const chatBox = el("div");
+  const drawChat = () => {
+    chatBox.innerHTML = "";
+    const fmt = S.get("titles.yml", "settings.format") ?? "<title> ";
+    const first = Object.values(S.get("titles.yml", "titles") || {})[0];
+    chatBox.append(preview("In chat", el("div", { class: "mcscene", style: { minHeight: "120px", alignItems: "flex-end" } }, el("div", { style: { display: "grid", gap: "2px" } },
+      el("div", { class: "mc chatline", html: renderMini(fmt.replace("<title>", first?.display || "") + "<white>Steve<gray>: anyone want to trade?", { vars: SAMPLE }) }),
+      el("div", { class: "mc chatline", html: renderMini((S.get("titles.yml", "settings.none-text") || "") + "<white>Alex<gray>: sure", { vars: SAMPLE }) })))));
+  };
+  const draw = () => {
+    listBox.innerHTML = "";
+    const items = el("div", { class: "items" });
+    for (const [id, t] of Object.entries(S.get("titles.yml", "titles") || {})) items.append(el("div", { class: "item" + (t?.enabled === false ? " off" : ""), onclick: () => edit(id) }, sprite(t?.icon || "NAME_TAG", 28),
+      el("div", { class: "main" }, el("div", { class: "t1" }, mcName(t?.display || id)), el("div", { class: "t2" }, [].concat(t?.description || []).map(stripMini).join(" "))), el("div", { class: "end" }, id)));
+    items.append(el("button", { class: "addrow", onclick: add }, icon("plus"), "New title"));
+    listBox.append(items);
+    drawChat();
+  };
   const edit = (id) => {
     const base = "titles." + id;
-    drawer("Title: " + id, el("div", {}, field("titles.yml", base + ".display", { label: "Shown as", type: "mini" }), field("titles.yml", base + ".description", { label: "Description", type: "yaml" }),
-      field("titles.yml", base + ".icon.material", { label: "Menu icon", type: "material" }), field("titles.yml", base + ".enabled", { label: "Enabled", type: "bool" }),
-      el("div", { class: "row", style: { marginTop: "12px" } }, btn("Delete", async () => { if (await confirmDialog("Delete " + id + "?", "Players who own it keep the ID until it's reset; it just stops showing.", { ok: "Delete", danger: true })) { S.remove("titles.yml", base); closeDrawer(); window.studio.refresh(); } }, "danger"))),
-      { subtitle: "titles.yml › " + base, onClose: () => window.studio.refresh() });
+    const prev = el("div");
+    const drawPrev = () => { const t = S.get("titles.yml", base) || {}; prev.innerHTML = ""; prev.append(el("div", { class: "mcscene", style: { minHeight: "0", gap: "14px", alignItems: "flex-start", marginBottom: "20px" } }, sprite(t.icon || "NAME_TAG", 48), tooltip(t.display || id, t.description))); };
+    drawPrev();
+    drawer(stripMini(S.get("titles.yml", base + ".display") || id), el("div", {}, prev, group(null, field("titles.yml", base + ".display", { onChange: () => { drawPrev(); draw(); } }), field("titles.yml", base + ".description", { label: "Description", onChange: drawPrev }),
+      field("titles.yml", base + ".icon.material", { label: "Menu item", onChange: drawPrev }), field("titles.yml", base + ".icon.glint", { onChange: drawPrev }), field("titles.yml", base + ".enabled", { label: "In use", type: "bool" }))),
+    { subtitle: "Title " + id, onClose: draw, footer: doneFooter(btn([icon("trash"), "Delete"], async () => { if (await confirmDialog("Delete " + id + "?", "Players who own it keep the ID, but it stops showing.", { ok: "Delete", danger: true })) { S.remove("titles.yml", base); closeDrawer(); } }, "ghost danger")) });
   };
-  root.append(g, sectionTitle("Settings"), el("div", { class: "panel" }, el("div", { class: "pb" }, allFields("titles.yml", "settings"))),
-    el("div", { class: "row", style: { marginTop: "14px" } }, btn("Edit the titles menu", () => editMenu("titles.yml", "gui", "Titles menu"))));
+  draw();
+  root.append(layout([el("section", { class: "group" }, listBox),
+    group("Showing titles", field("titles.yml", "settings.format", { onChange: drawChat, vars: { title: "<gold>[Champion]" } }), field("titles.yml", "settings.none-text", { onChange: drawChat }), field("titles.yml", "settings.auto-equip-first")),
+    group("Prefix in your permissions plugin", field("titles.yml", "settings.permission-prefix.enabled"), field("titles.yml", "settings.permission-prefix.type"), field("titles.yml", "settings.permission-prefix.priority", { hint: "Use one nothing else uses." }), field("titles.yml", "settings.permission-prefix.format"))],
+  chatBox));
+  if (params[0] && S.get("titles.yml", "titles." + params[0])) edit(params[0]);
 }
 
 // ============================================================================================
 //  Trading
 // ============================================================================================
 function tradingPage(root) {
-  root.append(pageHead("Trading", "/trade <player> rules: what can be traded, by whom, when trades are blocked or cancelled, and the trade screen."));
-  const split = el("div", { class: "split" });
-  const left = el("div");
-  const sec = (t, base, skip) => el("div", { class: "panel", style: { marginBottom: "14px" } }, el("div", { class: "ph" }, el("h3", {}, t)), el("div", { class: "pb" }, allFields("trade.yml", base, { skip })));
-  const sts = Object.keys(S.get("statuses.yml", "statuses") || {});
-  left.append(sec("Requests", "request"), sec("What can be traded", "allowed-types"), sec("Limits", "limits"), sec("Confirming", "confirm"), sec("Cooldown", "cooldown"), sec("Range", "range"),
-    el("div", { class: "panel", style: { marginBottom: "14px" } }, el("div", { class: "ph" }, el("h3", {}, "Statuses that block trades")), el("div", { class: "pb" },
-      field("trade.yml", "statuses.block-request", { label: "Can't send a request", type: "list", suggestions: sts }), field("trade.yml", "statuses.block-accept", { label: "Can't accept", type: "list", suggestions: sts }),
-      field("trade.yml", "statuses.cancel-open", { label: "Cancels an open trade", type: "list", suggestions: sts }), el("div", { class: "small muted" }, "Each has its own message (lang gates.trade-*) and bypass permission. ", link("Why is it blocked? →", "#/why")))),
-    sec("Cancelling", "cancel"), el("div", { class: "panel" }, el("div", { class: "pb" }, field("trade.yml", "save-player-data-after-trade"))));
+  root.append(pageHead("Trading", null, layoutBtn("trade")));
+  const r = S.get("trade.yml", "range.blocks") ?? -1;
+  const rangeRow = el("div", { class: "field", "data-key": "trade.yml#range.blocks" }, el("div", { class: "lab" }, el("span", { class: "name" }, "Distance")),
+    el("div", { class: "ctl" }, el("div", { class: "row" }, seg([["any", "Any"], ["n", "Within"]], r < 0 ? "any" : "n", (m) => { S.set("trade.yml", "range.blocks", m === "any" ? -1 : 32); window.studio.refresh(); }),
+      r >= 0 ? numberCtl(r, (n) => S.set("trade.yml", "range.blocks", n), { unit: "blocks", min: 0, step: 1 }) : null)));
+  rangeRow.classList.toggle("unsaved", r !== S.savedValue("trade.yml", "range.blocks"));
   const own = new Set(expandSlots(S.get("trade.yml", "gui.own-slots") ?? S.def("trade.yml", "gui.own-slots")));
   const other = new Set(expandSlots(S.get("trade.yml", "gui.other-slots") ?? S.def("trade.yml", "gui.other-slots")));
-  const right = el("div", { class: "sticky" }, el("div", { class: "card" }, el("h4", {}, "The trade screen"),
-    menuChest("trade.yml", "gui", { vars: { other: "Alex", my_heads: 2, max_heads: 24, my_items: 1, max_items: 24, their_heads: 1, their_items: 0, seconds: 3 },
-      extra: (i) => own.has(i) ? (i === [...own][0] ? { item: "PLAYER_HEAD", title: "your offer" } : i === [...own][1] ? { item: "DIAMOND", count: 3 } : { cls: "", title: "your offer" })
-        : other.has(i) ? (i === [...other][0] ? { item: "PLAYER_HEAD", title: "their offer", cls: "dim" } : { cls: "dim", title: "their offer (mirror)" }) : null,
-      onButton: () => editMenu("trade.yml", "gui", "Trade screen") }),
-    el("div", { class: "small muted", style: { marginTop: "8px" } }, "Left: your offer. Right (dimmed): theirs, mirrored. ", link("Edit the screen", "#/menus"))));
-  split.append(left, right);
-  root.append(split);
+  const first = (set) => [...set].sort((a, b) => a - b)[0];
+  const screen = menuChest("trade.yml", "gui", { vars: MENUS.find((m) => m.id === "trade").vars,
+    extra: (i) => i === first(own) ? { item: "PLAYER_HEAD", count: 2 } : i === first(own) + 1 ? { item: "DIAMOND", count: 3 } : i === first(other) ? { item: { material: "PLAYER_HEAD" } } : own.has(i) || other.has(i) ? { onclick: () => {} } : null,
+    onButton: () => go("#/menus/trade") });
+  root.append(layout([
+    group("Requests", field("trade.yml", "request.timeout"), field("trade.yml", "request.vanished-status"), field("trade.yml", "cooldown.duration"), field("trade.yml", "cooldown.after-cancel"), rangeRow, field("trade.yml", "range.same-world")),
+    group("What can be traded", field("trade.yml", "allowed-types.heads-for-heads"), field("trade.yml", "allowed-types.items-for-heads"), field("trade.yml", "allowed-types.items-for-items"), field("trade.yml", "allowed-types.gifts"),
+      field("trade.yml", "limits.max-heads"), field("trade.yml", "limits.max-items"), field("trade.yml", "limits.only-own-heads"), field("trade.yml", "limits.blocked-items")),
+    group("Blocked by statuses", field("trade.yml", "statuses.block-request"), field("trade.yml", "statuses.block-accept"), field("trade.yml", "statuses.cancel-open")),
+    group("Confirming and cancelling", field("trade.yml", "confirm.countdown"), field("trade.yml", "cancel.on-teleport"), field("trade.yml", "cancel.teleport-min-distance"), field("trade.yml", "cancel.on-gamemode-change"),
+      field("trade.yml", "cancel.check-interval"), field("trade.yml", "save-player-data-after-trade")),
+  ], preview("The trade screen", screen)));
 }
 
 // ============================================================================================
 //  Statuses
 // ============================================================================================
-function statusUses(name) {
+export function statusUses(name) {
   const out = [];
-  const lists = [["config.yml", "vault.block-movement.statuses", "vault gate"], ["trade.yml", "statuses.block-request", "trade requests"], ["trade.yml", "statuses.block-accept", "trade accepts"], ["trade.yml", "statuses.cancel-open", "open trades"]];
+  const lists = [["config.yml", "vault.block-movement.statuses", "Vault"], ["config.yml", "kills.killer-blocked-statuses", "Kills"], ["trade.yml", "statuses.block-request", "Trade requests"], ["trade.yml", "statuses.block-accept", "Accepting trades"], ["trade.yml", "statuses.cancel-open", "Open trades"]];
   for (const [f, p, what] of lists) if ((S.get(f, p) || []).some((x) => String(x).replace(/^!/, "") === name)) out.push(what);
+  if (S.get("trade.yml", "request.vanished-status") === name) out.push("Vanished check");
   for (const [n, s] of Object.entries(S.get("statuses.yml", "statuses") || {})) {
     if (!isObj(s)) continue;
-    if ([...(s.statuses || []), s.status, s.fallback].some((x) => String(x ?? "").replace(/^!/, "") === name)) out.push("status " + n);
+    if ([...(s.statuses || []), s.status, s.fallback].some((x) => String(x ?? "").replace(/^!/, "") === name)) out.push(n);
   }
-  const scan = (file, v) => { if (Array.isArray(v)) v.forEach((x) => scan(file, x)); else if (isObj(v)) for (const [k, x] of Object.entries(v)) { if ((k === "statuses" || k === "any-statuses") && Array.isArray(x) && file !== "statuses.yml" && x.some((y) => String(y).replace(/^!/, "") === name)) out.push(file + " conditions"); scan(file, x); } };
-  for (const f of ["outcomes.yml", "shop.yml", "actions.yml", "config.yml"]) scan(f, f === "config.yml" ? S.get(f, "hooks") : S.doc(f)?.data);
+  const scan = (file, v, where) => { if (Array.isArray(v)) v.forEach((x) => scan(file, x, where)); else if (isObj(v)) for (const [k, x] of Object.entries(v)) { if ((k === "statuses" || k === "any-statuses") && Array.isArray(x) && x.some((y) => String(y).replace(/^!/, "") === name)) out.push(where); scan(file, x, where); } };
+  scan("outcomes.yml", S.doc("outcomes.yml")?.data, "Outcomes"); scan("shop.yml", S.doc("shop.yml")?.data, "Shop"); scan("actions.yml", S.doc("actions.yml")?.data, "Action lists"); scan("config.yml", S.get("config.yml", "hooks"), "Hooks");
   return [...new Set(out)];
 }
-function statusesPage(root) {
+const SRC_SPRITE = { pvp: "iron_sword", "player-state": "clock", muted: "white_wool", bedrock: "bedrock", placeholder: "item_frame", "scoreboard-tag": "name_tag", permission: "trial_key", metadata: "paper",
+  flag: "redstone", headcount: "player_head", "in-trade": "bundle", "pvp-damage": "iron_sword", "recent-damage": "redstone", "mob-damage": "zombie_head", "nearby-player": "player_head",
+  "nearby-hostile": "creeper_head", "targeted-by-mob": "skeleton_skull", health: "glistering_melon_slice", food: "cooked_beef", "on-fire": "blaze_powder", "in-lava": "lava_bucket", "in-water": "water_bucket",
+  falling: "feather", gliding: "elytra", flying: "elytra", swimming: "water_bucket", sneaking: "leather_boots", sprinting: "sugar", sleeping: "red_bed", dead: "bone", invisible: "glass",
+  op: "command_block", riding: "saddle", gamemode: "grass_block", world: "filled_map", "joined-recently": "clock", potion: "potion", "y-level": "ladder", biome: "oak_sapling", holding: "diamond_sword",
+  "world-time": "clock", "all-of": "comparator", "any-of": "repeater", not: "redstone_torch", always: "lime_dye", never: "gray_dye" };
+function srcSettings(src) {
+  const out = {};
+  const text = src?.settingsText || "";
+  for (const m of text.matchAll(/`([a-z0-9-]+)`:\s*((?:`[^`]+`(?:,\s*|\s+or\s+|,\s*or\s+)?)+)/g)) out[m[1]] = { options: [...m[2].matchAll(/`([^`]+)`/g)].map((x) => x[1]) };
+  for (const m of text.matchAll(/`([a-z0-9-]+):\s*([^`]+)`/g)) if (!out[m[1]]) out[m[1]] = { def: m[2] };
+  return out;
+}
+const CHECKS = { "pvp-enabled": "PvP is on", "pvp-disabled": "PvP is off", "combat-tagged": "In combat", newbie: "New-player protection", "respawn-protected": "Just respawned", override: "PvP forced by a world",
+  afk: "AFK", vanished: "Vanished", god: "In god mode", jailed: "Jailed", muted: "Muted" };
+const list = (a) => { a = [].concat(a || []).map(String); return a.length > 1 ? a.slice(0, -1).join(", ") + " or " + a[a.length - 1] : a[0] || ""; };
+function statusSummary(s) {
+  if (!isObj(s)) return "";
+  const src = s.source;
+  const d = {
+    pvp: () => CHECKS[s.check] || s.check, "player-state": () => CHECKS[s.check] || s.check, gamemode: () => "Game mode is " + list(s.modes), "any-of": () => "Any of " + list(s.statuses),
+    "all-of": () => "All of " + [].concat(s.statuses || []).join(", "), not: () => "Not " + s.status, health: () => s.below !== undefined ? "Health below " + s.below : "Health " + (s.range ?? ""),
+    food: () => s.below !== undefined ? "Food below " + s.below : "Food " + (s.range ?? ""), falling: () => "Falling more than " + (s.distance ?? 4) + " blocks",
+    "pvp-damage": () => ({ dealt: "Hit a player", took: "Hit by a player", either: "Hit or was hit by a player" }[s.direction || "either"] || "PvP damage") + " in the last " + (s.seconds ?? 15) + "s",
+    "recent-damage": () => "Took damage in the last " + (s.seconds ?? 10) + "s", "mob-damage": () => "Hurt by a mob in the last " + (s.seconds ?? 10) + "s",
+    metadata: () => "Has the " + s.key + " flag from a plugin", permission: () => "Has " + s.permission, "scoreboard-tag": () => "Has the tag " + s.tag, flag: () => "Has the flag " + s.flag,
+    world: () => "In " + list(s.worlds), biome: () => "In " + list(s.biomes), holding: () => "Holding " + list((s.materials || []).map(prettyMaterial)), potion: () => "Has " + humanize(s.effect || "an effect"),
+    "nearby-player": () => "A player within " + (s.radius ?? 16) + " blocks", "nearby-hostile": () => "A hostile mob within " + (s.radius ?? 8) + " blocks", placeholder: () => s.placeholder + " " + (s.operator ?? "") + " " + (s.value ?? ""),
+  }[src];
+  return d ? d() : humanize(src || "?");
+}
+function statusesPage(root, params) {
   const sources = S.store.catalog?.statuses || [];
-  root.append(pageHead("Statuses", "Named player states (in PvP, AFK, low health…) used by the vault and trade rules, conditions and deny lists. Every status is also %headcount_status_<name>%.",
-    btn("＋ New status", async () => {
-      const id = await promptDialog("New status", "Status name:", "my-status", { check: idCheck((v) => S.get("statuses.yml", "statuses." + v)) });
-      if (!id) return;
-      S.set("statuses.yml", "statuses." + id, { source: "health", below: 6 });
-      window.studio.refresh(); edit(id);
-    }, "primary")));
-  const t = el("table", { class: "t" }, el("tr", {}, el("th", {}, "Status"), el("th", {}, "Source"), el("th", {}, "Settings"), el("th", {}, "Used by")));
-  for (const [name, s] of Object.entries(S.get("statuses.yml", "statuses") || {})) {
-    const settings = isObj(s) ? Object.entries(s).filter(([k]) => !["source", "description"].includes(k)).map(([k, v]) => k + ": " + (Array.isArray(v) ? v.join(", ") : v)).join(" · ") : "";
-    const uses = statusUses(name);
-    t.append(el("tr", { class: "click", onclick: () => edit(name) }, el("td", {}, el("b", {}, name)), el("td", {}, badge(s?.source || "?", "info")), el("td", { class: "small muted" }, settings),
-      el("td", {}, uses.length ? uses.map((u) => badge(u, "plain")) : el("span", { class: "faint small" }, "—"))));
-  }
-  root.append(el("div", { class: "panel" }, el("div", { class: "pb" }, t)), sectionTitle("Placeholder text"), el("div", { class: "panel" }, el("div", { class: "pb" }, allFields("statuses.yml", "settings"))));
+  const add = async () => {
+    const id = await promptDialog("New status", "A short name, like low-food:", "my-status", { check: idCheck((v) => S.get("statuses.yml", "statuses." + v)) });
+    if (!id) return;
+    S.set("statuses.yml", "statuses." + id, { source: "health", below: 6 });
+    draw(); edit(id);
+  };
+  root.append(pageHead("Statuses", null, btn([icon("plus"), "New status"], add)));
+  const listBox = el("div");
+  const draw = () => {
+    listBox.innerHTML = "";
+    const items = el("div", { class: "items" });
+    for (const [name, s] of Object.entries(S.get("statuses.yml", "statuses") || {})) {
+      const uses = statusUses(name);
+      items.append(el("div", { class: "item", onclick: () => edit(name) }, sprite(SRC_SPRITE[s?.source] || "redstone_torch", 28),
+        el("div", { class: "main" }, el("div", { class: "t1" }, name), el("div", { class: "t2" }, statusSummary(s))),
+        el("div", { class: "end" }, uses.length ? "Used by " + uses.slice(0, 2).join(", ") + (uses.length > 2 ? " and " + (uses.length - 2) + " more" : "") : "Not used")));
+    }
+    items.append(el("button", { class: "addrow", onclick: add }, icon("plus"), "New status"));
+    listBox.append(items);
+  };
   const edit = (name) => {
     const base = "statuses." + name;
     const body = el("div");
-    const draw = () => {
+    const drawE = () => {
       body.innerHTML = "";
       const s = S.get("statuses.yml", base) || {};
       const src = sources.find((x) => x.source === s.source);
-      body.append(el("div", { class: "field" }, el("div", {}, el("div", { class: "lbl" }, "Source"), el("div", { class: "help" }, src ? src.trueWhen : "")),
-        el("div", { class: "ctl" }, el("select", { onchange: (e) => { S.set("statuses.yml", base + ".source", e.target.value); draw(); } },
-          Object.entries(sources.reduce((g, x) => ((g[x.group] ||= []).push(x), g), {})).map(([g, xs]) => el("optgroup", { label: g }, xs.map((x) => el("option", { value: x.source, selected: x.source === s.source }, x.source))))),
-          src ? el("div", { class: "small muted", style: { marginTop: "4px" } }, "Settings: " + (src.settingsText || "none")) : null)));
-      const keys = [...new Set([...(src?.settings || []), ...Object.keys(s).filter((k) => !["source", "fallback", "unavailable", "description"].includes(k))])];
-      const names = Object.keys(S.get("statuses.yml", "statuses") || {});
+      const opts = srcSettings(src);
+      const names = Object.keys(S.get("statuses.yml", "statuses") || {}).filter((x) => x !== name);
+      const grouped = Object.entries(sources.reduce((g, x) => ((g[x.group] ||= []).push(x), g), {})).map(([g, xs]) => ({ group: g, items: xs.map((x) => [x.source, humanize(x.source)]) }));
+      const rows = [el("div", { class: "field" }, el("div", { class: "lab" }, el("span", { class: "name" }, "True when")), el("div", { class: "ctl" },
+        select(grouped, s.source || "", (v) => { S.set("statuses.yml", base + ".source", v); drawE(); }), src?.trueWhen ? el("div", { class: "note-inline" }, src.trueWhen.replace(/`/g, "")) : null))];
+      const keys = [...new Set([...(src?.settings || []), ...Object.keys(opts), ...Object.keys(s).filter((k) => !["source", "fallback", "unavailable", "description"].includes(k))])];
       for (const k of keys) {
-        const type = k === "statuses" ? "list" : k === "status" ? "enum" : undefined;
-        body.append(field("statuses.yml", base + "." + k, { label: humanize(k), type, options: type === "enum" ? names : undefined, select: true, suggestions: [...names, ...names.map((x) => "!" + x)] }));
+        const o = opts[k] || {};
+        const p = base + "." + k;
+        let row;
+        if (k === "statuses") row = field("statuses.yml", p, { label: "Statuses", type: "statuses" });
+        else if (k === "status") row = field("statuses.yml", p, { label: "Status", type: "select", options: names });
+        else if (k === "modes") row = field("statuses.yml", p, { label: "Game modes", type: "list", suggestions: ["survival", "creative", "adventure", "spectator"] });
+        else if (k === "materials") row = field("statuses.yml", p, { label: "Items", type: "materials" });
+        else if (o.options) row = field("statuses.yml", p, { label: humanize(k), type: o.options.length <= 4 ? "seg" : "select", options: o.options.map((x) => [x, humanize(x)]) });
+        else if (o.def !== undefined && /^-?\d+(\.\d+)?$/.test(o.def) && S.get("statuses.yml", p) === undefined) row = field("statuses.yml", p, { label: humanize(k), type: "number", placeholder: o.def });
+        else if (o.def === "true" || o.def === "false") row = field("statuses.yml", p, { label: humanize(k), type: "bool" });
+        else row = field("statuses.yml", p, { label: humanize(k) });
+        rows.push(row);
       }
-      body.append(sectionTitle("When the source can't answer"), field("statuses.yml", base + ".fallback", { label: "Fall back to", type: "enum", options: ["", ...names.filter((x) => x !== name)], select: true }),
-        field("statuses.yml", base + ".unavailable", { label: "Else read as", type: "bool" }), field("statuses.yml", base + ".description", { label: "Note", type: "text" }),
-        el("div", { class: "small muted", style: { marginTop: "10px" } }, "Used by: " + (statusUses(name).join(", ") || "nothing yet")),
-        el("div", { class: "row", style: { marginTop: "12px" } }, btn("Delete", async () => { if (await confirmDialog("Delete " + name + "?", "Rules that use it will report an unknown status.", { ok: "Delete", danger: true })) { S.remove("statuses.yml", base); closeDrawer(); window.studio.refresh(); } }, "danger")));
+      body.append(group(null, ...rows),
+        group("When it can't tell", field("statuses.yml", base + ".fallback", { label: "Ask another status", type: "select", options: [["", "No"], ...names.map((n) => [n, n])] }),
+          field("statuses.yml", base + ".unavailable", { label: "Otherwise count it as", type: "seg", options: [[false, "Inactive"], [true, "Active"]] })),
+        group(null, field("statuses.yml", base + ".description", { label: "Note", type: "text", placeholder: "For yourself" })),
+        el("p", { class: "muted" }, "Used by: " + (statusUses(name).join(", ") || "nothing yet") + ". Placeholder: ", el("code", {}, "%headcount_status_" + name + "%")));
     };
-    draw();
-    drawer("Status: " + name, body, { subtitle: "statuses.yml › " + base, onClose: () => window.studio.refresh() });
+    drawE();
+    drawer(name, body, { subtitle: "Status", onClose: draw, footer: doneFooter(btn([icon("trash"), "Delete"], async () => { if (await confirmDialog("Delete " + name + "?", "Anything that uses it reports an unknown status.", { ok: "Delete", danger: true })) { S.remove("statuses.yml", base); closeDrawer(); } }, "ghost danger")) });
   };
+  draw();
+  root.append(el("section", { class: "group" }, listBox), group("Placeholder text", field("statuses.yml", "settings.placeholder-true"), field("statuses.yml", "settings.placeholder-false")));
+  if (params[0] && S.get("statuses.yml", "statuses." + params[0])) edit(params[0]);
 }
 
 // ============================================================================================
 //  Integrations
 // ============================================================================================
 const INTEG = [
-  ["pvp", "PvP", "The PvP toggle, combat tag and new-player protection behind the in-pvp, combat-tagged and newbie-protected statuses and the pvp action.", ["included", "pvpmanager", "none"], { pvpmanager: "PvPManager" }],
-  ["placeholders", "Placeholders", "%...% placeholders in Headcount's text, the formula and statuses.", ["included", "placeholderapi", "none"], { placeholderapi: "PlaceholderAPI" }],
-  ["economy", "Money", "The money action (points need nothing).", ["vault", "none"], { vault: "Vault" }],
-  ["permissions", "Permissions", "Permission, group, track and prefix actions, and title prefixes.", ["included", "luckperms", "vault", "none"], { luckperms: "LuckPerms", vault: "Vault" }],
-  ["moderation", "Moderation", "Ban, mute, kick, warn and jail actions.", ["included", "libertybans", "litebans", "advancedban", "essentials", "commands", "none"], { libertybans: "LibertyBans", litebans: "LiteBans", advancedban: "AdvancedBan", essentials: "Essentials" }],
-  ["player-state", "Player states", "afk, vanished, god, jailed and muted for statuses.", ["included", "essentials", "none"], { essentials: "Essentials" }],
-  ["discord", "Discord", "The discord action.", ["discordsrv", "none"], { discordsrv: "DiscordSRV" }],
-  ["bedrock", "Bedrock", "Telling Bedrock players apart (typed /trade accept, the bedrock status).", ["floodgate", "geyser", "none"], { floodgate: "floodgate", geyser: "Geyser-Spigot" }],
+  ["pvp", "PvP", "iron_sword", ["included", "pvpmanager", "none"], { included: "Headcount", pvpmanager: "PvPManager", none: "Nobody" }, { pvpmanager: "PvPManager" }],
+  ["permissions", "Permissions", "trial_key", ["included", "luckperms", "vault", "none"], { included: "Headcount", luckperms: "LuckPerms", vault: "Vault", none: "Nobody" }, { luckperms: "LuckPerms", vault: "Vault" }],
+  ["moderation", "Bans, mutes and jail", "iron_bars", ["included", "libertybans", "litebans", "advancedban", "essentials", "commands", "none"], { included: "Headcount", libertybans: "LibertyBans", litebans: "LiteBans", advancedban: "AdvancedBan", essentials: "EssentialsX", commands: "Commands", none: "Nobody" }, { libertybans: "LibertyBans", litebans: "LiteBans", advancedban: "AdvancedBan", essentials: "Essentials" }],
+  ["placeholders", "Placeholders", "item_frame", ["included", "placeholderapi", "none"], { included: "Headcount's own", placeholderapi: "PlaceholderAPI", none: "None" }, { placeholderapi: "PlaceholderAPI" }],
+  ["player-state", "AFK and vanish", "clock", ["included", "essentials", "none"], { included: "Headcount", essentials: "EssentialsX", none: "Nobody" }, { essentials: "Essentials" }],
+  ["economy", "Money", "gold_nugget", ["vault", "none"], { vault: "Vault", none: "None" }, { vault: "Vault" }],
+  ["discord", "Discord", "amethyst_shard", ["discordsrv", "none"], { discordsrv: "DiscordSRV", none: "None" }, { discordsrv: "DiscordSRV" }],
+  ["bedrock", "Bedrock players", "bedrock", ["floodgate", "geyser", "none"], { floodgate: "Floodgate", geyser: "Geyser", none: "None" }, { floodgate: "floodgate", geyser: "Geyser-Spigot" }],
 ];
-const MSG_EVENTS = [["toggled", ["pvp.toggled-on", "pvp.toggled-off"]], ["tag-start", ["pvp.tag-start"]], ["tag-end", ["pvp.tag-end"]], ["blocked-hit", ["pvp.blocked-hit.target-off", "pvp.blocked-hit.self-off"]],
-  ["blocked-action", ["pvp.blocked-command", "pvp.cooldown"]]];
+const MSG_EVENTS = [["toggled", "Switching PvP", ["pvp.toggled-on", "pvp.toggled-off"]], ["tag-start", "Entering combat", ["pvp.tag-start"]], ["tag-end", "Leaving combat", ["pvp.tag-end"]],
+  ["blocked-hit", "A hit is stopped", ["pvp.blocked-hit.target-off", "pvp.blocked-hit.self-off"]], ["blocked-action", "Something is refused", ["pvp.blocked-command", "pvp.cooldown"]]];
 function integrationsPage(root) {
-  root.append(pageHead("Integrations", "Who handles each job: Headcount's own included version, another plugin, or nobody. Switching /pvp between plugins needs a server restart."));
+  root.append(pageHead("Integrations"));
   const installed = S.store.info.plugins || null;
-  for (const [key, title, desc, options, pluginOf] of INTEG) {
+  const has = (pl) => installed && installed.some((p) => p.toLowerCase().startsWith(pl.toLowerCase()));
+  for (const [key, title, spr, options, names, pluginOf] of INTEG) {
     const cur = S.get("integrations.yml", key + ".provider") ?? S.def("integrations.yml", key + ".provider");
-    const card = el("div", { class: "panel", style: { marginBottom: "14px" } });
-    const opts = options.map((o) => [o, el("span", {}, o, installed && pluginOf[o] ? el("span", { style: { marginLeft: "4px", fontSize: "10px", color: installed.some((p) => p.toLowerCase().startsWith(pluginOf[o].toLowerCase())) ? "var(--good)" : "var(--faint)" } }, installed.some((p) => p.toLowerCase().startsWith(pluginOf[o].toLowerCase())) ? "●" : "○") : null)]);
-    const segEl = el("div", { class: "seg" });
-    const drawSeg = (v) => { segEl.innerHTML = ""; for (const [o, lab] of opts) segEl.append(el("button", { class: o === v ? "on" : "", onclick: () => { S.set("integrations.yml", key + ".provider", o); drawSeg(o); drawBody(o); } }, lab)); };
-    drawSeg(cur);
-    const help = S.doc("integrations.yml").parsed.index.get(key + ".provider")?.help || "";
-    const bodyEl = el("div", { class: "pb" });
+    const bodyEl = el("div");
     const drawBody = (v) => {
       bodyEl.innerHTML = "";
-      bodyEl.append(el("div", { class: "small muted", style: { whiteSpace: "pre-wrap" } }, help));
-      if (v === "auto") bodyEl.append(el("div", { class: "note warn" }, "'auto' is from 1.0 and no longer an option; pick one."));
-      if (installed && pluginOf[v] && !installed.some((p) => p.toLowerCase().startsWith(pluginOf[v].toLowerCase()))) bodyEl.append(el("div", { class: "note warn", style: { marginTop: "8px" } }, pluginOf[v] + " doesn't look installed on this server; Headcount would fall back."));
-      if (key === "pvp" && v === "included") bodyEl.append(pvpIncluded());
-      else if (key === "moderation") bodyEl.append(moderationExtra());
-      else bodyEl.append(el("details", { class: "more" }, el("summary", {}, "More settings"), allFields("integrations.yml", key, { skip: [key + ".provider", key + ".included"] })));
-      if (key === "player-state" && v === "included") bodyEl.append(sectionTitle("Included AFK"), allFields("integrations.yml", "player-state.included"));
+      const rows = [];
+      if (v === "auto") rows.push(el("div", { class: "pad note-inline", style: { padding: "12px 18px", color: "var(--warn)" } }, "auto no longer exists. Pick one."));
+      if (installed && pluginOf[v] && !has(pluginOf[v])) rows.push(el("div", { class: "pad", style: { padding: "12px 18px", color: "var(--warn)" } }, pluginOf[v] + " isn't in this server's plugins folder, so Headcount would fall back."));
+      if (key === "pvp" && v === "included") rows.push(...pvpIncluded());
+      if (key === "pvp" && v === "pvpmanager") rows.push(field("integrations.yml", "pvp.pvpmanager.let-players-toggle"));
+      if (key === "placeholders" && v === "placeholderapi") rows.push(field("integrations.yml", "placeholders.placeholderapi.register-expansion"), field("integrations.yml", "placeholders.placeholderapi.expansion-format"));
+      if (key === "permissions" && v === "luckperms") rows.push(field("integrations.yml", "permissions.luckperms.use-expiry"), field("integrations.yml", "permissions.luckperms.server-context"));
+      if (key === "moderation" && v !== "none") rows.push(...moderationRows(v));
+      if (key === "discord" && v !== "none") rows.push(field("integrations.yml", "discord.default-channel"));
+      if (key === "player-state" && v === "included") rows.push(field("integrations.yml", "player-state.included.afk.after"), field("integrations.yml", "player-state.included.afk.looking-counts"), field("integrations.yml", "player-state.included.afk.announce"));
+      if (rows.length) bodyEl.append(el("div", { class: "sheet" }, rows));
     };
+    const opts = options.map((o) => [o, el("span", { class: "row gap-s", title: pluginOf[o] && installed ? (has(pluginOf[o]) ? "Installed" : "Not on this server") : null }, names[o] || o,
+      pluginOf[o] && installed ? el("span", { class: "led" + (has(pluginOf[o]) ? " on" : ""), style: { width: "6px", height: "6px" } }) : null)]);
+    const sg = seg(opts, cur, (v) => { S.set("integrations.yml", key + ".provider", v); drawBody(v); });
     drawBody(cur);
-    card.append(el("div", { class: "ph" }, el("div", { class: "grow" }, el("h3", {}, title), el("div", { class: "small muted" }, desc)), segEl), bodyEl);
-    root.append(card);
+    root.append(el("section", { class: "group", "data-key": "integrations.yml#" + key + ".provider" }, el("header", { style: { alignItems: "center", flexWrap: "wrap" } }, sprite(spr, 24), el("h2", {}, title), el("div", { class: "side" }, sg)), bodyEl));
   }
-  root.append(el("div", { class: "panel" }, el("div", { class: "ph" }, el("h3", {}, "Custom items")), el("div", { class: "pb" }, field("integrations.yml", "items.providers", { label: "Item plugins", type: "list", suggestions: ["itemsadder", "oraxen", "nexo"] }))));
+  root.append(group("Custom items", itemProviders()));
+}
+function itemProviders() {
+  const cur = S.get("integrations.yml", "items.providers") ?? S.def("integrations.yml", "items.providers") ?? [];
+  const row = el("div", { class: "field", "data-key": "integrations.yml#items.providers" }, el("div", { class: "lab" }, el("span", { class: "name" }, "Item plugins to use")),
+    el("div", { class: "ctl" }, ["itemsadder", "oraxen", "nexo"].map((p) => el("label", { class: "switchrow" }, switchCtl(cur.includes(p), (on) => {
+      const now = (S.get("integrations.yml", "items.providers") ?? []).filter((x) => x !== p);
+      if (on) now.push(p);
+      S.set("integrations.yml", "items.providers", ["itemsadder", "oraxen", "nexo"].filter((x) => now.includes(x)).concat(now.filter((x) => !["itemsadder", "oraxen", "nexo"].includes(x))));
+      row.classList.toggle("unsaved", JSON.stringify(S.get("integrations.yml", "items.providers")) !== JSON.stringify(S.savedValue("integrations.yml", "items.providers")));
+    }, p), { itemsadder: "ItemsAdder", oraxen: "Oraxen", nexo: "Nexo" }[p]))));
+  return row;
 }
 function pvpIncluded() {
-  const box = el("div");
-  const sec = (t, base) => el("details", { class: "more", open: base.endsWith("toggle") }, el("summary", {}, t), allFields("integrations.yml", base));
-  box.append(sec("The /pvp toggle", "pvp.included.toggle"), sec("New-player protection", "pvp.included.newbie-protection"), sec("Respawn protection", "pvp.included.respawn-protection"),
-    sec("Combat tag and what it blocks", "pvp.included.combat-tag"), sec("Combat logging", "pvp.included.combat-log"));
-  const msgs = el("details", { class: "more" }, el("summary", {}, "Messages: how each reaches the player"));
-  for (const [ev, keys] of MSG_EVENTS) {
-    const base = "pvp.included.messages." + ev;
-    const show = el("div", { style: { marginTop: "6px" } });
+  const P = "pvp.included.";
+  const f = (k, o) => field("integrations.yml", P + k, o);
+  const msgs = el("div");
+  for (const [ev, name, keys] of MSG_EVENTS) {
+    const base = P + "messages." + ev;
+    const show = el("div", { style: { marginTop: "10px" } });
     const drawShow = () => {
       show.innerHTML = "";
       const ch = S.get("integrations.yml", base + ".channel") ?? "chat";
       const text = S.lang(keys[0]) || "";
-      const scene = el("div", { class: "mcscene", style: { minHeight: "120px", justifyContent: "center", alignItems: ch === "title" ? "center" : "flex-end", padding: "10px" } });
-      const msg = el("div", { class: "mc", style: { background: ch === "chat" ? "rgba(0,0,0,.45)" : "transparent", fontSize: ch === "title" ? "18px" : "13px", alignSelf: ch === "chat" ? "flex-end" : "auto", marginRight: ch === "chat" ? "auto" : "0" }, html: renderMini(text, { vars: SAMPLE, prefix: S.lang("prefix") }) });
-      if (ch !== "none") scene.append(msg); else scene.append(el("div", { class: "mc", style: { background: "transparent", opacity: 0.6 } }, "(not shown)"));
+      const html = renderMini(text, { vars: SAMPLE, prefix: S.lang("prefix") });
+      const scene = el("div", { class: "mcscene", style: { minHeight: "110px", flexDirection: "column", justifyContent: ch === "chat" ? "flex-end" : ch === "title" ? "center" : "flex-end", alignItems: ch === "chat" ? "flex-start" : "center" } });
+      if (ch === "none") scene.append(el("div", { class: "faint" }, "Not shown"));
+      else if (ch === "title") scene.append(el("div", { class: "titlecard" }, el("div", { class: "mc t", html })));
+      else scene.append(el("div", { class: "mc" + (ch === "chat" ? " chatline" : " actionbar"), style: ch === "actionbar" ? { marginBottom: "30px" } : null, html }));
       show.append(scene);
     };
-    msgs.append(el("div", { class: "card", style: { margin: "8px 0" } }, el("b", {}, ev), el("span", { class: "small muted" }, "  lang: " + keys.join(", ")),
-      field("integrations.yml", base + ".channel", { label: "Channel", type: "enum", options: ["chat", "actionbar", "title", "none"], onChange: drawShow }),
-      field("integrations.yml", base + ".sound", { label: "Sound", type: "text", placeholder: "minecraft:block.note_block.bass" }),
-      field("lang/en_US.yml", keys[0], { label: "Text", type: "mini", onChange: drawShow }), show));
+    msgs.append(el("div", { class: "sheet", style: { marginBottom: "14px" } }, subhead(name),
+      field("integrations.yml", base + ".channel", { onChange: drawShow }),
+      field("integrations.yml", base + ".sound", { pitch: () => S.get("integrations.yml", base + ".pitch") ?? 1, volume: () => S.get("integrations.yml", base + ".volume") ?? 1 }),
+      S.get("integrations.yml", base + ".pitch") !== undefined ? field("integrations.yml", base + ".pitch") : null,
+      field("lang/en_US.yml", keys[0], { label: "Text", type: "mini", onChange: drawShow, render: () => show })));
     drawShow();
   }
-  msgs.append(field("integrations.yml", "pvp.included.messages.countdown", { label: "Countdown while in combat", type: "enum", options: ["actionbar", "bossbar", "none"] }),
-    field("integrations.yml", "pvp.included.messages.countdown-bossbar-color"));
-  box.append(msgs);
-  return box;
+  const sec = (title, ...rows) => el("details", { class: "more", style: { padding: "0 18px", borderTop: "1px solid var(--line)" } }, el("summary", {}, title), el("div", { style: { margin: "0 -18px" } }, rows));
+  return [
+    f("toggle.default"), f("toggle.allow-toggle"), f("toggle.cooldown"), f("toggle.reset-on-join"), f("toggle.force-on-worlds"), f("toggle.force-off-worlds"),
+    sec("New players and respawns", f("newbie-protection.duration"), f("newbie-protection.can-end-early"), f("respawn-protection.duration")),
+    sec("Combat tag", f("combat-tag.enabled"), f("combat-tag.duration"), f("combat-tag.tag-attacker"), f("combat-tag.tag-victim"), f("combat-tag.untag-on-death"),
+      subhead("While tagged"), f("combat-tag.block-pvp-toggle"), f("combat-tag.block-flight"), f("combat-tag.block-elytra"), f("combat-tag.block-ender-pearls"), f("combat-tag.block-teleport"), f("combat-tag.blocked-commands")),
+    sec("Leaving during a fight", f("combat-log.enabled"), f("combat-log.punishment"), f("combat-log.credit-last-attacker"), f("combat-log.broadcast"),
+      el("div", { class: "field stack" }, el("div", { class: "lab" }, el("span", { class: "name" }, "Also run")), el("div", { class: "ctl", style: { alignItems: "stretch" } }, actionList("integrations.yml", P + "combat-log.actions", { nested: true })))),
+    sec("Messages", el("div", { style: { padding: "4px 18px 4px" } }, msgs), f("messages.countdown"), f("messages.countdown-bossbar-color")),
+  ];
 }
-function moderationExtra() {
-  const box = el("div");
+function moderationRows(v) {
   const kinds = ["ban", "mute", "kick", "warn", "jail"];
-  const t = el("table", { class: "t" }, el("tr", {}, el("th", {}, "Kind"), el("th", {}, "Handled by")));
-  for (const k of kinds) {
-    const cur = S.get("integrations.yml", "moderation.kinds." + k) ?? "";
-    t.append(el("tr", {}, el("td", {}, k), el("td", {}, el("select", { onchange: (e) => S.set("integrations.yml", "moderation.kinds." + k, e.target.value || undefined) },
-      ["", "included", "libertybans", "litebans", "advancedban", "essentials", "commands", "none"].map((o) => el("option", { value: o, selected: o === cur }, o || "(the main provider)"))))));
-  }
-  box.append(el("details", { class: "more", open: true }, el("summary", {}, "Per kind"), t), el("details", { class: "more" }, el("summary", {}, "Included jail"), allFields("integrations.yml", "moderation.included-jail")),
-    el("details", { class: "more" }, el("summary", {}, "Included mute"), allFields("integrations.yml", "moderation.included-mute")),
-    el("details", { class: "more" }, el("summary", {}, "More (operator name, LiteBans and command templates)"), allFields("integrations.yml", "moderation", { skip: ["moderation.provider", "moderation.kinds", "moderation.included-jail", "moderation.included-mute"] })));
-  return box;
+  const names = { included: "Headcount", libertybans: "LibertyBans", litebans: "LiteBans", advancedban: "AdvancedBan", essentials: "EssentialsX", commands: "Commands", none: "Nobody" };
+  const kindRow = el("div", { class: "field", "data-key": "integrations.yml#moderation.kinds" }, el("div", { class: "lab" }, el("span", { class: "name" }, "Per kind"), el("div", { class: "hint" }, "Hand one kind to another plugin.")),
+    el("div", { class: "ctl" }, el("div", { style: { display: "grid", gridTemplateColumns: "auto 1fr", gap: "6px 12px", alignItems: "center" } }, kinds.flatMap((k) => [el("span", {}, humanize(k)),
+      select([["", "Same as above"], ...Object.entries(names)], S.get("integrations.yml", "moderation.kinds." + k) ?? "", (x) => S.set("integrations.yml", "moderation.kinds." + k, x || undefined))]))));
+  const usesIncluded = v === "included" || Object.values(S.get("integrations.yml", "moderation.kinds") || {}).includes("included") || ["libertybans", "litebans"].includes(v);
+  const out = [field("integrations.yml", "moderation.operator-name"), field("integrations.yml", "moderation.silent"), kindRow];
+  if (usesIncluded) out.push(subhead("Headcount's jail and mute"), field("integrations.yml", "moderation.included-jail.location"), field("integrations.yml", "moderation.included-jail.radius"),
+    field("integrations.yml", "moderation.included-jail.release-to"), field("integrations.yml", "moderation.included-jail.allowed-commands"), field("integrations.yml", "moderation.included-mute.blocked-commands"));
+  if (v === "litebans") out.push(subhead("LiteBans commands"), ...["ban", "tempban", "unban", "mute", "tempmute", "unmute", "kick", "warn"].map((k) => field("integrations.yml", "moderation.litebans-commands." + k, { label: humanize(k), type: "mono" })));
+  if (v === "commands") out.push(subhead("Commands"), ...["ban", "tempban", "unban", "mute", "tempmute", "unmute", "kick", "warn", "jail", "tempjail", "unjail"].map((k) => field("integrations.yml", "moderation.commands." + k, { label: humanize(k), type: "mono", placeholder: "Empty: Headcount does it" })));
+  return out;
 }
 
 // ============================================================================================
-//  Hooks & actions
+//  Hooks
 // ============================================================================================
-function hooksPage(root) {
-  root.append(pageHead("Hooks & actions", "Action lists that run at moments in a cycle and in a player's time on the server, and the named lists you can reuse anywhere."));
-  const moment = (label, sub, onclick, color) => el("div", { class: "card click", style: { minWidth: "150px", borderTop: "3px solid " + color }, onclick }, el("b", {}, label), el("div", { class: "small muted" }, sub));
-  const playerHooks = ["first-join", "first-join-cycle", "became-active", "join"];
-  const hookCount = (p) => { const v = C(p); return Array.isArray(v) ? v.length : 0; };
-  root.append(sectionTitle("A player's time"), el("div", { class: "row", style: { alignItems: "stretch" } },
-    playerHooks.flatMap((h, i) => [i ? el("span", { class: "faint" }, "→") : null, moment(humanize(h), hookCount("hooks.player." + h) + " actions", () => editActions("config.yml", "hooks.player." + h, { title: "Hook: " + h, hint: "Variables: <player> <cycle> <time_left> <points> <streak> <streak_text>" }), "var(--info)")])));
+const PLAYER_HOOKS = [["first-join", "First join", "Ever", "oak_door"], ["first-join-cycle", "First join this cycle", "Once a cycle", "clock"], ["became-active", "Becomes active", "Reached the playtime", "experience_bottle"], ["join", "Every join", "Each time", "player_head"]];
+function hooksPage(root, params) {
+  root.append(pageHead("Hooks"));
   const warnings = Object.entries(C("hooks.warnings") || {}).sort((a, b) => parseDuration(b[1]?.before) - parseDuration(a[1]?.before));
-  const cycleHook = (path, title) => {
-    const body = el("div", {},
-      el("div", { class: "row", style: { marginBottom: "10px" } }, btn("⚡ Global actions (once for the server)", () => editActions("config.yml", path + ".global", { title: title + ": global" }), "primary"),
-        S.get("config.yml", path + ".per-player") !== undefined || path.includes("cycle-") ? btn("⚡ Per-player actions", () => editActions("config.yml", path + ".per-player.actions", { title: title + ": per player" })) : null),
-      path.includes("warnings.") ? field("config.yml", path + ".before", { label: "Fires this long before the end", type: "duration" }) : null,
-      path.includes("warnings.") ? field("config.yml", path + ".enabled", { label: "Enabled", type: "bool" }) : null,
-      S.get("config.yml", path + ".per-player") ? el("div", {}, sectionTitle("Per player"), field("config.yml", path + ".per-player.players", { label: "Which players", type: "enum", options: ["all", "active", "inactive", "online"] }),
-        field("config.yml", path + ".per-player.offline", { label: "Offline players", type: "enum", options: ["deliver", "skip"] }), field("config.yml", path + ".per-player.expire-after-cycles", { label: "Drop stored hooks after", suffix: "cycles", type: "number" })) : null,
-      path.includes("warnings.") ? el("div", { class: "row", style: { marginTop: "12px" } }, btn("Delete warning", async () => { if (await confirmDialog("Delete this warning?", "", { ok: "Delete", danger: true })) { S.remove("config.yml", path); closeDrawer(); window.studio.refresh(); } }, "danger")) : null);
-    drawer(title, body, { subtitle: "config.yml › " + path });
+  const stop = (label, sub, spr, onclick, edge) => el("button", { class: "stop" + (edge ? " edge" : ""), onclick }, el("span", { class: "pt" }, sprite(spr, 20)), el("b", {}, label), el("small", {}, sub));
+  const count = (v) => { const n = Array.isArray(v) ? v.length : typeof v === "string" ? 1 : 0; return n ? n + " action" + (n === 1 ? "" : "s") : "Nothing yet"; };
+  const addWarning = async () => {
+    const id = await promptDialog("New warning", "How long before the end, like 30m, 6h or 2d:", "30m", { check: (v) => isNaN(parseDuration(v)) ? "That isn't a duration." : C("hooks.warnings." + v) ? "There's one already." : null });
+    if (!id) return;
+    S.set("config.yml", "hooks.warnings." + id, { before: id, global: [{ message: "<gold>Cycle <cycle> ends in <white>" + formatDuration(parseDuration(id)) + "</white>." }] });
+    window.studio.refresh(); cycleHook("hooks.warnings." + id, "Warning " + id);
   };
-  root.append(sectionTitle("A cycle"), el("div", { class: "row", style: { alignItems: "stretch" } },
-    moment("Cycle start", "everyone's vault refills", () => cycleHook("hooks.cycle-start", "Cycle start"), "var(--good)"),
-    warnings.map(([id, w]) => [el("span", { class: "faint" }, "→"), moment("Warning " + id, (w?.before ?? "?") + " before the end", () => cycleHook("hooks.warnings." + id, "Warning " + id), "var(--warn)")]),
-    el("span", { class: "faint" }, "→"), moment("Cycle end", "scores, outcomes, report", () => cycleHook("hooks.cycle-end", "Cycle end"), "var(--bad)"),
-    el("button", { class: "btn ghost", onclick: async () => {
-      const id = await promptDialog("New warning", "How long before the end (also its ID), e.g. 30m, 6h, 2d:", "30m", { check: (v) => isNaN(parseDuration(v)) ? "Not a duration." : C("hooks.warnings." + v) ? "Exists." : null });
-      if (!id) return;
-      S.set("config.yml", "hooks.warnings." + id, { before: id, global: [{ message: "<gold>Cycle <cycle> ends in <white>" + id + "</white>!" }] });
-      window.studio.refresh();
-    } }, "＋ warning")));
-  root.append(el("div", { class: "panel", style: { marginTop: "14px" } }, el("div", { class: "pb" }, allFields("config.yml", "hooks", { skip: ["hooks.cycle-start", "hooks.cycle-end", "hooks.warnings", "hooks.player"] }))));
+  root.append(el("section", { class: "group" }, el("header", {}, el("h2", {}, "A cycle"), el("div", { class: "side" }, btn([icon("plus"), "Warning"], addWarning, "small ghost"))),
+    el("div", { class: "sheet" }, el("div", { class: "track" },
+      stop("Starts", count(C("hooks.cycle-start.global")), "lime_dye", () => cycleHook("hooks.cycle-start", "Cycle start"), true),
+      warnings.map(([id, w]) => stop(formatDuration(parseDuration(w?.before)) + " left", w?.enabled === false ? "Off" : count(w?.global), "bell", () => cycleHook("hooks.warnings." + id, "Warning " + id))),
+      stop("Ends", count(C("hooks.cycle-end.global")) + ", reports", "red_dye", () => cycleHook("hooks.cycle-end", "Cycle end"), true)))));
+  root.append(el("section", { class: "group" }, el("header", {}, el("h2", {}, "A player")), el("div", { class: "sheet" }, el("div", { class: "track" },
+    PLAYER_HOOKS.map(([h, label, , spr]) => stop(label, count(C("hooks.player." + h)), spr, () => editActions("config.yml", "hooks.player." + h, { title: label, onClose: () => window.studio.refresh() })))))));
+  root.append(group("Timing", field("config.yml", "hooks.join-delay"), field("config.yml", "hooks.missed-warning-grace"), field("config.yml", "hooks.top-count")));
   const names = listNames();
-  root.append(sectionTitle("Named action lists", btn("＋ New list", async () => {
+  const addList = async () => {
     const id = await promptDialog("New action list", "Name:", "my-list", { check: idCheck((v) => names.includes(v)) });
     if (!id) return;
     S.set("actions.yml", "lists." + id, [{ message: "<green>Hello <player>!" }]);
-    editActions("actions.yml", "lists." + id, { title: "List: " + id });
-  }, "small")));
-  const t = el("table", { class: "t" }, el("tr", {}, el("th", {}, "List"), el("th", {}, "Does"), el("th", {}, "Used by"), el("th", {})));
+    editActions("actions.yml", "lists." + id, { title: "Action list " + id, onClose: () => window.studio.refresh() });
+  };
+  const items = el("div", { class: "items" });
   for (const n of names) {
     const v = S.get("actions.yml", "lists." + n);
     const uses = listUsages(n);
-    t.append(el("tr", { class: "click", onclick: () => editActions("actions.yml", "lists." + n, { title: "List: " + n }) }, el("td", {}, el("b", {}, n)),
-      el("td", { class: "small muted" }, (Array.isArray(v) ? v : [v]).slice(0, 3).map(summarize).join(" · ")),
-      el("td", {}, uses.length ? uses.slice(0, 4).map((u) => badge(u.file.replace(".yml", "") + " " + u.path.split(".").slice(0, 3).join("."), "plain")) : el("span", { class: "faint small" }, "not used")),
-      el("td", {}, el("button", { class: "iconbtn", title: "Rename", onclick: async (e) => { e.stopPropagation(); const nn = await promptDialog("Rename list", "New name (places that use it are not renamed):", n); if (nn && nn !== n) { S.rename("actions.yml", "lists." + n, nn); window.studio.refresh(); } } }, "✎"),
-        el("button", { class: "iconbtn", title: "Delete", onclick: async (e) => { e.stopPropagation(); if (await confirmDialog("Delete " + n + "?", uses.length ? `It's used in ${uses.length} place(s), which would then fail.` : "Not used anywhere.", { ok: "Delete", danger: true })) { S.remove("actions.yml", "lists." + n); window.studio.refresh(); } } }, "🗑"))));
+    items.append(el("div", { class: "item", onclick: () => editActions("actions.yml", "lists." + n, { title: "Action list " + n, onClose: () => window.studio.refresh() }) }, sprite("repeater", 28),
+      el("div", { class: "main" }, el("div", { class: "t1" }, n), el("div", { class: "t2" }, (Array.isArray(v) ? v : [v]).slice(0, 3).map(summarize).join(", "))),
+      el("div", { class: "end" }, uses.length ? "Used " + uses.length + (uses.length === 1 ? " time" : " times") : "Not used"),
+      iconBtn("edit", "Rename", async (e) => { e.stopPropagation(); const nn = await promptDialog("Rename " + n, "New name. Places that use it keep the old name.", n, { check: idCheck((x) => x !== n && names.includes(x)) }); if (nn && nn !== n) { S.rename("actions.yml", "lists." + n, nn); window.studio.refresh(); } }, "sm"),
+      iconBtn("trash", "Delete", async (e) => { e.stopPropagation(); if (await confirmDialog("Delete " + n + "?", uses.length ? `It's used in ${uses.length} place${uses.length === 1 ? "" : "s"}, which would then fail.` : "Nothing uses it.", { ok: "Delete", danger: true })) { S.remove("actions.yml", "lists." + n); window.studio.refresh(); } }, "sm")));
   }
-  root.append(el("div", { class: "panel" }, el("div", { class: "pb" }, t)));
+  items.append(el("button", { class: "addrow", onclick: addList }, icon("plus"), "New action list"));
+  root.append(el("section", { class: "group" }, el("header", {}, el("h2", {}, "Action lists")), items));
+  const rest = allFields("actions.yml", "", { skip: ["lists", "config-version"] });
+  if (rest.children.length) root.append(el("section", { class: "group" }, el("header", {}, el("h2", {}, "Other")), rest));
+  if (params[0] === "list" && params[1] && names.includes(params[1])) editActions("actions.yml", "lists." + params[1], { title: "Action list " + params[1], onClose: () => window.studio.refresh() });
+}
+function cycleHook(path, title) {
+  const warn = path.includes("warnings.");
+  const hasPer = S.get("config.yml", path + ".per-player") !== undefined || !warn;
+  let part = "global";
+  const body = el("div");
+  const draw = () => {
+    body.innerHTML = "";
+    if (warn) body.append(group(null, field("config.yml", path + ".before", { label: "Before the end", type: "duration", units: ["m", "h", "d"] }), field("config.yml", path + ".enabled", { label: "On", type: "bool" })));
+    if (hasPer) body.append(el("div", { style: { marginBottom: "16px" } }, seg([["global", "Once for the server"], ["per", "For each player"]], part, (v) => { part = v; draw(); })));
+    if (part === "global") body.append(actionList("config.yml", path + ".global", { vars: "cycle" }));
+    else {
+      body.append(group(null, field("config.yml", path + ".per-player.players", { label: "Players", type: "seg", options: [["all", "All"], ["active", "Active"], ["inactive", "Inactive"], ["online", "Online"]] }),
+        field("config.yml", path + ".per-player.offline", { label: "Offline players", type: "seg", options: [["deliver", "Get it when they join"], ["skip", "Miss it"]] }),
+        field("config.yml", path + ".per-player.expire-after-cycles", { label: "Drop stored ones after", type: "number", unit: "cycles", min: 1, step: 1 })),
+      actionList("config.yml", path + ".per-player.actions"));
+    }
+  };
+  draw();
+  drawer(title, body, { wide: true, subtitle: path.replace("hooks.", "Hook "), onClose: () => window.studio.refresh(),
+    footer: doneFooter(warn ? btn([icon("trash"), "Delete warning"], async () => { if (await confirmDialog("Delete this warning?", "Undo brings it back.", { ok: "Delete", danger: true })) { S.remove("config.yml", path); closeDrawer(); } }, "ghost danger") : null) });
 }
 
 // ============================================================================================
 //  Sidebar
 // ============================================================================================
 function sidebarPage(root) {
-  root.append(pageHead("Sidebar", "The scoreboard on the right of the screen (/hc sidebar). Up to 15 lines; %headcount_...% placeholders update every interval."));
-  const split = el("div", { class: "split" });
-  const left = el("div", { class: "panel" }, el("div", { class: "pb" }));
-  const prev = el("div", { class: "sticky" });
+  root.append(pageHead("Sidebar"));
+  const prev = el("div");
   const drawPrev = () => {
     prev.innerHTML = "";
     const lines = C("sidebar.lines") || [];
     const sb = el("div", { class: "scoreboard" }, el("div", { class: "sbt", html: renderMini(C("sidebar.title"), { vars: SAMPLE }) }));
-    lines.forEach((l, i) => sb.append(el("div", { class: "row", style: { flexWrap: "nowrap", gap: "14px" } }, el("span", { class: "grow", html: renderMini(l, { vars: SAMPLE }) || "&nbsp;" }), el("span", { style: { color: "#FF5555", opacity: 0.0 } }, lines.length - i))));
-    prev.append(el("div", { class: "mcscene" }, sb), el("div", { class: "small muted", style: { marginTop: "8px" } }, `${lines.length}/15 lines · sample values: cycle 3, 7 unique, score 4, 12 points`));
+    for (const l of lines) sb.append(el("div", { class: "sbl", html: renderMini(l, { vars: SAMPLE }) || " " }));
+    prev.append(preview("In game", el("div", { class: "mcscene", style: { justifyContent: "flex-end", alignItems: "center", minHeight: "340px" } }, sb)),
+      el("div", { class: "small faint", style: { marginTop: "8px" } }, `${lines.length} of 15 lines. Sample values: cycle 3, 7 unique, score 4, 12 points.`));
   };
-  const linesBox = el("div");
+  const linesBox = el("div", { style: { display: "grid", gap: "6px", width: "100%" } });
+  const linesRow = el("div", { class: "field stack", "data-key": "config.yml#sidebar.lines" }, el("div", { class: "lab" }, el("span", { class: "name" }, "Lines")), el("div", { class: "ctl", style: { alignItems: "stretch" } }, linesBox));
   const drawLines = () => {
     linesBox.innerHTML = "";
     const lines = [...(C("sidebar.lines") || [])];
+    const write = () => { S.set("config.yml", "sidebar.lines", lines, "config.yml#sidebar.lines"); linesRow.classList.toggle("unsaved", JSON.stringify(lines) !== JSON.stringify(S.savedValue("config.yml", "sidebar.lines"))); drawPrev(); };
     lines.forEach((l, i) => {
-      const inp = el("input", { type: "text", value: l, spellcheck: "false" });
-      inp.addEventListener("input", () => { lines[i] = inp.value; S.set("config.yml", "sidebar.lines", lines); drawPrev(); });
-      linesBox.append(el("div", { class: "row", style: { flexWrap: "nowrap", margin: "4px 0" } }, el("span", { class: "faint small", style: { width: "18px" } }, i + 1), inp,
-        el("button", { class: "iconbtn", disabled: i === 0, onclick: () => { [lines[i - 1], lines[i]] = [lines[i], lines[i - 1]]; S.set("config.yml", "sidebar.lines", lines); drawLines(); drawPrev(); } }, "↑"),
-        el("button", { class: "iconbtn", disabled: i === lines.length - 1, onclick: () => { [lines[i + 1], lines[i]] = [lines[i], lines[i + 1]]; S.set("config.yml", "sidebar.lines", lines); drawLines(); drawPrev(); } }, "↓"),
-        el("button", { class: "iconbtn", onclick: () => { lines.splice(i, 1); S.set("config.yml", "sidebar.lines", lines); drawLines(); drawPrev(); } }, "✕")));
+      linesBox.append(el("div", { class: "row", style: { flexWrap: "nowrap", alignItems: "flex-start" } }, el("div", { class: "grow" }, miniCtl(l, (v) => { lines[i] = v; write(); }, { preview: false })),
+        iconBtn("up", "Move up", () => { if (i) { [lines[i - 1], lines[i]] = [lines[i], lines[i - 1]]; write(); drawLines(); } }, "sm"),
+        iconBtn("dn", "Move down", () => { if (i < lines.length - 1) { [lines[i + 1], lines[i]] = [lines[i], lines[i + 1]]; write(); drawLines(); } }, "sm"),
+        iconBtn("trash", "Remove line", () => { lines.splice(i, 1); write(); drawLines(); }, "sm")));
     });
-    linesBox.append(el("div", { class: "row", style: { marginTop: "6px" } }, btn("＋ line", () => { lines.push("<gray>New line"); S.set("config.yml", "sidebar.lines", lines); drawLines(); drawPrev(); }, "small"),
-      el("select", { onchange: (e) => { if (e.target.value) { lines.push("<gray>" + humanize(e.target.value) + ": <white>%headcount_" + e.target.value + "%"); S.set("config.yml", "sidebar.lines", lines); drawLines(); drawPrev(); } } },
-        el("option", { value: "" }, "＋ line with a placeholder…"), (S.store.catalog?.placeholders || []).map((p) => el("option", { value: p.name }, p.name + " — " + p.description)))));
+    linesBox.append(el("div", { class: "row" }, btn([icon("plus"), "Line"], () => { lines.push("<gray>New line"); write(); drawLines(); }, "small", ),
+      select((S.store.catalog?.placeholders || []).map((p) => [p.name, p.name + ": " + p.description]), "", (v) => { if (v) { lines.push("<gray>" + humanize(v) + ": <white>%headcount_" + v + "%"); write(); drawLines(); } }, { placeholder: "Add a line with a placeholder" })));
+    linesRow.classList.toggle("unsaved", JSON.stringify(lines) !== JSON.stringify(S.savedValue("config.yml", "sidebar.lines")));
   };
   drawLines();
-  left.firstChild.append(field("config.yml", "sidebar.enabled"), field("config.yml", "sidebar.shown-for-new-players"), field("config.yml", "sidebar.update-interval"),
-    field("config.yml", "sidebar.title", { type: "mini", onChange: drawPrev }), el("div", { class: "field" }, el("div", {}, el("div", { class: "lbl" }, "Lines")), el("div", { class: "ctl" }, linesBox)),
-    field("config.yml", "sidebar.lines-before-start", { type: "yaml" }));
+  root.append(layout([group(null, field("config.yml", "sidebar.enabled"), field("config.yml", "sidebar.shown-for-new-players"), field("config.yml", "sidebar.update-interval")),
+    group("Contents", field("config.yml", "sidebar.title", { onChange: drawPrev }), linesRow, field("config.yml", "sidebar.lines-before-start"))], prev));
   drawPrev();
-  split.append(left, prev);
-  root.append(split);
 }
 
 // ============================================================================================
@@ -498,74 +708,83 @@ function messagesPage(root, params) {
   const L = "lang/en_US.yml";
   const data = S.doc(L).data || {};
   const groups = Object.keys(data).filter((k) => k !== "config-version");
-  let group = params[0] && groups.includes(params[0]) ? params[0] : "general" in data ? "general" : groups[0];
+  let group0 = params[0] && groups.includes(params[0]) ? params[0] : "general" in data ? "general" : groups[0];
   let filter = "all", q = "";
-  root.append(pageHead("Messages", "Everything Headcount says (lang/en_US.yml), with previews. An empty message is never sent."));
-  const split = el("div", { style: { display: "grid", gridTemplateColumns: "220px 1fr", gap: "16px", alignItems: "start" } });
-  const nav = el("div", { class: "panel sticky", style: { padding: "6px", maxHeight: "80vh", overflow: "auto" } });
+  root.append(pageHead("Messages"));
+  const nav = el("div", { class: "msgnav" });
   const body = el("div");
-  const search = el("input", { type: "search", placeholder: "Search every message…", oninput: (e) => { q = e.target.value.toLowerCase(); draw(); } });
+  const search = el("input", { type: "search", placeholder: "Search every message", "aria-label": "Search messages", style: { maxWidth: "340px" }, oninput: (e) => { q = e.target.value.toLowerCase(); drawList(); drawNav(); } });
   const flat = (obj, p = "") => Object.entries(obj || {}).flatMap(([k, v]) => isObj(v) ? flat(v, p + k + ".") : [[p + k, v]]);
-  const draw = () => {
+  const drawNav = () => {
     nav.innerHTML = "";
-    for (const g of groups) nav.append(el("button", { class: "navitem" + (g === group && !q ? " active" : ""), onclick: () => { group = g; q = ""; search.value = ""; draw(); } }, g, el("span", { class: "badge plain" }, isObj(data[g]) ? flat(data[g]).length : 1)));
-    body.innerHTML = "";
-    body.append(el("div", { class: "row", style: { marginBottom: "10px" } }, search, seg([["all", "All"], ["changed", "Changed"], ["empty", "Empty (off)"]], filter, (f) => { filter = f; draw(); })));
-    const items = q ? flat(S.doc(L).data).filter(([k, v]) => (k + " " + v).toLowerCase().includes(q)) : isObj(data[group]) ? flat(data[group], group + ".") : [[group, data[group]]];
-    const panel = el("div", { class: "panel" }, el("div", { class: "pb" }));
+    for (const g of groups) nav.append(el("button", { class: g === group0 && !q ? "on" : "", onclick: () => { group0 = g; q = ""; search.value = ""; drawList(); drawNav(); } }, humanize(g), el("small", {}, isObj(data[g]) ? flat(data[g]).length : 1)));
+  };
+  const listBox = el("div");
+  const drawList = () => {
+    listBox.innerHTML = "";
+    const items = q ? flat(S.doc(L).data).filter(([k, v]) => (k + " " + v).toLowerCase().includes(q)) : isObj(data[group0]) ? flat(data[group0], group0 + ".") : [[group0, data[group0]]];
+    const sheet = el("div", { class: "sheet" });
     let n = 0;
     for (const [k] of items) {
       const v = S.get(L, k), d = S.def(L, k);
       if (filter === "changed" && JSON.stringify(v) === JSON.stringify(d)) continue;
       if (filter === "empty" && v !== "") continue;
       if (++n > 150) break;
-      panel.firstChild.append(field(L, k, { label: k, type: Array.isArray(v) ? "yaml" : "mini" }));
+      const rel = q ? k : k.slice(group0.length + 1) || k;
+      sheet.append(field(L, k, { label: rel.replace(/\./g, " / ").replace(/-/g, " "), type: Array.isArray(v) ? "lore" : "mini", stack: true }));
     }
-    if (!n) panel.firstChild.append(el("div", { class: "empty" }, "Nothing here."));
-    body.append(panel);
+    listBox.append(n ? sheet : el("div", { class: "empty" }, filter === "changed" ? "Nothing changed here." : filter === "empty" ? "No empty messages here." : "No message matches."));
+    if (n > 150) listBox.append(el("p", { class: "muted" }, "Showing 150. Search to narrow it down."));
   };
-  draw();
-  split.append(nav, body);
-  root.append(split);
+  body.append(el("div", { class: "row", style: { marginBottom: "14px" } }, search, el("span", { class: "grow" }), seg([["all", "All"], ["changed", "Changed"], ["empty", "Turned off"]], filter, (f) => { filter = f; drawList(); })), listBox);
+  drawNav(); drawList();
+  root.append(el("div", { class: "msgs" }, nav, body));
 }
 
 // ============================================================================================
-//  Resets & safety, and the per-file editor
+//  General, and the per-file editor
 // ============================================================================================
-function safetyPage(root) {
-  root.append(pageHead("Resets & safety", "Reset commands, the audit log, storage and general settings."));
-  const sec = (t, f, base, skip) => el("div", { class: "panel", style: { marginBottom: "14px" } }, el("div", { class: "ph" }, el("h3", {}, t)), el("div", { class: "pb" }, allFields(f, base, { skip })));
-  root.append(sec("Resets", "config.yml", "reset"), sec("Audit log", "config.yml", "audit", ["audit.types"]));
-  const types = el("div", { class: "grid g3" });
-  for (const [k, v] of Object.entries(C("audit.types") || {})) types.append(el("label", { class: "row", style: { flexWrap: "nowrap" } }, switchCtl(v !== false, (c) => S.set("config.yml", "audit.types." + k, c)), el("code", {}, k)));
-  root.append(el("div", { class: "panel", style: { marginBottom: "14px" } }, el("div", { class: "ph" }, el("h3", {}, "Audit event types")), el("div", { class: "pb" }, types)),
-    sec("General", "config.yml", "general"), sec("Storage", "config.yml", "storage"), sec("Small display settings", "config.yml", "gates"), sec("Menus", "config.yml", "gui"), sec("True/false text", "config.yml", "placeholders"), sec("Leaderboard", "config.yml", "top"));
+function generalPage(root) {
+  root.append(pageHead("General"));
+  const types = el("div", { style: { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(210px, 1fr))", gap: "8px 18px", padding: "14px 18px" } });
+  for (const k of Object.keys({ ...(S.def("config.yml", "audit.types") || {}), ...(C("audit.types") || {}) })) {
+    const p = "audit.types." + k;
+    const lab = el("label", { class: "switchrow", "data-key": "config.yml#" + p, style: { color: "var(--ink)" } }, switchCtl(C(p) !== false, (c) => { S.set("config.yml", p, c); lab.style.color = JSON.stringify(S.get("config.yml", p)) !== JSON.stringify(S.savedValue("config.yml", p)) ? "var(--changed)" : "var(--ink)"; }, k), humanize(k));
+    types.append(lab);
+  }
+  root.append(layout([
+    group("Text", field("config.yml", "general.language"), field("config.yml", "general.date-format"), field("config.yml", "general.time-units.shown"), field("config.yml", "placeholders.true-text"), field("config.yml", "placeholders.false-text")),
+    group("Leaderboard", field("config.yml", "top.lines"), field("config.yml", "top.refresh-interval")),
+    group("Resets", field("config.yml", "reset.delete-old-heads"), field("config.yml", "reset.hard.enabled"), field("config.yml", "reset.hard.confirmations"), field("config.yml", "reset.hard.confirm-timeout"),
+      field("config.yml", "reset.hard.backup-database"), field("config.yml", "reset.hard.archive-audit-log")),
+    group("Audit log", field("config.yml", "audit.enabled"), field("config.yml", "audit.folder"), field("config.yml", "audit.max-file-size-mb"), field("config.yml", "audit.keep-days"), field("config.yml", "audit.compress-old-files"),
+      field("config.yml", "audit.also-log-to-console"), field("config.yml", "audit.log-vault-moves"), field("config.yml", "audit.log-each-cycle-start-head"), field("config.yml", "audit.search-page-size")),
+    el("section", { class: "group" }, el("header", {}, el("h2", {}, "Events to log")), el("div", { class: "sheet" }, types)),
+    group("Timing and storage", field("config.yml", "gates.message-cooldown"), field("config.yml", "gui.click-cooldown"), field("config.yml", "storage.file")),
+  ], []));
 }
 function filesPage(root, params) {
   const name = params.join("/") || "config.yml";
   const d = S.doc(name);
   if (!d) { root.append(el("div", { class: "empty" }, "No file " + name)); return; }
   let mode = "options";
-  root.append(pageHead(name, d.parsed.header.split("\n").slice(1, 3).join(" "), seg([["options", "Options"], ["text", "Text"]], mode, (m) => { mode = m; draw(); })));
+  root.append(pageHead(name, null, select(S.store.names, name, (n) => go("#/files/" + n)), seg([["options", "Settings"], ["text", "Text"]], mode, (m) => { mode = m; draw(); })));
   const body = el("div");
   root.append(body);
   const draw = () => {
     body.innerHTML = "";
+    body.append(el("details", { class: "more", style: { marginBottom: "12px" } }, el("summary", {}, "About this file"), el("pre", { class: "small muted", style: { whiteSpace: "pre-wrap", fontFamily: "var(--sans)" } }, d.parsed.header)));
     if (mode === "text" || !d.parsed.entries) {
-      const ta = el("textarea", { spellcheck: "false", style: { minHeight: "72vh", fontSize: "12.5px" } });
+      const ta = el("textarea", { spellcheck: "false", style: { minHeight: "72vh", fontSize: "13px" } });
       ta.value = S.doc(name).text;
       ta.addEventListener("input", () => S.setText(name, ta.value, name + "#raw"));
-      body.append(el("details", { class: "more" }, el("summary", {}, "About this file"), el("pre", { class: "small muted", style: { whiteSpace: "pre-wrap" } }, d.parsed.header)), ta,
-        S.doc(name).error ? el("div", { class: "note bad" }, S.doc(name).error) : null);
+      body.append(ta, S.doc(name).error ? el("div", { class: "note bad" }, S.doc(name).error) : null);
       return;
     }
-    body.append(el("details", { class: "more" }, el("summary", {}, "About this file"), el("pre", { class: "small muted", style: { whiteSpace: "pre-wrap" } }, d.parsed.header)));
     for (const top of Object.keys({ ...(S.doc(name).defaults || {}), ...(S.doc(name).data || {}) })) {
       if (top === "config-version") continue;
       const v = S.get(name, top) ?? S.def(name, top);
-      const help = d.parsed.index.get(top)?.help || d.defParsed.index.get(top)?.help || "";
-      body.append(el("details", { class: "panel more", style: { padding: "0 16px", marginBottom: "10px" }, open: Object.keys(S.doc(name).data || {}).length < 6 },
-        el("summary", {}, top, " ", el("span", { class: "small muted", style: { fontWeight: 400 } }, help.split("\n")[0])), isObj(v) ? allFields(name, top) : field(name, top)));
+      body.append(el("details", { class: "more", open: Object.keys(S.doc(name).data || {}).length < 6 }, el("summary", {}, top), isObj(v) ? allFields(name, top) : el("div", { class: "sheet" }, field(name, top))));
     }
   };
   draw();
@@ -577,10 +796,10 @@ export const setupPages2 = [
   { id: "trading", group: "Set up", title: "Trading", icon: ICONS.trade, render: tradingPage, owns: ["trade.yml"] },
   { id: "statuses", group: "Set up", title: "Statuses", icon: ICONS.status, render: statusesPage, owns: ["statuses.yml"] },
   { id: "integrations", group: "Set up", title: "Integrations", icon: ICONS.plug, render: integrationsPage, owns: ["integrations.yml"] },
-  { id: "hooks", group: "Set up", title: "Hooks & actions", icon: ICONS.hook, render: hooksPage, owns: ["config.yml:hooks", "actions.yml"] },
+  { id: "hooks", group: "Set up", title: "Hooks", icon: ICONS.hook, render: hooksPage, owns: ["config.yml:hooks", "actions.yml"] },
   { id: "sidebar", group: "Set up", title: "Sidebar", icon: ICONS.sidebar, render: sidebarPage, owns: ["config.yml:sidebar"] },
-  { id: "menus", group: "Set up", title: "Menus", icon: ICONS.menu, render: menusPage, owns: ["config.yml:history"] },
+  { id: "menus", group: "Set up", title: "Menus", icon: ICONS.menu, render: menusPage, owns: ["config.yml:vault.gui", "config.yml:history", "shop.yml:gui", "shop.yml:confirm-gui", "trade.yml:gui", "titles.yml:gui"] },
   { id: "messages", group: "Set up", title: "Messages", icon: ICONS.lang, render: messagesPage, owns: ["lang/en_US.yml"] },
-  { id: "safety", group: "Set up", title: "Resets & safety", icon: ICONS.reset, render: safetyPage, owns: ["config.yml:reset", "config.yml:audit", "config.yml:general", "config.yml:storage", "config.yml:gates", "config.yml:gui", "config.yml:placeholders", "config.yml:top"] },
-  { id: "files", group: "Tools", title: "Raw files", icon: ICONS.raw, render: filesPage, hidden: false },
+  { id: "safety", group: "Set up", title: "General", icon: ICONS.reset, render: generalPage, owns: ["config.yml:general", "config.yml:reset", "config.yml:audit", "config.yml:storage", "config.yml:gates", "config.yml:gui", "config.yml:placeholders", "config.yml:top"] },
+  { id: "files", group: "Tools", title: "Raw files", icon: ICONS.raw, render: filesPage },
 ];

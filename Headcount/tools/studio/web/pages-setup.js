@@ -1,73 +1,68 @@
-// Set up pages, part 1: Overview, Cycle & schedule, Vault & heads, Scoring (formula lab), Outcomes.
-import { el, btn, badge, field, allFields, sectionTitle, mcText, miniInline, tooltip, itemTile, chest, seg, switchCtl, drawer, closeDrawer, toast,
-  promptDialog, confirmDialog, hoverTip, SAMPLE, ICONS, humanize } from "./ui.js";
-import { compileFormula, roundScore, parseRange, describeRange, parseDuration, formatDuration, isObj, clone, renderMini, stripMini, expandSlots } from "./core.js";
+// Set up pages, part 1: Overview, Cycle, Vault and heads, Scoring, Outcomes.
+import { el, btn, icon, iconBtn, field, group, subhead, mcText, miniInline, tooltip, chest, seg, drawer, closeDrawer, promptDialog, confirmDialog,
+  sprite, face, SAMPLE, ICONS, humanize, select, numberCtl, miniCtl, switchCtl } from "./ui.js";
+import { compileFormula, roundScore, parseRange, describeRange, parseDuration, formatDuration, isObj, renderMini, stripMini } from "./core.js";
 import * as S from "./store.js";
-import { editActions, summarize } from "./actions.js";
+import { actionList, conditionsCtl, rangeCtl, summarize } from "./actions.js";
 
 export const C = (p) => S.get("config.yml", p) ?? S.def("config.yml", p);
-const go = (h) => { location.hash = h; };
-const link = (text, hash, key) => el("a", { href: hash, onclick: (e) => { e.preventDefault(); window.studio.go(hash, key); } }, text);
-export const pageHead = (title, sub, ...actions) => el("div", { class: "pagehead" }, el("div", { class: "grow" }, el("h1", {}, title), sub ? el("div", { class: "sub" }, sub) : null), ...actions);
+const go = (h, key) => window.studio.go(h, key);
+const link = (text, hash, key, cls) => el("a", { href: hash, class: cls || null, onclick: (e) => { e.preventDefault(); go(hash, key); } }, text);
+export const pageHead = (title, sub, ...actions) => el("div", { class: "pagehead" }, el("div", { class: "grow" }, el("h1", {}, title), sub ? el("div", { class: "sub" }, sub) : null),
+  actions.length ? el("div", { class: "acts" }, actions) : null);
+export const layout = (main, aside, wide) => el("div", { class: "layout" + (wide ? " wide-preview" : "") }, el("div", {}, main), el("div", { class: "aside" }, aside));
+/** A preview block in the aside: a quiet heading over the in-game view. */
+export const preview = (title, ...body) => el("section", {}, title ? el("div", { class: "row", style: { marginBottom: "10px" } }, el("h2", { style: { fontSize: "16px" } }, title)) : null, ...body);
+export const mcName = (src) => el("span", { class: "mcbox" }, el("span", { class: "mcline", html: renderMini(src ?? "", { vars: SAMPLE }) }));
 
 // ============================================================================================
 //  Overview
 // ============================================================================================
 function overview(root) {
   const live = S.store.live;
-  const formula = S.get("scoring.yml", "formula") ?? S.def("scoring.yml", "formula");
-  const f = compileFormula(String(formula));
+  const formula = String(S.get("scoring.yml", "formula") ?? S.def("scoring.yml", "formula"));
+  const f = compileFormula(formula);
   const ex = (u, a) => roundScore(f.eval({ unique: u, active: a, total: u * 3, own: 9, rank: 3, percentile: 60, players: a + 4, kills: 0, deaths: 0, trades: 0, streak: 0, points: 0, bonus: 0 }), S.get("scoring.yml", "rounding"));
   const rules = Object.entries(S.get("outcomes.yml", "rules") || {}).filter(([, r]) => r && r.enabled !== false);
-  const worstFirst = rules.filter(([, r]) => parseRange(r.score).max < 0).sort((a, b) => parseRange(b[1].score).max - parseRange(a[1].score).max);
+  const worst = rules.filter(([, r]) => parseRange(r.score).max < 0).sort((a, b) => parseRange(b[1].score).max - parseRange(a[1].score).max)[0];
   const tiers = Object.entries(S.get("shop.yml", "tiers") || {});
   const entries = tiers.reduce((n, [, t]) => n + Object.keys(t?.entries || {}).length, 0);
-  const B = (v, hash, key) => el("b", {}, link(String(v), hash, key));
-  root.append(pageHead("Overview", "Your Headcount setup at a glance. Every highlighted value is a link to where it's set."));
+  const V = (v, hash, key) => link(String(v), hash, key, "v");
+  const pvp = S.get("integrations.yml", "pvp.provider") ?? "included";
+  root.append(pageHead("Overview"));
+  const lede = el("p", { class: "lede" },
+    "Cycles last ", V(C("cycle.length-days") + " days", "#/cycle", "config.yml#cycle.length-days"), " and roll over at ", V(C("cycle.end-time") + " " + C("cycle.time-zone"), "#/cycle", "config.yml#cycle.end-time"),
+    ". Each player starts a cycle with ", V(C("vault.starting-heads") + " of their own heads", "#/vault", "config.yml#vault.starting-heads"), " in a ", V(C("vault.size") + "-slot vault", "#/vault", "config.yml#vault.size"), ". ",
+    f.ok ? ["With 12 active players, 4 unique heads score ", el("b", {}, ex(4, 12)), " and 10 score ", el("b", {}, ex(10, 12)), " under ", V("the formula", "#/scoring"), ". "] : ["The ", V("score formula", "#/scoring"), " has an error. "],
+    worst ? ["A score of ", el("b", {}, describeRange(worst[1].score)), " brings ", V(stripMini(worst[1].display || worst[0]), "#/outcomes"), ". "] : "",
+    "The shop has ", V(tiers.length + " tiers", "#/shop"), " and ", entries, " items, and PvP is handled by ", V(pvp === "included" ? "Headcount" : pvp === "none" ? "nobody" : pvp, "#/integrations"), ".");
+  const mainCol = el("div", {}, lede);
+  const problems = window.studio.problems();
+  if (problems.length) {
+    const box = el("div", { class: "items" });
+    for (const pr of problems.slice(0, 6)) box.append(el("div", { class: "item", onclick: () => pr.go && go(pr.go, pr.key) },
+      el("span", { class: "led " + (pr.level === "error" ? "off" : ""), style: pr.level === "error" ? null : { background: "var(--warn)" } }), el("div", { class: "main" }, pr.text), pr.go ? icon("right") : null));
+    if (problems.length > 6) box.append(el("button", { class: "addrow", onclick: () => go("#/problems") }, "All " + problems.length + " problems"));
+    mainCol.append(el("section", { class: "group", style: { marginTop: "28px" } }, el("header", {}, el("h2", {}, "Needs a look")), box));
+  }
+  const dirty = S.dirtyNames();
+  if (dirty.length) mainCol.append(el("section", { class: "group" }, el("header", {}, el("h2", {}, "Not saved yet")),
+    el("div", { class: "sheet pad", style: { padding: "14px 18px" } }, el("div", { class: "row" }, el("span", { class: "grow" }, dirty.join(", ")), btn("Review and save", () => window.studio.review(), "primary")))));
+  mainCol.append(el("section", { class: "group" }, el("header", {}, el("h2", {}, "Getting started")), checklist()));
+  const aside = [];
   if (live?.cycle) {
     const c = live.cycle;
     const pct = Math.max(0, Math.min(100, (Date.now() - c.start_ms) / (c.end_ms - c.start_ms) * 100));
-    root.append(el("div", { class: "card click", style: { marginBottom: "14px" }, onclick: () => go("#/live") },
-      el("div", { class: "kpi" }, el("div", { class: "ring", style: { "--p": pct.toFixed(1) } }, el("div", {}, el("b", {}, formatDuration(c.end_ms - Date.now())), el("div", { class: "faint" }, "left"))),
-        el("div", { class: "grow" }, el("h3", {}, `Cycle ${c.id} is running`, " ", badge("live", "good")),
-          el("div", { class: "muted" }, `${live.activeCount} active of ${live.playerCount} players · ${live.online.length} online · ends ${new Date(c.end_ms).toLocaleString()}`)),
-        live.top?.[0] ? el("div", {}, el("div", { class: "faint small" }, "Leading"), el("b", {}, live.top[0].name), el("div", { class: "small muted" }, live.top[0].unique + " unique")) : null)));
+    aside.push(el("section", { class: "sheet", style: { padding: "16px 18px" } },
+      el("div", { class: "row" }, el("h2", { class: "grow", style: { fontSize: "18px" } }, "Cycle " + c.id), link("Live", "#/live")),
+      el("div", { class: "livecycle", style: { display: "block" } }, el("div", { class: "prog" }, el("i", { style: { width: pct.toFixed(1) + "%" } })),
+        el("div", { class: "row small muted" }, el("span", { class: "grow" }, formatDuration(c.end_ms - Date.now()) + " left"), el("span", {}, "ends " + new Date(c.end_ms).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })))),
+      el("div", { style: { marginTop: "14px" } }, el("div", { class: "small muted", style: { marginBottom: "6px" } }, `${live.activeCount} active of ${live.playerCount} players, ${live.online.length} online`),
+        el("div", { class: "heads-row" }, live.online.slice(0, 24).map((p) => el("a", { href: "#/live-player/" + p.uuid, title: p.name }, face(p.uuid, 28))))),
+      live.top?.[0] ? el("div", { class: "row", style: { marginTop: "14px" } }, face(live.top[0].uuid, 24), el("span", { class: "grow" }, el("b", {}, live.top[0].name), " leads with ", live.top[0].unique, " unique heads")) : null));
   }
-  const p = el("div", { class: "card", style: { fontSize: "15px", lineHeight: "1.7" } });
-  p.append("Cycles last ", B(C("cycle.length-days") + " days", "#/cycle", "config.yml#cycle.length-days"), " and roll over at ",
-    B(C("cycle.end-time"), "#/cycle", "config.yml#cycle.end-time"), " ", B(C("cycle.time-zone"), "#/cycle", "config.yml#cycle.time-zone"), ". Everyone starts with ",
-    B(C("vault.starting-heads"), "#/vault", "config.yml#vault.starting-heads"), " of their own heads in a ", B(C("vault.size") + "-slot", "#/vault", "config.yml#vault.size"),
-    " vault. A score is ", el("code", {}, link(String(formula), "#/scoring")), f.ok ? frag2(": with 12 active players, 4 unique heads scores ", el("b", {}, ex(4, 12)), " and 10 score ", el("b", {}, ex(10, 12))) : el("span", { style: { color: "var(--bad)" } }, " (the formula has an error)"),
-    ". Positive scores earn ", B((C("points.earn-multiplier") ?? 1) + "× points", "#/scoring"), ", ",
-    worstFirst.length ? frag2("a score of ", el("b", {}, describeRange(worstFirst[0][1].score)), " brings ", miniInline(worstFirst[0][1].display || worstFirst[0][0]), ", ") : "",
-    "and the shop has ", B(tiers.length + " tiers", "#/shop"), " with ", el("b", {}, entries), " items. PvP is handled by ", B(S.get("integrations.yml", "pvp.provider") ?? "included", "#/integrations"), ".");
-  root.append(p);
-  const card = (icon, title, value, sub, hash) => el("div", { class: "card click", onclick: () => go(hash) }, el("h4", {}, icon + "  " + title), el("div", { class: "big" }, value), el("div", { class: "muted small" }, sub));
-  const statuses = Object.keys(S.get("statuses.yml", "statuses") || {});
-  const lists = Object.keys(S.get("actions.yml", "lists") || {});
-  const titles = Object.keys(S.get("titles.yml", "titles") || {});
-  const langChanged = countChanged("lang/en_US.yml");
-  root.append(sectionTitle("Areas"), el("div", { class: "grid g4" },
-    card(ICONS.cycle, "Cycle", C("cycle.length-days") + "d", "rolls over " + C("cycle.end-time"), "#/cycle"),
-    card(ICONS.vault, "Vault", C("vault.size"), C("vault.starting-heads") + " starting heads", "#/vault"),
-    card(ICONS.score, "Scoring", f.ok ? "ƒ" : "⚠", String(formula).slice(0, 40), "#/scoring"),
-    card(ICONS.outcome, "Outcomes", rules.length, "active rules · " + (S.get("outcomes.yml", "mode") || "most-extreme"), "#/outcomes"),
-    card(ICONS.shop, "Shop", entries, tiers.length + " tiers", "#/shop"),
-    card(ICONS.title, "Titles", titles.length, "titles", "#/titles"),
-    card(ICONS.status, "Statuses", statuses.length, "named states", "#/statuses"),
-    card(ICONS.lang, "Messages", langChanged, "changed from the defaults", "#/messages")));
-  const plugs = ["pvp", "placeholders", "economy", "permissions", "moderation", "player-state"].map((k) => [k, S.get("integrations.yml", k + ".provider") ?? S.def("integrations.yml", k + ".provider")]);
-  root.append(sectionTitle("Who handles what"), el("div", { class: "row" }, plugs.map(([k, v]) => el("span", { class: "pill", style: { cursor: "pointer" }, onclick: () => go("#/integrations") }, humanize(k), ": ", el("b", {}, v)))));
-  const problems = window.studio.problems();
-  root.append(sectionTitle("Problems", problems.length ? badge(problems.length, problems.some((x) => x.level === "error") ? "bad" : "warn") : badge("none", "good")));
-  if (!problems.length) root.append(el("div", { class: "note good" }, "Nothing looks wrong in your configs."));
-  for (const pr of problems.slice(0, 6)) root.append(el("div", { class: "note " + (pr.level === "error" ? "bad" : "warn"), style: { margin: "6px 0", cursor: pr.go ? "pointer" : "default" }, onclick: () => pr.go && window.studio.go(pr.go, pr.key) }, pr.text));
-  if (problems.length > 6) root.append(link(`All ${problems.length} problems →`, "#/problems"));
-  const dirty = S.dirtyNames();
-  if (dirty.length) root.append(sectionTitle("Unsaved changes"), el("div", { class: "row" }, dirty.map((n) => badge(n, "warn")), btn("Review & save", () => go("#/review"), "primary")));
-  root.append(sectionTitle("Getting started"), checklist());
+  root.append(layout(mainCol, aside));
 }
-const frag2 = (...k) => { const f = document.createDocumentFragment(); k.forEach((x) => f.append(x.nodeType ? x : document.createTextNode(String(x)))); return f; };
 export function countChanged(file) {
   const d = S.doc(file); let n = 0;
   const walk = (a, b) => { if (isObj(a) && isObj(b)) { for (const k of Object.keys(a)) walk(a[k], b[k]); } else if (JSON.stringify(a) !== JSON.stringify(b)) n++; };
@@ -76,26 +71,23 @@ export function countChanged(file) {
 }
 function checklist() {
   const items = [["cycle", "Pick a cycle length and check the time zone", "#/cycle"], ["vault", "Choose the vault size and starting heads", "#/vault"],
-    ["scoring", "Try the formula in the scoring lab", "#/scoring"], ["shop", "Look through the shop", "#/shop"], ["integrations", "Check who handles PvP and permissions", "#/integrations"],
-    ["learn", "Read how a cycle works", "#/learn"], ["review", "Review and save your changes", "#/review"], ["reload", "Reload the server and run selftest", "#/console"]];
+    ["scoring", "Try a few numbers on the formula", "#/scoring"], ["shop", "Look through the shop", "#/shop"], ["integrations", "Check who handles PvP and permissions", "#/integrations"],
+    ["learn", "Read how a cycle works", "#/learn"], ["review", "Save your changes", "#/review"], ["reload", "Reload the server and run selftest", "#/console"]];
   let done = {};
   try { done = JSON.parse(localStorage.getItem("hc-checklist") || "{}"); } catch (e) { /* private window */ }
-  const box = el("div", { class: "card" });
+  const box = el("div", { class: "sheet" });
   for (const [id, text, hash] of items) {
-    const cb = el("input", { type: "checkbox" }); cb.checked = !!done[id];
-    cb.addEventListener("change", () => { done[id] = cb.checked; try { localStorage.setItem("hc-checklist", JSON.stringify(done)); } catch (e) { /* ignore */ } });
-    box.append(el("div", { class: "row", style: { padding: "4px 0" } }, cb, el("span", { class: "grow" }, text), link("open →", hash)));
+    const cb = el("input", { type: "checkbox", "aria-label": text }); cb.checked = !!done[id];
+    const row = el("div", { class: "check" + (cb.checked ? " done" : "") }, cb, el("span", { class: "grow" }, text), link("Open", hash));
+    cb.addEventListener("change", () => { done[id] = cb.checked; row.classList.toggle("done", cb.checked); try { localStorage.setItem("hc-checklist", JSON.stringify(done)); } catch (e) { /* ignore */ } });
+    box.append(row);
   }
   return box;
 }
 
 // ============================================================================================
-//  Cycle & schedule
+//  Cycle
 // ============================================================================================
-const ZONES = ["UTC", "America/New_York", "America/Chicago", "America/Denver", "America/Phoenix", "America/Los_Angeles", "America/Anchorage", "Pacific/Honolulu",
-  "America/Toronto", "America/Sao_Paulo", "Europe/London", "Europe/Dublin", "Europe/Paris", "Europe/Berlin", "Europe/Madrid", "Europe/Amsterdam", "Europe/Stockholm",
-  "Europe/Warsaw", "Europe/Moscow", "Asia/Dubai", "Asia/Kolkata", "Asia/Singapore", "Asia/Shanghai", "Asia/Tokyo", "Asia/Seoul", "Australia/Sydney", "Australia/Perth",
-  "Pacific/Auckland", "MST", "MDT", "EST", "EDT", "CST", "CDT", "PST", "PDT", "CET", "GMT", "GMT-7", "UTC+5:30", "system"];
 const ABBR = { UTC: 0, GMT: 0, Z: 0, WET: 0, WEST: 60, BST: 60, CET: 60, CEST: 120, EET: 120, EEST: 180, MSK: 180, IST: 330, SGT: 480, AWST: 480, JST: 540, KST: 540,
   ACST: 570, AEST: 600, AEDT: 660, NZST: 720, NZDT: 780, HST: -600, AKST: -540, AKDT: -480, PST: -480, PDT: -420, MST: -420, MDT: -360, CST: -360, CDT: -300, EST: -300, EDT: -240,
   AST: -240, ADT: -180, NST: -210, NDT: -150 };
@@ -103,127 +95,146 @@ const ABBR = { UTC: 0, GMT: 0, Z: 0, WET: 0, WEST: 60, BST: 60, CET: 60, CEST: 1
 export function zoneInfo(z) {
   const s = String(z || "").trim();
   if (s.toLowerCase() === "system") return { iana: Intl.DateTimeFormat().resolvedOptions().timeZone, label: "this computer's zone" };
-  if (ABBR[s.toUpperCase()] !== undefined) return { offset: ABBR[s.toUpperCase()], label: s.toUpperCase() + " (fixed offset)" };
+  if (ABBR[s.toUpperCase()] !== undefined) return { offset: ABBR[s.toUpperCase()], label: "the same offset all year" };
   const m = /^(?:utc|gmt|ut)?\s*([+-])\s*(\d{1,2})(?::?(\d{2}))?$/i.exec(s);
-  if (m) return { offset: (m[1] === "-" ? -1 : 1) * (+m[2] * 60 + +(m[3] || 0)), label: "fixed offset" };
+  if (m) return { offset: (m[1] === "-" ? -1 : 1) * (+m[2] * 60 + +(m[3] || 0)), label: "the same offset all year" };
   try { new Intl.DateTimeFormat("en", { timeZone: s }).format(); return { iana: s, label: "follows daylight saving" }; } catch (e) { return null; }
 }
-function wallClockNow(zi) {
+function wallClock(zi, t = Date.now(), opts = { weekday: "short", hour: "2-digit", minute: "2-digit" }) {
   if (!zi) return "";
-  if (zi.iana) return new Intl.DateTimeFormat(undefined, { timeZone: zi.iana, weekday: "short", hour: "2-digit", minute: "2-digit" }).format(new Date());
-  const d = new Date(Date.now() + zi.offset * 60000);
-  return d.toUTCString().slice(0, 3) + " " + d.toISOString().slice(11, 16);
+  if (zi.iana) return new Intl.DateTimeFormat(undefined, { timeZone: zi.iana, ...opts }).format(new Date(t));
+  return new Intl.DateTimeFormat(undefined, { timeZone: "UTC", ...opts }).format(new Date(t + zi.offset * 60000));
+}
+/** Milliseconds since the epoch for a wall-clock date and time in a zone. */
+function zoned(y, mo, d, hh, mm, zi) {
+  const guess = Date.UTC(y, mo, d, hh, mm);
+  if (!zi || zi.offset !== undefined) return guess - (zi?.offset || 0) * 60000;
+  const parts = new Intl.DateTimeFormat("en-US", { timeZone: zi.iana, hourCycle: "h23", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" }).formatToParts(new Date(guess));
+  const g = Object.fromEntries(parts.map((p) => [p.type, p.value]));
+  const asUtc = Date.UTC(+g.year, +g.month - 1, +g.day, +g.hour % 24, +g.minute);
+  return guess - (asUtc - guess);
 }
 function cyclePage(root) {
-  root.append(pageHead("Cycle & schedule", "When cycles start and end. A cycle's length and vault settings are fixed when it starts; changes apply from the next cycle (or a /hca reset cycle)."));
-  const split = el("div", { class: "split" });
-  const left = el("div", { class: "panel" }, el("div", { class: "pb" }));
-  const fl = left.firstChild;
-  const len = field("config.yml", "cycle.length-days", { label: "Cycle length", suffix: "days", min: 1, onChange: () => draw() });
-  len.querySelector(".ctl").prepend(el("div", { style: { marginBottom: "6px" } }, seg([[1, "1 day"], [7, "1 week"], [14, "2 weeks"], [30, "30 days"]], C("cycle.length-days"), (v) => { S.set("config.yml", "cycle.length-days", +v); len.querySelector("input[type=number]").value = v; draw(); })));
-  fl.append(len);
-  // start-date: auto, or a date
+  const liveBtn = S.store.info.live ? btn([sprite("recovery_compass", 18), "Cycle tools"], () => go("#/live-cycle")) : null;
+  root.append(pageHead("Cycle", null, liveBtn));
+  const aside = el("div", { style: { display: "grid", gap: "22px" } });
+  const draw = () => drawSchedule(aside);
+  const lenRow = field("config.yml", "cycle.length-days", { hint: "Applies from the next cycle.", onChange: draw });
+  const presets = seg([[1, "Day"], [7, "Week"], [14, "2 weeks"], [30, "30 days"]], C("cycle.length-days"), (v) => { S.set("config.yml", "cycle.length-days", +v); lenRow.querySelector("input[type=number]").value = v; draw(); refreshUnsaved(lenRow, "cycle.length-days"); });
+  lenRow.querySelector(".ctl").prepend(presets);
+  lenRow.querySelector("input[type=number]").addEventListener("input", (e) => presets.querySelectorAll("button").forEach((b) => b.classList.toggle("on", b.textContent === ({ 1: "Day", 7: "Week", 14: "2 weeks", 30: "30 days" })[e.target.value])));
+  // start-date: "auto" or a date
   const sd = String(C("cycle.start-date") ?? "auto");
-  const dateInp = el("input", { type: "date", value: sd === "auto" ? "" : sd, style: { maxWidth: "200px" }, oninput: (e) => { if (e.target.value) { S.set("config.yml", "cycle.start-date", e.target.value); draw(); } } });
-  fl.append(el("div", { class: "field", "data-key": "config.yml#cycle.start-date" }, el("div", {}, el("div", { class: "lbl" }, "First cycle starts"), el("div", { class: "help" }, "auto starts at once (aligned to the roll-over time today). A date waits until then; no cycle runs before it.")),
-    el("div", { class: "ctl" }, seg([["auto", "Right away"], ["date", "On a date"]], sd === "auto" ? "auto" : "date", (m) => { if (m === "auto") S.set("config.yml", "cycle.start-date", "auto"); else if (dateInp.value) S.set("config.yml", "cycle.start-date", dateInp.value); dateInp.style.display = m === "date" ? "" : "none"; draw(); }),
-      el("div", { style: { marginTop: "6px" } }, dateInp))));
-  if (sd === "auto") dateInp.style.display = "none";
-  fl.append(field("config.yml", "cycle.end-time", { label: "Roll-over time", type: "time", onChange: () => draw() }));
-  const tz = field("config.yml", "cycle.time-zone", { label: "Time zone", type: "text", list: "zones", onChange: () => { draw(); clock(); } });
-  const clockEl = el("div", { class: "small", style: { marginTop: "4px" } });
-  const clock = () => { const zi = zoneInfo(S.get("config.yml", "cycle.time-zone") ?? "UTC"); clockEl.innerHTML = ""; clockEl.append(zi ? el("span", { class: "muted" }, `It's ${wallClockNow(zi)} there now · ${zi.label}`) : el("span", { style: { color: "var(--bad)" } }, "Not a time zone Headcount knows; it would use UTC.")); };
-  tz.querySelector(".ctl").insertBefore(clockEl, tz.querySelector(".meta"));
-  tz.append(el("datalist", { id: "zones" }, ZONES.map((z) => el("option", { value: z }))));
-  fl.append(tz);
+  const startRow = el("div", { class: "field", "data-key": "config.yml#cycle.start-date" });
+  const dateInp = el("input", { type: "date", value: sd === "auto" ? "" : sd, oninput: (e) => { if (e.target.value) { S.set("config.yml", "cycle.start-date", e.target.value); draw(); refreshUnsaved(startRow, "cycle.start-date"); } } });
+  dateInp.hidden = sd === "auto";
+  startRow.append(el("div", { class: "lab" }, el("label", { class: "name" }, "First cycle starts")), el("div", { class: "ctl" },
+    seg([["auto", "Right away"], ["date", "On a date"]], sd === "auto" ? "auto" : "date", (m) => {
+      dateInp.hidden = m !== "date";
+      if (m === "auto") S.set("config.yml", "cycle.start-date", "auto");
+      else { if (!dateInp.value) dateInp.value = new Date(Date.now() + 86400000).toISOString().slice(0, 10); S.set("config.yml", "cycle.start-date", dateInp.value); }
+      draw(); refreshUnsaved(startRow, "cycle.start-date");
+    }), dateInp));
+  refreshUnsaved(startRow, "cycle.start-date");
+  const clockNote = el("div", { class: "note-inline" });
+  const clock = () => { const zi = zoneInfo(S.get("config.yml", "cycle.time-zone") ?? "UTC"); clockNote.textContent = zi ? `${wallClock(zi)} there now, ${zi.label}` : "Headcount doesn't know this zone and would use UTC."; clockNote.style.color = zi ? "" : "var(--bad)"; };
+  const tz = field("config.yml", "cycle.time-zone", { onChange: () => { clock(); draw(); }, render: () => clockNote });
   clock();
-  fl.append(sectionTitle("Activity"), field("config.yml", "activity.min-playtime", { label: "Playtime to count as active" }), field("config.yml", "activity.check-interval", { label: "Check every" }));
-  const right = el("div", { class: "sticky" });
-  const draw = () => {
-    right.innerHTML = "";
-    const days = +C("cycle.length-days") || 30;
-    const [hh, mm] = String(C("cycle.end-time") || "00:00").split(":").map(Number);
-    const sdv = String(S.get("config.yml", "cycle.start-date") ?? "auto");
-    const base = sdv === "auto" ? new Date() : new Date(sdv + "T00:00:00Z");
-    let start = Date.UTC(base.getUTCFullYear(), base.getUTCMonth(), base.getUTCDate(), hh || 0, mm || 0);
-    const fmt = (t) => new Date(t).toUTCString().slice(0, 22).replace(" GMT", "");
-    const card = el("div", { class: "card" }, el("h4", {}, "The next cycles"), el("div", { class: "small muted" }, "Wall-clock times in " + (S.get("config.yml", "cycle.time-zone") ?? "UTC") + (sdv === "auto" ? ", if the first started today." : ".")));
-    for (let k = 0; k < 3; k++) {
-      const end = start + days * 86400000;
-      card.append(el("div", { class: "row", style: { padding: "6px 0", borderTop: "1px solid var(--line)" } }, badge("Cycle " + (k + 1), k ? "plain" : ""), el("span", { class: "grow small" }, fmt(start) + "  →  " + fmt(end))));
-      start = end;
-    }
-    // Warnings on the timeline of one cycle
-    const tl = el("div", { class: "timeline" }, el("div", { class: "bar" }));
-    const total = days * 86400000;
-    const warnings = C("hooks.warnings") || {};
-    for (const [id, w] of Object.entries(warnings)) {
-      const before = parseDuration(w?.before);
-      if (!isFinite(before) || w?.enabled === false) continue;
-      const x = Math.max(0, Math.min(100, (1 - before / total) * 100));
-      tl.append(el("div", { class: "mk", style: { left: x + "%" }, title: id + ": " + w.before + " before the end" }, el("span", {}, id)));
-    }
-    tl.append(el("div", { class: "end", style: { left: 0 } }, "start"), el("div", { class: "end", style: { right: 0 } }, "end"));
-    right.append(card, el("div", { class: "card", style: { marginTop: "14px" } }, el("h4", {}, "Warnings before the end"), tl,
-      el("div", { class: "small muted" }, "Each marker is a warning hook. ", link("Edit warnings →", "#/hooks"))));
-    right.append(el("div", { class: "card", style: { marginTop: "14px" } }, el("h4", {}, "Running cycle"), el("div", { class: "small muted" }, "Change the current cycle's end, end it, or start it over from the console:"),
-      el("div", { class: "row", style: { marginTop: "8px" } }, btn("Cycle tools →", () => go("#/live-cycle")))));
-  };
+  root.append(layout([
+    group("Schedule", lenRow, startRow, field("config.yml", "cycle.end-time", { onChange: draw }), tz),
+    group("Activity", field("config.yml", "activity.min-playtime", { hint: "Only active players get a score." }), field("config.yml", "activity.check-interval")),
+  ], aside));
   draw();
-  split.append(left, right);
-  root.append(split);
+}
+function refreshUnsaved(row, path) { row.classList.toggle("unsaved", JSON.stringify(S.get("config.yml", path)) !== JSON.stringify(S.savedValue("config.yml", path))); }
+function drawSchedule(box) {
+  box.innerHTML = "";
+  const days = +C("cycle.length-days") || 30;
+  const [hh, mm] = String(C("cycle.end-time") || "00:00").split(":").map(Number);
+  const zone = S.get("config.yml", "cycle.time-zone") ?? "UTC";
+  const zi = zoneInfo(zone) || { offset: 0 };
+  const sdv = String(S.get("config.yml", "cycle.start-date") ?? "auto");
+  const live = S.store.live?.cycle;
+  let start;
+  if (live) start = live.end_ms;
+  else if (sdv === "auto") { const t = new Date(); start = zoned(t.getUTCFullYear(), t.getUTCMonth(), t.getUTCDate(), hh || 0, mm || 0, zi); }
+  else { const [y, mo, d] = sdv.split("-").map(Number); start = zoned(y, mo - 1, d, hh || 0, mm || 0, zi); }
+  const fmt = (t) => wallClock(zi, t, { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+  const rows = el("div", { class: "items" });
+  if (live) rows.append(el("div", { class: "item", style: { cursor: "default" } }, el("div", { class: "main" }, el("div", { class: "t1" }, "Cycle " + live.id + ", running"), el("div", { class: "t2" }, "Ends " + fmt(live.end_ms)))));
+  for (let k = 0; k < 3; k++) {
+    const end = start + days * 86400000;
+    rows.append(el("div", { class: "item", style: { cursor: "default" } }, el("div", { class: "main" }, el("div", { class: "t1" }, live ? "Cycle " + (live.id + k + 1) : k ? "Then" : sdv === "auto" ? "If it started today" : "First cycle"),
+      el("div", { class: "t2" }, fmt(start) + " to " + fmt(end)))));
+    start = end;
+  }
+  box.append(preview("Next cycles", rows, el("div", { class: "small faint", style: { marginTop: "6px" } }, "Times in " + zone + (live ? ". New lengths start after the running cycle." : "."))));
+  const tl = el("div", { class: "timeline" }, el("div", { class: "bar" }));
+  const total = days * 86400000;
+  let lastX = -100;
+  const marks = Object.entries(C("hooks.warnings") || {}).map(([id, w]) => [id, parseDuration(w?.before), w]).filter(([, b, w]) => isFinite(b) && w?.enabled !== false)
+    .map(([id, b]) => [id, Math.max(0, Math.min(100, (1 - b / total) * 100))]).sort((a, b) => a[1] - b[1]);
+  for (const [id, x] of marks) {
+    const show = x - lastX > 7;
+    if (show) lastX = x;
+    tl.append(el("div", { class: "mk", style: { left: x + "%" }, title: id + " before the end" }, el("span", {}, show ? id : "")));
+  }
+  tl.append(el("div", { class: "end", style: { left: 0 } }, "Start"), el("div", { class: "end", style: { right: 0 } }, "End"));
+  box.append(preview("Warnings in a cycle", el("a", { href: "#/hooks", class: "sheet", style: { display: "block", padding: "8px 12px", color: "inherit", textDecoration: "none" } }, tl)));
 }
 
 // ============================================================================================
-//  Vault & heads
+//  Vault and heads
 // ============================================================================================
+const HEAD_STATES = [["", "Current", "From this cycle"], ["expired-", "Expired", "From an older cycle"], ["defunct-", "Defunct", "From before a reset"]];
 function vaultPage(root) {
-  root.append(pageHead("Vault & heads", "The head vault (/hc), the economy head item, placed heads, duplicates, kills and points."));
-  const split = el("div", { class: "split" });
-  const left = el("div");
-  const right = el("div", { class: "sticky" });
-  const main = el("div", { class: "panel" }, el("div", { class: "pb" }));
-  main.firstChild.append(
-    field("config.yml", "vault.size", { label: "Vault size", suffix: "slots", slider: true, min: 1, max: 54, step: 1, onChange: () => drawPrev() }),
-    field("config.yml", "vault.starting-heads", { label: "Starting heads", suffix: "of your own head", slider: true, min: 0, max: 54, step: 1, onChange: () => drawPrev() }),
-    field("config.yml", "vault.gui.title", { label: "Vault title", type: "mini", onChange: () => drawPrev() }),
-    field("config.yml", "vault.block-movement.statuses", { label: "Statuses that block moving heads", type: "list", suggestions: Object.keys(S.get("statuses.yml", "statuses") || {}) }),
-    field("config.yml", "vault.block-movement.block-opening", { label: "…also block opening the vault" }),
-  );
-  left.append(main);
-  const heads = el("div", { class: "panel", style: { marginTop: "14px" } }, el("div", { class: "ph" }, el("h3", {}, "The head item")), el("div", { class: "pb" }));
-  heads.lastChild.append(
-    field("config.yml", "heads.item.name", { label: "Name", onChange: () => drawPrev() }), field("config.yml", "heads.item.lore", { label: "Lore", type: "yaml", onChange: () => drawPrev() }),
-    field("config.yml", "heads.item.expired-name", { label: "Expired name", onChange: () => drawPrev() }), field("config.yml", "heads.item.expired-lore", { label: "Expired lore", type: "yaml", onChange: () => drawPrev() }),
-    field("config.yml", "heads.item.defunct-name", { label: "Defunct name", onChange: () => drawPrev() }), field("config.yml", "heads.item.defunct-lore", { label: "Defunct lore", type: "yaml", onChange: () => drawPrev() }),
-    field("config.yml", "heads.item.glint"), field("config.yml", "heads.item.max-stack-size"), field("config.yml", "heads.item.item-model"));
-  left.append(heads);
-  const more = (title, file, base, skip) => el("details", { class: "panel more", style: { marginTop: "14px", padding: "0 16px" } }, el("summary", {}, title), allFields(file, base, { skip }));
-  left.append(more("All vault options", "config.yml", "vault", ["vault.size", "vault.starting-heads", "vault.gui.title", "vault.block-movement"]),
-    more("Placed heads", "config.yml", "heads.placed"), more("Duplicates", "config.yml", "duplicates"), more("Kills", "config.yml", "kills"), more("Points", "config.yml", "points"));
+  root.append(pageHead("Vault and heads"));
+  let state = "";
+  const aside = el("div", { style: { display: "grid", gap: "22px" } });
   const drawPrev = () => {
-    right.innerHTML = "";
+    aside.innerHTML = "";
     const size = Math.max(1, +C("vault.size") || 27), start = Math.min(size, +C("vault.starting-heads") || 0);
-    const rows = Math.min(6, Math.ceil(Math.min(size, 54) / 9));
-    const vars = { owner: "Steve", unique: 1, total: start, size, used: start, score: SAMPLE.score };
-    right.append(el("div", { class: "card" }, el("h4", {}, "Preview"), chest(rows, C("vault.gui.title"), (i) => i >= Math.min(size, 54) ? { cls: "dim", item: "BLACK_STAINED_GLASS_PANE" }
-      : i < start ? { item: "PLAYER_HEAD", tip: () => tooltip(C("heads.item.name"), C("heads.item.lore"), { owner: "Steve", cycle: 3 }) } : null, { vars }),
-      size > 54 ? el("div", { class: "small muted", style: { marginTop: "6px" } }, `${size} slots: shown in pages of 45.`) : null));
-    const h = (t, n, l, extra) => el("div", { style: { marginTop: "12px" } }, el("div", { class: "small muted", style: { marginBottom: "4px" } }, t), tooltip(n, l, { owner: "Steve", cycle: 3, ...extra }));
-    right.append(el("div", { class: "card", style: { marginTop: "14px" } }, el("h4", {}, "Head tooltips"),
-      h("Current", C("heads.item.name"), C("heads.item.lore")), h("Expired (older cycle)", C("heads.item.expired-name"), C("heads.item.expired-lore"), { cycle: 2 }),
-      h("Defunct (from before a reset)", C("heads.item.defunct-name"), C("heads.item.defunct-lore"))));
+    const shown = Math.min(size, 54);
+    const rows = Math.min(6, Math.ceil(shown / 9));
+    const vars = { owner: "Steve", unique: 1, total: start, size, used: start, score: -2 };
+    const tip = () => tooltip(C("heads.item.name"), C("heads.item.lore"), { owner: "Steve", cycle: 3 });
+    aside.append(preview("At the start of a cycle", chest(rows, C("vault.gui.title"), (i) => i >= shown ? { item: C("vault.gui.locked-slot.material") || "BLACK_STAINED_GLASS_PANE", cls: "dim" }
+      : i < start ? { item: { material: "PLAYER_HEAD", glint: C("heads.item.glint") }, tip } : null, { vars }),
+      size > 54 ? el("div", { class: "small faint", style: { marginTop: "6px" } }, `${size} slots, shown in pages of 45.`) : null));
+    const [p, title] = HEAD_STATES.find((h) => h[0] === state);
+    aside.append(preview(title + " head", el("div", { class: "row", style: { alignItems: "flex-start", flexWrap: "nowrap" } }, sprite({ material: "PLAYER_HEAD", glint: !p && C("heads.item.glint") }, 48),
+      tooltip(C("heads.item." + p + "name"), C("heads.item." + p + "lore"), { owner: "Steve", cycle: p === "expired-" ? 2 : 3 }))));
   };
+  const headBox = el("div");
+  const drawHead = () => {
+    headBox.innerHTML = "";
+    headBox.append(field("config.yml", "heads.item." + state + "name", { onChange: drawPrev }), field("config.yml", "heads.item." + state + "lore", { onChange: drawPrev }));
+  };
+  const stateSeg = seg(HEAD_STATES.map(([k, n]) => [k, n]), state, (v) => { state = v; drawHead(); drawPrev(); });
+  drawHead();
+  const main = [
+    group("Vault",
+      field("config.yml", "vault.size", { onChange: drawPrev }), field("config.yml", "vault.starting-heads", { onChange: drawPrev, hint: "Up to the vault size. Extra ones arrive as items." }),
+      field("config.yml", "vault.max-size", { hint: "For actions that grow a vault." }), field("config.yml", "vault.block-movement.statuses"), field("config.yml", "vault.block-movement.block-opening"),
+      field("config.yml", "vault.allow-drop-key"), field("config.yml", "vault.duplicate-insert"), field("config.yml", "vault.save-player-data-after-change")),
+    group(["Head item", stateSeg], headBox, field("config.yml", "heads.item.glint", { onChange: drawPrev }), field("config.yml", "heads.item.max-stack-size"), field("config.yml", "heads.item.item-model")),
+    group("Kills", field("config.yml", "kills.enabled"), field("config.yml", "kills.once-per-victim-per-cycle"), field("config.yml", "kills.heads-per-kill"),
+      field("config.yml", "kills.disabled-worlds"), field("config.yml", "kills.killer-blocked-statuses"), field("config.yml", "kills.killer-pickup-only")),
+    group("Heads placed as blocks", field("config.yml", "heads.placed.preserve"), field("config.yml", "heads.placed.creative-break"), field("config.yml", "heads.placed.always-drop"), field("config.yml", "heads.placed.untracked-blocks")),
+    group("Copied heads", field("config.yml", "duplicates.notify-admins"), field("config.yml", "duplicates.remove-copies"), field("config.yml", "duplicates.scan-on-inventory-close")),
+  ];
+  aside.append();
+  root.append(layout(main, [aside, el("div", {}, btn([sprite("chest", 18), "Vault menu layout"], () => go("#/menus/vault"), "ghost"))]));
   drawPrev();
-  split.append(left, right);
-  root.append(split);
 }
 
 // ============================================================================================
-//  Scoring: the formula lab
+//  Scoring
 // ============================================================================================
 const INPUTS = [["unique", 0, 60, 6], ["active", 1, 80, 12], ["total", 0, 120, 20], ["own", 0, 60, 8], ["rank", 1, 80, 3], ["percentile", 0, 100, 70], ["kills", 0, 30, 1],
   ["deaths", 0, 30, 1], ["trades", 0, 40, 3], ["streak", -10, 10, 0], ["points", 0, 200, 10], ["playtime", 0, 3000, 300], ["last_score", -20, 30, 2], ["bonus", -10, 10, 0]];
+const INPUT_LABEL = { unique: "Unique heads", active: "Active players", total: "Heads in the vault", own: "Own heads", rank: "Rank", percentile: "Percentile", kills: "Kills", deaths: "Deaths",
+  trades: "Trades", streak: "Streak", points: "Points", playtime: "Playtime (min)", last_score: "Last score", bonus: "Score bonus" };
 export function outcomesFor(score) {
   const rules = Object.entries(S.get("outcomes.yml", "rules") || {}).filter(([, r]) => r && r.enabled !== false && parseRange(r.score).test(score));
   if ((S.get("outcomes.yml", "mode") ?? "most-extreme") === "all") return rules;
@@ -237,43 +248,45 @@ export function outcomesFor(score) {
   return Object.values(groups).map((x) => [x.id, x.r]);
 }
 function scoringPage(root) {
-  root.append(pageHead("Scoring", "The formula that turns a vault into a score. Try it with the sliders; the chart shows scores for every number of unique heads."));
+  root.append(pageHead("Scoring"));
   const env = Object.fromEntries(INPUTS.map(([k, , , v]) => [k, v]));
-  const split = el("div", { class: "split" });
-  const left = el("div");
-  const fCard = el("div", { class: "panel" }, el("div", { class: "ph" }, el("h3", {}, "Formula")), el("div", { class: "pb" }));
-  const fInp = el("textarea", { rows: 2, spellcheck: "false", style: { fontSize: "15px" } });
+  const fInp = el("textarea", { rows: 2, spellcheck: "false", "aria-label": "Formula", style: { fontSize: "16px", minHeight: "56px" } });
   fInp.value = String(S.get("scoring.yml", "formula") ?? S.def("scoring.yml", "formula"));
-  const fErr = el("div", { class: "small", style: { minHeight: "18px", marginTop: "4px" } });
-  fInp.addEventListener("input", () => { S.set("scoring.yml", "formula", fInp.value); calc(); });
-  const ideas = el("div", { class: "row gap-s", style: { marginTop: "6px" } }, el("span", { class: "small muted" }, "Ideas:"),
-    (S.store.catalog?.formula?.ideas || []).map((i) => el("button", { class: "btn small", title: i.formula, onclick: () => { fInp.value = i.formula; S.set("scoring.yml", "formula", i.formula); calc(); } }, i.name)),
-    el("button", { class: "btn small ghost", onclick: () => { fInp.value = S.def("scoring.yml", "formula"); S.set("scoring.yml", "formula", fInp.value); calc(); } }, "↺ default"));
-  const varsHelp = el("details", { class: "more" }, el("summary", {}, "Variables and functions"),
-    el("table", { class: "t small" }, (S.store.catalog?.formula?.variables || []).map((v) => el("tr", {}, el("td", {}, el("code", {}, v.name)), el("td", { class: "muted" }, v.description)))),
-    el("div", { class: "small muted", style: { marginTop: "6px" } }, "Functions: " + (S.store.catalog?.formula?.functions || []).join(", ") + ". Operators: + − × ÷ % ^, comparisons, && || !, and a ? b : c."));
-  fCard.lastChild.append(fInp, fErr, ideas, varsHelp);
-  const lab = el("div", { class: "panel", style: { marginTop: "14px" } }, el("div", { class: "ph" }, el("h3", {}, "Try it"), el("span", { class: "small muted" }, "a player in a cycle with these numbers")), el("div", { class: "pb" }));
-  const inputsBox = el("div", { class: "grid g2" });
-  INPUTS.forEach(([k, min, max], i) => {
-    const out = el("b", { style: { minWidth: "38px", textAlign: "right" } }, env[k]);
-    const r = el("input", { type: "range", min, max, value: env[k], style: { flex: 1 } });
-    r.addEventListener("input", () => { env[k] = +r.value; out.textContent = r.value; calc(); });
-    const row = el("div", { class: "row", style: { flexWrap: "nowrap" } }, el("code", { style: { width: "86px" } }, k), r, out);
-    if (i >= 4) row.dataset.more = "1";
-    inputsBox.append(row);
+  const fState = el("div", { class: "small", style: { minHeight: "20px" } });
+  const fRow = el("div", { class: "field stack", "data-key": "scoring.yml#formula" });
+  const setF = (v) => { fInp.value = v; S.set("scoring.yml", "formula", v); fRow.classList.toggle("unsaved", v !== S.savedValue("scoring.yml", "formula")); calc(); };
+  fInp.addEventListener("input", () => setF(fInp.value));
+  const ideas = S.store.catalog?.formula?.ideas || [];
+  const ideaSel = select([["", "Start from an idea"], ...ideas.map((i, n) => [String(n), i.name]), ["default", "The default"]], "", (v) => {
+    if (v === "default") setF(S.def("scoring.yml", "formula")); else if (v !== "") setF(ideas[+v].formula);
+    ideaSel.value = "";
   });
-  const moreBtn = el("button", { class: "btn small ghost", onclick: () => { inputsBox.querySelectorAll("[data-more]").forEach((x) => x.classList.toggle("hidden")); } }, "more inputs");
-  inputsBox.querySelectorAll("[data-more]").forEach((x) => x.classList.add("hidden"));
-  lab.lastChild.append(inputsBox, moreBtn);
-  left.append(fCard, lab);
-  left.append(el("details", { class: "panel more", style: { marginTop: "14px", padding: "0 16px" }, open: true }, el("summary", {}, "Rounding, ranks and streaks"),
-    field("scoring.yml", "rounding", { onChange: () => calc() }), field("scoring.yml", "add-bonus-after-formula", { onChange: () => calc() }), field("scoring.yml", "rank-mode"),
-    allFields("scoring.yml", "streaks"), field("config.yml", "points.earn-multiplier", { label: "Points per score point" }), field("config.yml", "points.rollover-percent", { label: "Unspent points kept", suffix: "%" })));
-  const right = el("div", { class: "sticky" });
-  const result = el("div", { class: "card" });
-  const chartCard = el("div", { class: "card", style: { marginTop: "14px" } });
-  right.append(result, chartCard);
+  const vars = el("details", { class: "more" }, el("summary", {}, "What a formula can use"),
+    el("table", { class: "t small" }, (S.store.catalog?.formula?.variables || []).map((v) => el("tr", {}, el("td", {}, el("code", {}, v.name)), el("td", { class: "muted" }, v.description)))),
+    el("p", { class: "small muted", style: { marginTop: "8px" } }, "Functions: " + (S.store.catalog?.formula?.functions || []).join(", ") + ". Operators: + - * / % ^, comparisons, && || !, and a ? b : c."));
+  fRow.append(el("div", { class: "ctl" }, fInp, el("div", { class: "row", style: { width: "100%" } }, el("div", { class: "grow" }, fState), ideaSel), vars));
+  const sliders = el("div", { class: "sheet" });
+  INPUTS.forEach(([k, min, max], i) => {
+    const out = el("input", { type: "number", value: env[k], min, max, style: { width: "84px" }, "aria-label": INPUT_LABEL[k] });
+    const r = el("input", { type: "range", min, max, value: env[k], "aria-label": INPUT_LABEL[k] });
+    r.addEventListener("input", () => { env[k] = +r.value; out.value = r.value; calc(); });
+    out.addEventListener("input", () => { if (out.value !== "") { env[k] = +out.value; r.value = out.value; calc(); } });
+    const row = el("div", { class: "field" }, el("div", { class: "lab" }, el("span", { class: "name" }, INPUT_LABEL[k]), el("div", { class: "hint" }, el("code", {}, k))), el("div", { class: "ctl" }, el("div", { class: "slider-row" }, out, r)));
+    if (i >= 4) row.dataset.more = "1";
+    sliders.append(row);
+  });
+  sliders.querySelectorAll("[data-more]").forEach((x) => x.classList.add("hidden"));
+  const moreBtn = btn("More inputs", () => { const hid = sliders.querySelector("[data-more].hidden"); sliders.querySelectorAll("[data-more]").forEach((x) => x.classList.toggle("hidden", !hid)); moreBtn.textContent = hid ? "Fewer inputs" : "More inputs"; }, "ghost small");
+  const result = el("section", { class: "sheet", style: { padding: "18px" } });
+  const chartBox = el("section", { class: "sheet", style: { padding: "16px 18px" } });
+  const main = [
+    el("section", { class: "group" }, el("header", {}, el("h2", {}, "Formula")), el("div", { class: "sheet", style: { padding: "4px 18px 8px" } }, fRow)),
+    el("section", { class: "group" }, el("header", {}, el("h2", {}, "Try it"), el("div", { class: "side" }, moreBtn)), sliders),
+    group("Rounding and ranks", field("scoring.yml", "rounding", { onChange: () => calc() }), field("scoring.yml", "add-bonus-after-formula", { onChange: () => calc() }), field("scoring.yml", "rank-mode")),
+    group("Streaks", field("scoring.yml", "streaks.inactive"), field("scoring.yml", "streaks.zero-score")),
+    group("Points", field("config.yml", "points.earn-multiplier", { onChange: () => calc() }), field("config.yml", "points.rollover-percent"), field("config.yml", "points.allow-negative")),
+  ];
+  root.append(layout(main, [result, chartBox]));
   const scoreFor = (f, e) => {
     const raw = f.eval({ players: e.active + 6, online: 4, duplicates: Math.max(0, e.total - e.unique), vault_size: +C("vault.size") || 27, vault_free: 0, starting_heads: +C("vault.starting-heads") || 27,
       unique_avg: 5, unique_median: 5, unique_max: 15, unique_min: 1, unique_sum: 60, heads_in: 2, heads_out: 2, purchases: 1, points_spent: 3, points_next: 0, playtime_hours: e.playtime / 60,
@@ -283,120 +296,131 @@ function scoringPage(root) {
     if ((S.get("scoring.yml", "add-bonus-after-formula") ?? true) !== false) s += e.bonus;
     return { raw, s };
   };
-  const calc = () => {
+  function calc() {
     const f = compileFormula(fInp.value);
-    fErr.innerHTML = "";
-    if (!f.ok) fErr.append(el("span", { style: { color: "var(--bad)" } }, "⚠ " + f.error + " (at character " + (f.at + 1) + ")"));
+    fState.innerHTML = "";
+    if (!f.ok) fState.append(el("span", { style: { color: "var(--bad)" } }, f.error + ", at character " + (f.at + 1) + "."));
     else {
       const unknown = [...f.vars].filter((v) => !v.startsWith("%") && !(v in env) && !(S.store.catalog?.formula?.variables || []).some((x) => x.name === v));
-      if (unknown.length) fErr.append(el("span", { style: { color: "var(--warn)" } }, "Unknown variable: " + unknown.join(", ")));
-      else fErr.append(el("span", { class: "muted" }, "✓ The formula reads fine."));
+      if (unknown.length) fState.append(el("span", { style: { color: "var(--warn)" } }, "Unknown: " + unknown.join(", ")));
     }
     const { raw, s } = scoreFor(f, env);
     const outs = outcomesFor(s);
     const pts = s > 0 ? Math.floor(s * (+C("points.earn-multiplier") || 1)) : 0;
     result.innerHTML = "";
-    result.append(el("h4", {}, "Result"), el("div", { class: "kpi" }, el("div", { class: "big", style: { fontSize: "48px", color: s > 0 ? "var(--good)" : s < 0 ? "var(--bad)" : "var(--muted)" } }, isFinite(raw) ? s : "?"),
-      el("div", {}, el("div", { class: "small muted" }, "raw " + (isFinite(raw) ? Math.round(raw * 1000) / 1000 : "not a number")), el("div", {}, pts ? `earns ${pts} point${pts === 1 ? "" : "s"}` : s < 0 ? "no points, and…" : "no points"))),
-      el("div", { style: { marginTop: "8px" } }, outs.length ? outs.map(([id, r]) => el("div", { class: "row", style: { margin: "3px 0" } }, miniInline(r.display || id), el("span", { class: "small muted" }, "(" + describeRange(r.score) + ")")))
-        : el("span", { class: "muted small" }, "No outcome for this score.")));
-    // Chart: score for unique = 0..max at this active count
-    chartCard.innerHTML = "";
+    result.append(el("div", { class: "row", style: { alignItems: "baseline", gap: "14px" } },
+      el("div", { style: { fontSize: "56px", fontWeight: 600, lineHeight: 1, letterSpacing: "-.03em", color: s > 0 ? "var(--good)" : s < 0 ? "var(--bad)" : "var(--ink-2)" } }, isFinite(raw) ? s : "?"),
+      el("div", {}, el("div", {}, pts ? `${pts} point${pts === 1 ? "" : "s"}` : "No points"), el("div", { class: "small faint" }, isFinite(raw) ? "Before rounding " + Math.round(raw * 1000) / 1000 : "Not a number"))),
+      el("div", { style: { marginTop: "14px", display: "grid", gap: "6px", justifyItems: "start" } }, outs.length ? outs.map(([id, r]) => el("a", { href: "#/outcomes/" + id, style: { textDecoration: "none" } }, mcName(r.display || id))) : el("span", { class: "muted" }, "No outcome at this score.")));
+    chartBox.innerHTML = "";
     const maxU = Math.max(10, Math.min(40, env.active + 5));
     const pts2 = [];
     for (let u = 0; u <= maxU; u++) pts2.push(scoreFor(f, { ...env, unique: u, total: Math.max(u, env.total) }).s);
-    const lo = Math.min(0, ...pts2), hi = Math.max(1, ...pts2);
-    const W = 340, H = 200, pad = 28;
-    const x = (u) => pad + (u / maxU) * (W - pad - 6), y = (v) => 8 + (hi - v) / (hi - lo || 1) * (H - 30);
-    const svg = [`<svg class="chart" viewBox="0 0 ${W} ${H}">`, `<line class="gridl" x1="${pad}" x2="${W - 6}" y1="${y(0)}" y2="${y(0)}"/>`];
-    pts2.forEach((v, u) => { const bw = Math.max(2, (W - pad) / (maxU + 1) - 2); svg.push(`<rect x="${x(u) - bw / 2}" y="${Math.min(y(v), y(0))}" width="${bw}" height="${Math.max(1, Math.abs(y(v) - y(0)))}" rx="2" fill="${v > 0 ? "var(--good)" : v < 0 ? "var(--bad)" : "var(--line-2)"}" opacity="${u === env.unique ? 1 : 0.55}"/>`); });
-    svg.push(`<text x="${pad - 4}" y="${y(hi) + 4}" text-anchor="end">${hi}</text><text x="${pad - 4}" y="${y(lo) + 4}" text-anchor="end">${lo}</text><text x="${pad - 4}" y="${y(0) + 4}" text-anchor="end">0</text>`);
+    const lo = Math.min(0, ...pts2.filter(isFinite)), hi = Math.max(1, ...pts2.filter(isFinite));
+    const W = 340, H = 190, pad = 30;
+    const x = (u) => pad + (u / maxU) * (W - pad - 8), y = (v) => 10 + (hi - v) / (hi - lo || 1) * (H - 34);
+    const bw = Math.max(2, (W - pad) / (maxU + 1) - 2);
+    const svg = [`<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Score for each number of unique heads">`, `<line class="gridl" x1="${pad}" x2="${W - 6}" y1="${y(0)}" y2="${y(0)}"/>`];
+    pts2.forEach((v, u) => { if (isFinite(v)) svg.push(`<rect x="${x(u) - bw / 2}" y="${Math.min(y(v), y(0))}" width="${bw}" height="${Math.max(1, Math.abs(y(v) - y(0)))}" rx="1.5" fill="${v > 0 ? "var(--good)" : v < 0 ? "var(--bad)" : "var(--line-2)"}" opacity="${u === env.unique ? 1 : 0.45}"><title>${u} unique: ${v}</title></rect>`); });
+    svg.push(`<text x="${pad - 6}" y="${y(hi) + 4}" text-anchor="end">${hi}</text><text x="${pad - 6}" y="${y(lo) + 4}" text-anchor="end">${lo}</text><text x="${pad - 6}" y="${y(0) + 4}" text-anchor="end">0</text>`);
     svg.push(`<text x="${pad}" y="${H - 4}">0 unique</text><text x="${W - 6}" y="${H - 4}" text-anchor="end">${maxU}</text></svg>`);
-    chartCard.append(el("h4", {}, `Score by unique heads, ${env.active} active players`), el("div", { html: svg.join("") }));
-  };
+    chartBox.append(el("h2", { style: { fontSize: "15px", marginBottom: "8px" } }, `Score by unique heads, ${env.active} active`), el("div", { html: svg.join("") }));
+  }
   calc();
-  split.append(left, right);
-  root.append(split);
 }
 
 // ============================================================================================
 //  Outcomes
 // ============================================================================================
-const PAL = ["#c0392b", "#d35400", "#e67e22", "#8e44ad", "#16a085", "#27ae60", "#2980b9", "#b7950b"];
-function outcomesPage(root) {
-  root.append(pageHead("Outcomes", "What happens at the end of a cycle for each score. Drag the marker to see which rules a score gets.", btn("＋ New rule", async () => {
-    const id = await promptDialog("New rule", "An ID for the rule (letters, numbers, dashes):", "my-rule", { check: (v) => !/^[a-z0-9][a-z0-9-]*$/i.test(v) ? "Use letters, numbers and dashes." : S.get("outcomes.yml", "rules." + v) ? "That ID exists." : null });
+const PAL = ["#b8463c", "#c46a1f", "#a0861b", "#7a4fb3", "#1f8a7e", "#3f8a3a", "#2f6fae", "#9a4f84"];
+function outcomesPage(root, params) {
+  const addRule = async () => {
+    const id = await promptDialog("New rule", "A short ID, like double-points:", "my-rule", { check: (v) => !/^[a-z0-9][a-z0-9-]*$/i.test(v) ? "Use letters, numbers and dashes." : S.get("outcomes.yml", "rules." + v) ? "That ID is taken." : null });
     if (!id) return;
-    S.set("outcomes.yml", "rules." + id, { display: "<yellow>" + humanize(id), score: "..-1", actions: [{ message: "<yellow>Score <score>." }] });
-    window.studio.refresh();
-  }, "primary")));
+    S.set("outcomes.yml", "rules." + id, { display: "<yellow>" + humanize(id), score: "..-1", actions: [{ message: "<yellow>Your score was <score>." }] });
+    draw(); edit(id);
+  };
+  root.append(pageHead("Outcomes", null, btn([icon("plus"), "New rule"], addRule)));
   let score = -3;
-  const top = el("div", { class: "panel" }, el("div", { class: "pb" }));
-  top.firstChild.append(field("outcomes.yml", "mode", { label: "Which rules apply", onChange: () => drawLine() }));
-  const line = el("div", { class: "card", style: { marginTop: "14px" } });
-  const list = el("div", { class: "grid g2", style: { marginTop: "14px" } });
-  root.append(top, line, list);
+  const lineBox = el("div", { class: "sheet", style: { padding: "18px 18px 10px" } });
+  const listBox = el("div");
+  root.append(group(null, field("outcomes.yml", "mode", { onChange: () => draw() })), el("section", { class: "group" }, el("header", {}, el("h2", {}, "Score line")), lineBox), listBox);
   const MIN = -20, MAX = 20;
-  const drawLine = () => {
-    line.innerHTML = "";
+  const draw = () => {
+    lineBox.innerHTML = "";
     const rules = Object.entries(S.get("outcomes.yml", "rules") || {});
     const pos = (v) => ((Math.max(MIN, Math.min(MAX, v)) - MIN) / (MAX - MIN)) * 100;
-    const wrap = el("div", { class: "scoreline" });
     const axis = el("div", { class: "axis" });
     for (let t = MIN; t <= MAX; t += 5) axis.append(el("div", { class: "tick", style: { left: pos(t) + "%" } }, t));
-    const bands = el("div", { style: { position: "relative", height: rules.length * 24 + 10 + "px", margin: "26px 10px 0" } });
+    const bands = el("div", { style: { position: "relative", height: rules.length * 30 + 4 + "px", margin: "30px 12px 0" } });
     rules.forEach(([id, r], i) => {
       const rg = parseRange(r?.score);
       if (!rg.ok) return;
       const a = pos(rg.min === -Infinity ? MIN : rg.min), b = pos(rg.max === Infinity ? MAX : rg.max);
-      const band = el("div", { class: "band", style: { left: a + "%", width: Math.max(1.2, b - a) + "%", top: i * 24 + "px", background: PAL[i % PAL.length], opacity: r?.enabled === false ? 0.3 : 1 }, title: id + ": " + describeRange(r.score), onclick: () => edit(id) }, stripMini(r?.display || id));
-      bands.append(band);
+      bands.append(el("div", { class: "band", style: { left: a + "%", width: Math.max(1.5, b - a) + "%", top: i * 30 + "px", background: PAL[i % PAL.length], opacity: r?.enabled === false ? 0.35 : 1 }, title: stripMini(r?.display || id) + ": " + describeRange(r.score), onclick: () => edit(id) }, stripMini(r?.display || id)));
     });
-    const marker = el("div", { class: "marker", "data-v": score, style: { left: `calc(${pos(score)}% )` } });
-    const slider = el("input", { type: "range", min: MIN, max: MAX, value: score, style: { width: "100%", marginTop: "8px" } });
-    slider.addEventListener("input", () => { score = +slider.value; marker.dataset.v = score; marker.style.left = pos(score) + "%"; result(); });
-    const res = el("div", { style: { marginTop: "8px" } });
+    const marker = el("div", { class: "marker", "data-v": score, style: { left: pos(score) + "%" } });
+    const slider = el("input", { type: "range", min: MIN, max: MAX, value: score, "aria-label": "Score", style: { width: "calc(100% - 24px)", margin: "12px 12px 0" } });
+    const res = el("div", { class: "row", style: { margin: "12px 0 6px" } });
     const result = () => {
       res.innerHTML = "";
       const outs = outcomesFor(score);
-      res.append(el("span", { class: "muted" }, `A score of ${score} gets: `), outs.length ? outs.map(([id, r]) => el("span", { class: "pill", style: { margin: "0 4px", cursor: "pointer" }, onclick: () => edit(id) }, miniInline(r.display || id))) : el("span", { class: "muted" }, "nothing"));
-      res.append(el("div", { class: "small faint" }, "Rules with conditions (streak, rank, statuses…) also need those to match."));
+      res.append(el("span", { class: "muted" }, `A score of ${score} gets`), ...(outs.length ? outs.map(([id, r]) => el("a", { href: "#/outcomes/" + id, style: { textDecoration: "none" } }, mcName(r.display || id))) : [el("span", { class: "muted" }, "nothing")]));
     };
-    const bandsWrap = el("div", { style: { position: "relative" } }, bands, el("div", { style: { position: "absolute", inset: "0 10px", pointerEvents: "none" } }, marker));
-    wrap.append(axis, bandsWrap);
-    line.append(el("h4", {}, "Score line"), wrap, slider, res);
+    slider.addEventListener("input", () => { score = +slider.value; marker.dataset.v = score; marker.style.left = pos(score) + "%"; result(); });
+    lineBox.append(el("div", { class: "scoreline" }, axis, el("div", { style: { position: "relative" } }, bands, el("div", { style: { position: "absolute", inset: "0 12px", pointerEvents: "none" } }, marker))), slider, res,
+      el("div", { class: "small faint" }, "Rules with conditions also need those to match."));
     result();
-    list.innerHTML = "";
-    for (const [id, r] of rules) {
-      const acts = Array.isArray(r?.actions) ? r.actions : r?.actions ? [r.actions] : [];
-      list.append(el("div", { class: "card click", onclick: () => edit(id) },
-        el("div", { class: "row" }, el("div", { class: "grow" }, mcText(r?.display || id)), r?.enabled === false ? badge("off", "plain") : null, badge(describeRange(r?.score), parseRange(r?.score).max < 0 ? "bad" : "good")),
-        el("div", { class: "small muted", style: { marginTop: "8px" } }, typeof r?.actions === "string" ? "runs the list “" + r.actions + "”" : acts.length + " action" + (acts.length === 1 ? "" : "s") + ": " + acts.slice(0, 3).map(summarize).join(" · ")),
-        r?.conditions ? el("div", { class: "small faint" }, "conditions: " + JSON.stringify(r.conditions)) : null));
-    }
+    listBox.innerHTML = "";
+    const items = el("div", { class: "items" });
+    rules.forEach(([id, r], i) => {
+      const acts = typeof r?.actions === "string" ? "Runs the list " + r.actions : (Array.isArray(r?.actions) ? r.actions : r?.actions ? [r.actions] : []).map(summarize).join(", ") || "Does nothing";
+      items.append(el("div", { class: "item" + (r?.enabled === false ? " off" : ""), onclick: () => edit(id) },
+        el("span", { style: { width: "10px", height: "28px", borderRadius: "3px", background: PAL[i % PAL.length], flex: "none" } }),
+        el("div", { class: "main" }, el("div", { class: "t1" }, mcName(r?.display || id)), el("div", { class: "t2" }, acts)),
+        el("div", { class: "end" }, describeRange(r?.score), r?.conditions ? el("div", {}, "with conditions") : null, r?.enabled === false ? el("div", {}, "Off") : null)));
+    });
+    items.append(el("button", { class: "addrow", onclick: addRule }, icon("plus"), "New rule"));
+    listBox.append(el("section", { class: "group" }, el("header", {}, el("h2", {}, "Rules")), items));
   };
   const edit = (id) => {
     const base = "rules." + id;
+    const groups = [...new Set(Object.values(S.get("outcomes.yml", "rules") || {}).map((r) => r?.group).filter(Boolean))];
+    const r = S.get("outcomes.yml", base) || {};
+    const pun = r.punishment === undefined ? "auto" : r.punishment ? "yes" : "no";
+    const groupRow = el("div", { class: "field", "data-key": "outcomes.yml#" + base + ".group" }, el("div", { class: "lab" }, el("span", { class: "name" }, "Competes in"), el("div", { class: "hint" }, "Only the strongest rule in a group applies.")),
+      el("div", { class: "ctl" }, select([["", parseRange(r.score).max < 0 ? "Punishments" : "Rewards"], ...groups.map((g) => [g, humanize(g)]), ["+", "A new group"]], r.group || "", async (v) => {
+        if (v === "+") { const g = await promptDialog("New group", "Name:", "", { check: (x) => (/^[a-z0-9-]+$/i.test(x) ? null : "Letters, numbers and dashes.") }); if (g) S.set("outcomes.yml", base + ".group", g); edit(id); return; }
+        S.set("outcomes.yml", base + ".group", v || undefined);
+      })));
+    const priRow = el("div", { class: "field" }, el("div", { class: "lab" }, el("span", { class: "name" }, "Priority"), el("div", { class: "hint" }, "Auto: further from 0 wins.")),
+      el("div", { class: "ctl" }, el("div", { class: "row" }, switchCtl(r.priority === undefined, (auto) => { S.set("outcomes.yml", base + ".priority", auto ? undefined : 10); edit(id); }, "Automatic priority"), el("span", { class: "muted" }, "Auto"),
+        r.priority !== undefined ? numberCtl(r.priority, (v) => S.set("outcomes.yml", base + ".priority", v), { step: 1 }) : null)));
     const body = el("div", {},
-      field("outcomes.yml", base + ".display", { label: "Name", type: "mini" }),
-      field("outcomes.yml", base + ".score", { label: "Score range", type: "text", help: "5, 1..3, ..-1 (−1 or lower), 10.. (10 or more), >=2, <0", onChange: () => drawLine() }),
-      field("outcomes.yml", base + ".enabled", { label: "Enabled", type: "bool", onChange: () => drawLine() }),
-      field("outcomes.yml", base + ".punishment", { label: "Counts as a punishment (a shield blocks it)", type: "bool" }),
-      field("outcomes.yml", base + ".group", { label: "Group", type: "text", help: "Rules compete within a group in most-extreme mode (default: punishments or rewards)." }),
-      field("outcomes.yml", base + ".priority", { label: "Priority", type: "number", help: "Higher wins in most-extreme mode (default: how far the range is from 0)." }),
-      field("outcomes.yml", base + ".conditions", { label: "Conditions", type: "yaml", help: "Extra requirements, e.g.  streak: \"<=-3\"  or  rank: \"1..3\"" }));
-    body.prepend(el("div", { class: "row", style: { margin: "4px 0 10px" } }, btn("⚡ Edit actions", () => editActions("outcomes.yml", base + ".actions", { title: "Actions: " + id, hint: "Variables: <player> <score> <unique> <rank> <points> <streak> <cycle> <outcome> …" }), "primary"),
-      btn("Rename", async () => { const n = await promptDialog("Rename rule", "New ID:", id); if (n && n !== id) { S.rename("outcomes.yml", base, n); closeDrawer(); window.studio.refresh(); } }),
-      btn("Delete", async () => { if (await confirmDialog("Delete " + id + "?", "The rule and its actions are removed (undo with Ctrl+Z).", { ok: "Delete", danger: true })) { S.remove("outcomes.yml", base); closeDrawer(); window.studio.refresh(); } }, "danger")));
-    drawer("Rule: " + id, body, { onClose: () => drawLine() });
+      group(null,
+        field("outcomes.yml", base + ".display", { label: "Name", onChange: draw }),
+        el("div", { class: "field", "data-key": "outcomes.yml#" + base + ".score" }, el("div", { class: "lab" }, el("span", { class: "name" }, "Score")),
+          el("div", { class: "ctl" }, rangeCtl(r.score, (v) => { S.set("outcomes.yml", base + ".score", v); draw(); }))),
+        field("outcomes.yml", base + ".enabled", { label: "On", type: "bool", onChange: draw }),
+        el("div", { class: "field" }, el("div", { class: "lab" }, el("span", { class: "name" }, "A shield blocks it"), el("div", { class: "hint" }, "Auto: when the whole range is below 0.")),
+          el("div", { class: "ctl" }, seg([["auto", "Auto"], ["yes", "Yes"], ["no", "No"]], pun, (v) => S.set("outcomes.yml", base + ".punishment", v === "auto" ? undefined : v === "yes")))),
+        groupRow, priRow),
+      el("section", { class: "group" }, el("header", {}, el("h2", {}, "Only when")), el("div", { class: "sheet pad", style: { padding: "12px 18px" } }, conditionsCtl("outcomes.yml", base + ".conditions"))),
+      el("section", { class: "group" }, el("header", {}, el("h2", {}, "What happens")), actionList("outcomes.yml", base + ".actions", { vars: "outcome" })));
+    drawer(mcName(r.display || id), body, { subtitle: "Rule " + id, wide: true, onClose: draw,
+      footer: el("div", { class: "row", style: { width: "100%" } },
+        btn("Rename", async () => { const n = await promptDialog("Rename rule", "New ID:", id, { check: (v) => (!/^[a-z0-9][a-z0-9-]*$/i.test(v) ? "Use letters, numbers and dashes." : null) }); if (n && n !== id) { S.rename("outcomes.yml", base, n); closeDrawer(); edit(n); } }, "ghost"),
+        btn([icon("trash"), "Delete"], async () => { if (await confirmDialog("Delete " + id + "?", "The rule and its actions go. Undo brings them back.", { ok: "Delete", danger: true })) { S.remove("outcomes.yml", base); closeDrawer(); } }, "ghost danger"),
+        el("span", { class: "grow" }), btn("Done", () => closeDrawer(), "primary")) });
   };
-  drawLine();
+  draw();
+  if (params[0] && S.get("outcomes.yml", "rules." + params[0])) edit(params[0]);
 }
 
 export const setupPages = [
   { id: "overview", group: "Home", title: "Overview", icon: ICONS.home, render: overview },
-  { id: "cycle", group: "Set up", title: "Cycle & schedule", icon: ICONS.cycle, render: cyclePage, owns: ["config.yml:cycle", "config.yml:activity"] },
-  { id: "vault", group: "Set up", title: "Vault & heads", icon: ICONS.vault, render: vaultPage, owns: ["config.yml:vault", "config.yml:heads", "config.yml:duplicates", "config.yml:kills", "config.yml:points"] },
-  { id: "scoring", group: "Set up", title: "Scoring", icon: ICONS.score, render: scoringPage, owns: ["scoring.yml"] },
+  { id: "cycle", group: "Set up", title: "Cycle", icon: ICONS.cycle, render: cyclePage, owns: ["config.yml:cycle", "config.yml:activity"] },
+  { id: "vault", group: "Set up", title: "Vault and heads", icon: ICONS.vault, render: vaultPage, owns: ["config.yml:vault", "config.yml:heads", "config.yml:duplicates", "config.yml:kills"] },
+  { id: "scoring", group: "Set up", title: "Scoring", icon: ICONS.score, render: scoringPage, owns: ["scoring.yml", "config.yml:points"] },
   { id: "outcomes", group: "Set up", title: "Outcomes", icon: ICONS.outcome, render: outcomesPage, owns: ["outcomes.yml"] },
 ];

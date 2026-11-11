@@ -1,31 +1,56 @@
-// The action builder: edits any action list (hooks, outcomes, shop entries, named lists) as cards.
-import { el, btn, badge, drawer, closeDrawer, seg, switchCtl, chips, toast, promptDialog, confirmDialog, toYamlText, fromYamlText, SAMPLE, prefix, ICONS } from "./ui.js";
-import { renderMini, isObj, clone, parseDuration, formatDuration, stripMini } from "./core.js";
+// The action builder: edits any action list (hooks, outcomes, shop items, named lists) as cards, one per action,
+// with controls that fit each setting. It can sit inside another editor (actionList) or open in a drawer
+// (editActions). Also the conditions editor and the score-range control that rules and actions share.
+import { plain, el, btn, icon, iconBtn, drawer, closeDrawer, seg, select, switchCtl, chips, statusPicker, materialCtl, soundCtl, colorCtl, miniCtl, durationCtl,
+  numberCtl, toast, promptDialog, toYamlText, fromYamlText, sprite, humanize } from "./ui.js";
+import { isObj, clone, parseDuration, formatDuration, stripMini } from "./core.js";
 import * as S from "./store.js";
 
 const COMMON = ["duration", "time", "stacking", "key", "chance", "delay", "repeat", "conditions", "start-message", "end-message"];
-const NUM = new Set(["amount", "amplifier", "seconds", "ticks", "count", "volume", "pitch", "power", "radius", "charges", "points", "percent", "priority",
-  "food", "exhaustion", "luck", "claims", "progress", "speed", "height", "x", "z", "min-radius", "chance", "weight"]);
-const BOOL = new Set(["lock", "restore", "revert", "take-back", "ambient", "particles", "icon", "announce", "equip", "require-online", "levels", "console", "glint", "return"]);
-const ENUMS = {
-  time: ["real", "online"], stacking: ["refresh", "extend", "stack", "ignore"], state: ["on", "off"], when: ["now", "next-cycle"], cycle: ["current", "next"],
-  color: ["pink", "blue", "red", "green", "yellow", "purple", "white"], overlay: ["progress", "notched_6", "notched_10", "notched_12", "notched_20"],
-  direction: ["promote", "demote"], which: ["equipped", "all"], from: ["inventory", "enderchest", "both"], slot: ["head", "chest", "legs", "feet", "offhand"],
-  operation: ["add_number", "add_scalar", "multiply_scalar_1"],
-};
-const MINI = new Set(["text", "title", "subtitle", "message", "start-message", "end-message", "reason", "name"]);
-const LISTS = new Set(["commands", "deny", "worlds", "items", "allowed-commands", "revert-commands"]);
-const YAMLS = new Set(["conditions", "actions", "choices", "item", "random", "display"]);
+const NUM = new Set(["amplifier", "seconds", "ticks", "count", "volume", "pitch", "power", "radius", "charges", "points", "percent", "priority",
+  "food", "exhaustion", "luck", "claims", "progress", "speed", "height", "x", "z", "min-radius", "chance", "weight", "offset", "fade-in-ticks"]);
+const BOOL = new Set(["lock", "restore", "revert", "take-back", "ambient", "particles", "icon", "announce", "equip", "require-online", "levels", "console", "glint", "return", "damage", "value"]);
+const MINI = new Set(["text", "title", "subtitle", "message", "start-message", "end-message", "reason", "name", "prefix", "suffix"]);
+const LISTS = new Set(["commands", "worlds", "items", "allowed-commands", "revert-commands"]);
+const YAMLS = new Set(["choices", "item", "random", "display", "pdc", "enchants"]);
+const OPEN = new Set(["audience", "to", "countdown-to", "amount", "owner", "starting-heads", "vault-size"]);
+const EFFECTS = ["speed", "slowness", "haste", "mining_fatigue", "strength", "instant_health", "instant_damage", "jump_boost", "nausea", "regeneration", "resistance",
+  "fire_resistance", "water_breathing", "invisibility", "blindness", "night_vision", "hunger", "weakness", "poison", "wither", "health_boost", "absorption", "saturation",
+  "glowing", "levitation", "luck", "unluck", "slow_falling", "conduit_power", "dolphins_grace", "bad_omen", "hero_of_the_village", "darkness", "trial_omen", "raid_omen",
+  "wind_charged", "weaving", "oozing", "infested"];
 /** Settings the docs table doesn't spell out, by type. */
 const EXTRA = {
   "give-item": ["material", "item", "amount", "to", "take-back"], "take-item": ["material", "name-contains", "lore-contains", "custom", "amount", "from", "return"],
   equip: ["slot", "material", "item", "lock"], teleport: ["to", "world", "random", "return"], deny: ["deny", "commands", "allowed-commands", "items", "worlds", "message"],
   "give-heads": ["owner", "amount", "cycle", "to"], console: ["command", "commands", "revert-commands", "require-online"], "player-command": ["command", "commands", "revert-commands"],
-  run: ["list", "actions"], random: ["choices"], potion: ["effect", "amplifier", "seconds", "ambient", "particles", "icon"], points: ["amount", "when", "revert"],
+  run: ["list"], random: ["choices"], potion: ["effect", "amplifier", "seconds", "ambient", "particles", "icon"], points: ["amount", "when", "revert"],
   "next-cycle": ["starting-heads", "vault-size"], rollover: ["percent", "add"], bounty: ["points", "actions", "claims", "announce"], pvp: ["state", "lock", "restore"],
 };
-const GROUP_ICON = { "Messages and effects": "✉", Commands: "›", Items: "▣", Currency: "◎", "Permissions and ranks": "⚿", Titles: "✎", Moderation: "⚖", PvP: "⚔",
-  "Buffs and debuffs": "✧", Headcount: "☻", Flow: "↻" };
+const DESC = {
+  message: "Chat message", broadcast: "Message to everyone", title: "Big text on screen", actionbar: "Text above the hotbar", sound: "Play a sound",
+  particle: "Particles around them", bossbar: "Boss bar at the top", discord: "Post to Discord", "broadcast-location": "Announce where they are",
+  console: "Run a console command", "player-command": "They run a command", "give-item": "Give an item", "take-item": "Take items away", equip: "Put an item on them",
+  "give-heads": "Give economy heads", loot: "Roll a loot table", experience: "Give or take XP", points: "Give or take points", money: "Give or take money",
+  permission: "Add or remove a permission", group: "Add or remove a group", "primary-group": "Set the main group", track: "Promote or demote", prefix: "Set a chat prefix",
+  suffix: "Set a chat suffix", "grant-title": "Give a title", "revoke-title": "Take a title", "strip-title": "Unequip titles", "force-title": "Lock a title on them",
+  ban: "Ban them", mute: "Mute them", warn: "Warn them", kick: "Kick them", jail: "Send them to jail", pvp: "Switch their PvP", potion: "Potion effect",
+  attribute: "Change an attribute", glowing: "Make them glow", fire: "Set them on fire", lightning: "Strike lightning", freeze: "Freeze them", hunger: "Change hunger",
+  gamemode: "Change game mode", teleport: "Teleport them", heal: "Heal them", feed: "Feed them", damage: "Hurt them", launch: "Launch them upward",
+  "clear-effects": "Remove potion effects", deny: "Block things they do", "next-cycle": "Change their next cycle", rollover: "Keep more points next cycle",
+  "head-protection": "Keep their head on death", "extra-heads": "Drop more heads on death", bounty: "Put a bounty on them", shield: "Block the next punishment",
+  flag: "Set or clear a flag", "score-bonus": "Add to this cycle's score", run: "Run an action list", random: "Pick one at random",
+};
+const SPRITE = {
+  message: "paper", broadcast: "bell", title: "item_frame", actionbar: "oak_sign", sound: "note_block", particle: "blaze_powder", bossbar: "ender_eye", discord: "amethyst_shard",
+  "broadcast-location": "compass", console: "command_block", "player-command": "feather", "give-item": "chest", "take-item": "hopper", equip: "iron_chestplate",
+  "give-heads": "player_head", loot: "chest", experience: "experience_bottle", points: "sunflower", money: "gold_nugget", permission: "trial_key", group: "lead",
+  "primary-group": "lead", track: "rail", prefix: "name_tag", suffix: "name_tag", "grant-title": "name_tag", "revoke-title": "shears", "strip-title": "shears",
+  "force-title": "carved_pumpkin", ban: "barrier", mute: "white_wool", warn: "goat_horn", kick: "iron_boots", jail: "iron_bars", pvp: "iron_sword", potion: "potion",
+  attribute: "golden_apple", glowing: "glowstone_dust", fire: "flint_and_steel", lightning: "trident", freeze: "powder_snow_bucket", hunger: "rotten_flesh",
+  gamemode: "grass_block", teleport: "ender_pearl", heal: "glistering_melon_slice", feed: "cooked_beef", damage: "cactus", launch: "wind_charge", "clear-effects": "milk_bucket",
+  deny: "structure_void", "next-cycle": "clock", rollover: "chest_minecart", "head-protection": "turtle_helmet", "extra-heads": "skeleton_skull", bounty: "crossbow",
+  shield: "iron_chestplate", flag: "redstone", "score-bonus": "lapis_lazuli", run: "repeater", random: "rabbit_foot",
+};
 
 export function types() {
   const map = {};
@@ -35,6 +60,18 @@ export function types() {
   return map;
 }
 export const listNames = () => Object.keys(S.get("actions.yml", "lists") || {});
+
+/** Each setting's choices and default, read from the catalog's settings text. */
+const parsed = new Map();
+function settingsOf(type) {
+  if (parsed.has(type)) return parsed.get(type);
+  const text = types()[type]?.settingsText || "";
+  const out = {};
+  for (const m of text.matchAll(/`([a-z0-9-]+)`:\s*((?:`[^`]+`(?:\s*\([^)]*\))?(?:,\s*|\s+or\s+|,\s*or\s+)?)+)/g)) out[m[1]] = { options: [...m[2].matchAll(/`([^`]+)`/g)].map((x) => x[1]) };
+  for (const m of text.matchAll(/`([a-z0-9-]+):\s*([^`]+)`/g)) if (!out[m[1]]) out[m[1]] = { def: m[2].replace(/^"|"$/g, "") };
+  parsed.set(type, out);
+  return out;
+}
 
 /** An action list entry as a card model: {form, type, data}. */
 export function normalize(item) {
@@ -69,224 +106,309 @@ export function denormalize(c) {
 /** A one-line summary of an action, for cards and lists. */
 export function summarize(item) {
   const c = normalize(item);
-  if (c.form === "ref") return `run list "${c.data.list}"`;
+  if (c.form === "ref") return `Run the list ${c.data.list}`;
   const T = types()[c.type];
   const main = T?.main ? c.data[T.main] : undefined;
-  let s = c.type;
-  if (main !== undefined && main !== null) s += ": " + (Array.isArray(main) ? main.map(stripMini).join(" / ") : stripMini(typeof main === "object" ? JSON.stringify(main) : main));
-  if (c.data.duration) s += ` (${c.data.duration})`;
-  return s.length > 90 ? s.slice(0, 87) + "…" : s;
+  let s = DESC[c.type] || c.type;
+  if (main !== undefined && main !== null && main !== "") s = (DESC[c.type] ? c.type.replace(/-/g, " ").replace(/^\w/, (x) => x.toUpperCase()) : c.type) + ": " + (Array.isArray(main) ? main.map(plain).join(" / ") : plain(typeof main === "object" ? JSON.stringify(main) : main));
+  return s.length > 90 ? s.slice(0, 87) + "..." : s;
+}
+const DUR_WORD = { cycle: "until the cycle ends", death: "until they die", permanent: "for good", manual: "until removed" };
+function meta(c) {
+  const d = c.data;
+  const out = [];
+  if (d.duration !== undefined && d.duration !== "instant") out.push(DUR_WORD[d.duration] || (String(d.duration).startsWith("cycles:") ? "for " + String(d.duration).slice(7) + " cycles" : "for " + d.duration));
+  if (d.chance !== undefined && +d.chance < 100) out.push(d.chance + "% chance");
+  if (d.delay) out.push("after " + d.delay);
+  if (d.repeat) out.push("every " + d.repeat);
+  if (d.conditions) out.push("only when " + Object.keys(d.conditions).join(", "));
+  return out.join(", ");
 }
 
-function kindOf(key, value) {
-  if (key === "duration") return "duration";
-  if (typeof value === "boolean" || BOOL.has(key)) return "bool";
-  if (typeof value === "number" || NUM.has(key)) return "number";
-  if (ENUMS[key]) return "enum";
-  if (Array.isArray(value) ? value.every((x) => !isObj(x)) && LISTS.has(key) : LISTS.has(key)) return "list";
-  if (isObj(value) || Array.isArray(value) || YAMLS.has(key)) return "yaml";
-  if (MINI.has(key) || /<[a-z#\/]/i.test(String(value ?? ""))) return "mini";
-  if (key === "material") return "material";
-  return "text";
-}
-
-/** The duration picker: instant | a time | cycle | cycles:N | death | permanent | manual. */
-function durationCtl(value, onChange) {
-  const v = value === undefined || value === null ? "instant" : String(value);
-  const mode = ["instant", "cycle", "death", "permanent", "manual"].includes(v) ? v : v.startsWith("cycles:") ? "cycles" : "time";
-  const box = el("div");
-  const extra = el("div", { style: { marginTop: "6px" } });
-  const drawExtra = (m, cur) => {
-    extra.innerHTML = "";
-    if (m === "time") {
-      const inp = el("input", { type: "text", value: mode === "time" ? v : "30m", style: { maxWidth: "160px" } });
-      const hint = el("span", { class: "small muted", style: { marginLeft: "8px" } });
-      const upd = () => { const ms = parseDuration(inp.value); hint.textContent = isNaN(ms) ? "e.g. 30s, 10m, 2h, 3d, 1h30m" : "= " + formatDuration(ms); };
-      inp.addEventListener("input", () => { upd(); if (!isNaN(parseDuration(inp.value))) onChange(inp.value); });
-      upd();
-      extra.append(el("div", { class: "row" }, inp, hint));
-    } else if (m === "cycles") {
-      const inp = el("input", { type: "number", min: 1, value: mode === "cycles" ? v.slice(7) : 2, style: { maxWidth: "100px" } });
-      inp.addEventListener("input", () => { if (+inp.value >= 1) onChange("cycles:" + Math.floor(+inp.value)); });
-      extra.append(el("div", { class: "row" }, inp, el("span", { class: "small muted" }, "cycle ends")));
+// ---------------------------------------------------------------- shared controls
+/** A score range ("..-1", "1..3", ">=2", "5") as a comparison and numbers. */
+export function rangeCtl(value, onChange) {
+  const s = String(value ?? "").trim();
+  let mode = "custom", a = "", b = "";
+  const opStyle = /^[<>!=]/.test(s);
+  let m;
+  if (/^-?\d+(\.\d+)?$/.test(s)) { mode = "eq"; a = s; }
+  else if ((m = /^(-?\d+(?:\.\d+)?)\.\.$/.exec(s)) || (m = /^>=\s*(-?\d+(?:\.\d+)?)$/.exec(s))) { mode = "ge"; a = m[1]; }
+  else if ((m = /^\.\.(-?\d+(?:\.\d+)?)$/.exec(s)) || (m = /^<=\s*(-?\d+(?:\.\d+)?)$/.exec(s))) { mode = "le"; a = m[1]; }
+  else if ((m = /^(-?\d+(?:\.\d+)?)\.\.(-?\d+(?:\.\d+)?)$/.exec(s))) { mode = "between"; a = m[1]; b = m[2]; }
+  else if ((m = /^>\s*(-?\d+(?:\.\d+)?)$/.exec(s))) { mode = "gt"; a = m[1]; }
+  else if ((m = /^<\s*(-?\d+(?:\.\d+)?)$/.exec(s))) { mode = "lt"; a = m[1]; }
+  else if ((m = /^!=\s*(-?\d+(?:\.\d+)?)$/.exec(s))) { mode = "ne"; a = m[1]; }
+  else if (!s) { mode = "ge"; a = "1"; }
+  const box = el("div", { class: "row", style: { flexWrap: "nowrap" } });
+  const write = () => {
+    const A = String(+a || 0), B = String(+b || 0);
+    const v = { eq: A, ge: opStyle ? ">=" + A : A + "..", le: opStyle ? "<=" + A : ".." + A, between: A + ".." + B, gt: ">" + A, lt: "<" + A, ne: "!=" + A }[mode];
+    if (v !== undefined) onChange(v);
+  };
+  const draw = () => {
+    box.innerHTML = "";
+    box.append(select([["eq", "Exactly"], ["ge", "At least"], ["le", "At most"], ["between", "From"], ["gt", "Above"], ["lt", "Below"], ["ne", "Not"], ["custom", "Written as"]], mode, (v) => {
+      if (mode === "custom" && v !== "custom") a = a || "0";
+      mode = v; draw(); if (v !== "custom") write();
+    }));
+    if (mode === "custom") { const t = el("input", { type: "text", value: s, style: { width: "140px" }, spellcheck: "false" }); t.addEventListener("input", () => onChange(t.value)); box.append(t); return; }
+    const n1 = el("input", { type: "number", value: a, style: { width: "90px" }, "aria-label": "Value" });
+    n1.addEventListener("input", () => { a = n1.value; write(); });
+    box.append(n1);
+    if (mode === "between") {
+      const n2 = el("input", { type: "number", value: b, style: { width: "90px" }, "aria-label": "To" });
+      n2.addEventListener("input", () => { b = n2.value; write(); });
+      box.append(el("span", { class: "muted" }, "to"), n2);
     }
   };
-  const help = { instant: "happens once", time: "for a while, then undone", cycle: "until this cycle ends", cycles: "for N cycle ends", death: "until the player dies",
-    permanent: "never undone", manual: "until an admin removes it" };
-  const note = el("div", { class: "small muted", style: { marginTop: "4px" } }, help[mode]);
-  box.append(seg(["instant", "time", "cycle", "cycles", "death", "permanent", "manual"], mode, (m) => {
-    note.textContent = help[m];
+  draw();
+  return box;
+}
+
+const COND = [["statuses", "Has every status"], ["any-statuses", "Has one of"], ["score", "Score"], ["streak", "Streak"], ["rank", "Rank"], ["points", "Points"],
+  ["unique", "Unique heads"], ["active", "Was active"], ["permission", "Has permission"], ["expression", "Formula is true"]];
+/** The conditions of a rule or action as rows, one per condition, with an add menu. */
+export function conditionsEditor(value, onChange) {
+  let cond = isObj(value) ? { ...value } : {};
+  const box = el("div", { class: "cond" });
+  const write = () => onChange(Object.keys(cond).length ? { ...cond } : undefined);
+  const draw = () => {
+    box.innerHTML = "";
+    for (const k of Object.keys(cond)) {
+      const label = COND.find((c) => c[0] === k)?.[1] || humanize(k);
+      const set = (v) => { if (v === undefined) delete cond[k]; else cond[k] = v; write(); };
+      let ctl;
+      if (k === "statuses" || k === "any-statuses") ctl = statusPicker([].concat(cond[k] || []), (v) => set(v));
+      else if (["score", "streak", "rank", "points", "unique"].includes(k)) ctl = rangeCtl(cond[k], set);
+      else if (k === "active") ctl = seg([[true, "Yes"], [false, "No"]], String(cond[k] !== false), (v) => set(v === true || v === "true"));
+      else if (k === "expression" || k === "permission") { ctl = el("input", { type: "text", value: cond[k] ?? "", spellcheck: "false", style: { fontFamily: "var(--mono)", fontSize: "13.5px" } }); ctl.addEventListener("input", () => set(ctl.value)); }
+      else { ctl = el("textarea", { rows: 2, spellcheck: "false" }); ctl.value = toYamlText(cond[k]); ctl.addEventListener("input", () => { try { set(fromYamlText(ctl.value)); } catch (e) { /* not valid yet */ } }); }
+      box.append(el("div", { class: "crow" }, el("b", {}, label), el("div", { class: "grow" }, ctl), iconBtn("close", "Remove this condition", () => { delete cond[k]; write(); draw(); }, "sm")));
+    }
+    const free = COND.filter(([k]) => !(k in cond));
+    box.append(el("div", {}, select(free.map(([k, l]) => [k, l]), "", (k) => { if (!k) return; cond[k] = k === "active" ? true : k.includes("statuses") ? [] : ["score", "streak", "rank", "points", "unique"].includes(k) ? "1.." : ""; write(); draw(); },
+      { placeholder: Object.keys(cond).length ? "Add a condition" : "Always. Add a condition" })));
+  };
+  draw();
+  return box;
+}
+export function conditionsCtl(file, path) { return conditionsEditor(S.get(file, path), (v) => S.set(file, path, v)); }
+
+/** An action duration: once, a time, until the cycle ends, N cycles, until death, for good, or until removed. */
+function actionDuration(value, onChange) {
+  const v = value === undefined || value === null ? "instant" : String(value);
+  const mode = ["instant", "cycle", "death", "permanent", "manual"].includes(v) ? v : v.startsWith("cycles:") ? "cycles" : "time";
+  const box = el("div", { style: { display: "grid", gap: "8px", width: "100%" } });
+  const extra = el("div");
+  const drawExtra = (m) => {
+    extra.innerHTML = "";
+    if (m === "time") extra.append(durationCtl(mode === "time" ? v : "30m", (x) => onChange(x), { units: ["s", "m", "h", "d"] }));
+    if (m === "cycles") extra.append(numberCtl(mode === "cycles" ? +v.slice(7) : 2, (n) => { if (n >= 1) onChange("cycles:" + Math.floor(n)); }, { unit: "cycle ends", min: 1, step: 1 }));
+  };
+  box.append(select([["instant", "Once, nothing to undo"], ["time", "For a while"], ["cycle", "Until the cycle ends"], ["cycles", "For a number of cycles"], ["death", "Until they die"],
+    ["permanent", "For good"], ["manual", "Until an admin removes it"]], mode, (m) => {
     drawExtra(m);
     if (m === "time") onChange("30m"); else if (m === "cycles") onChange("cycles:2"); else onChange(m === "instant" ? undefined : m);
-  }), extra, note);
+  }), extra);
   drawExtra(mode);
   return box;
 }
 
-function settingRow(key, value, onChange, { main } = {}) {
-  const kind = kindOf(key, value);
+function settingRow(type, key, value, onChange, { main, vars } = {}) {
+  const info = settingsOf(type)[key] || {};
   const ctl = el("div", { class: "ctl" });
-  let preview = null;
-  switch (kind) {
-    case "duration": ctl.append(durationCtl(value, onChange)); break;
-    case "bool": ctl.append(switchCtl(!!value, onChange)); break;
-    case "number": { const i = el("input", { type: "number", step: "any", value: value ?? "" }); i.addEventListener("input", () => onChange(i.value === "" ? undefined : +i.value)); ctl.append(i); break; }
-    case "enum": ctl.append(el("select", { onchange: (e) => onChange(e.target.value || undefined) }, el("option", { value: "" }, "(default)"), ENUMS[key].map((o) => el("option", { value: o, selected: String(value) === o }, o)))); break;
-    case "list": ctl.append(chips(Array.isArray(value) ? value : value ? [value] : [], (v) => onChange(v.length ? v : undefined))); break;
-    case "yaml": {
-      const ta = el("textarea", { rows: Math.min(12, Math.max(3, toYamlText(value).split("\n").length + 1)), spellcheck: "false" });
-      ta.value = toYamlText(value);
-      const err = el("div", { class: "small", style: { color: "var(--bad)" } });
-      ta.addEventListener("input", () => { try { const v = ta.value.trim() ? fromYamlText(ta.value) : undefined; err.textContent = ""; onChange(v); } catch (x) { err.textContent = x.message; } });
-      ctl.append(ta, err);
-      if (key === "actions") ctl.append(el("div", { class: "small muted" }, "A nested action list (YAML)."));
-      break;
-    }
-    default: {
-      const multi = Array.isArray(value) || (typeof value === "string" && value.includes("\n"));
-      const inp = multi ? el("textarea", { rows: 3 }) : el("input", { type: "text", list: kind === "material" ? "materials" : null });
-      inp.value = Array.isArray(value) ? value.join("\n") : value ?? "";
-      if (kind === "mini") preview = el("div", { class: "mc", style: { marginTop: "5px" } });
-      const upd = () => { if (preview) preview.innerHTML = renderMini(inp.value, { vars: SAMPLE, prefix: prefix() }); };
-      inp.addEventListener("input", () => {
-        upd();
-        const v = inp.value;
-        onChange(Array.isArray(value) || (multi && v.includes("\n") && key === "text") ? v.split("\n") : v === "" ? undefined : v);
-      });
-      upd();
-      ctl.append(inp);
-      if (preview) ctl.append(preview);
-    }
+  const titles = Object.keys(S.get("titles.yml", "titles") || {});
+  const set = (v) => onChange(v === "" ? undefined : v);
+  if (key === "duration") ctl.append(actionDuration(value, onChange));
+  else if (key === "chance") ctl.append(numberCtl(value ?? 100, (v) => onChange(v >= 100 ? undefined : v), { unit: "%", min: 0, max: 100, step: 1, slider: [0, 100] }));
+  else if (key === "delay" || key === "repeat" || (["fade-in", "stay", "fade-out", "seconds"].includes(key) && typeof value === "string")) {
+    ctl.append(value === undefined ? btn([icon("plus"), key === "delay" ? "Add a delay" : key === "repeat" ? "Repeat it" : "Set"], () => onChange(key === "delay" ? "5s" : key === "repeat" ? "5m" : "1s"), "ghost small")
+      : el("div", { class: "row" }, durationCtl(value, onChange, { units: ["s", "m", "h", "d"] }), iconBtn("close", "Remove", () => onChange(undefined), "sm")));
   }
-  return el("div", { class: "field" }, el("div", {}, el("div", { class: "lbl" }, key, main ? el("span", { class: "badge plain", style: { marginLeft: "6px" } }, "main") : null)), ctl);
+  else if (key === "time") ctl.append(seg([["real", "Real time"], ["online", "Only while online"]], value ?? "real", (v) => onChange(v === "real" ? undefined : v)));
+  else if (key === "stacking") ctl.append(select([["refresh", "Restart its timer"], ["extend", "Add the time"], ["stack", "Run another copy"], ["ignore", "Do nothing"]], value ?? "refresh", (v) => onChange(v === "refresh" ? undefined : v)));
+  else if (key === "conditions") ctl.append(conditionsEditor(value, onChange));
+  else if (key === "list") ctl.append(select(listNames(), value ?? "", set, { placeholder: "Pick a list" }));
+  else if (key === "title" && ["grant-title", "revoke-title", "force-title"].includes(type)) ctl.append(select(titles, value ?? "", set, { placeholder: "Pick a title" }));
+  else if (key === "effect" && type === "potion") ctl.append(select(EFFECTS.map((e) => [e, humanize(e)]), value ?? "", set, { placeholder: "Pick an effect" }));
+  else if (key === "sound") ctl.append(soundCtl(value, set));
+  else if (key === "material") ctl.append(materialCtl(value, set, { allowEmpty: true }));
+  else if (key === "items" && type === "deny") ctl.append(chips([].concat(value ?? []), (v) => onChange(v.length ? v : undefined), { placeholder: "MATERIAL", suggestions: [] }));
+  else if (key === "color") ctl.append(colorCtl(value ?? "", set, { names: ["pink", "blue", "red", "green", "yellow", "purple", "white"] }));
+  else if (key === "deny" && info.options) {
+    const cur = [].concat(value ?? []);
+    const box = el("div", { class: "row gap-s" });
+    for (const o of info.options) {
+      const on = cur.includes(o);
+      box.append(el("button", { type: "button", class: "btn small" + (on ? " primary" : ""), onclick: () => { const n = on ? cur.filter((x) => x !== o) : [...cur, o]; onChange(n.length ? n : undefined); rowEl.replaceWith(settingRow(type, key, n.length ? n : undefined, onChange)); } }, humanize(o)));
+    }
+    ctl.append(box);
+  }
+  else if (key === "actions") ctl.append(actionEditor(value, (v) => onChange(v && v.length ? v : undefined), { nested: true }));
+  else if (info.options && (OPEN.has(key) || info.options.some((o) => /[<\[,]/.test(o)))) {
+    const id = "o" + Math.random().toString(36).slice(2);
+    const inp = el("input", { type: "text", value: value ?? "", list: id, spellcheck: "false", placeholder: info.options[0] });
+    inp.addEventListener("input", () => set(inp.value));
+    ctl.append(inp, el("datalist", { id }, info.options.map((o) => el("option", { value: o }))));
+  }
+  else if (info.options && info.options.length <= 4) ctl.append(seg(info.options.map((o) => [o, humanize(o)]), value ?? "", set));
+  else if (info.options) ctl.append(select(info.options.map((o) => [o, humanize(o)]), value ?? "", set, { placeholder: "Default" }));
+  else if (typeof value === "boolean" || BOOL.has(key) || info.def === "true" || info.def === "false") ctl.append(switchCtl(value ?? info.def === "true", onChange, key));
+  else if (typeof value === "number" || NUM.has(key) || (info.def !== undefined && /^-?\d+(\.\d+)?$/.test(info.def))) {
+    const i = el("input", { type: "number", step: "any", value: value ?? "", placeholder: info.def ?? "" });
+    i.addEventListener("input", () => onChange(i.value === "" ? undefined : +i.value));
+    ctl.append(i);
+  }
+  else if (LISTS.has(key)) ctl.append(chips([].concat(value ?? []), (v) => onChange(v.length ? v : undefined)));
+  else if (YAMLS.has(key) || isObj(value) || (Array.isArray(value) && value.some(isObj))) {
+    const ta = el("textarea", { rows: Math.min(12, Math.max(3, toYamlText(value).split("\n").length + 1)), spellcheck: "false" });
+    ta.value = toYamlText(value);
+    const err = el("div", { class: "err" });
+    ta.addEventListener("input", () => { try { const v = ta.value.trim() ? fromYamlText(ta.value) : undefined; err.textContent = ""; onChange(v); } catch (x) { err.textContent = x.message; } });
+    ctl.append(ta, err);
+  }
+  else if (MINI.has(key) || /<[a-z#\/]/i.test(String(value ?? ""))) ctl.append(miniCtl(value ?? "", (v) => onChange(Array.isArray(v) ? (v.length ? v : undefined) : v === "" ? undefined : v), { vars, list: Array.isArray(value), multiline: key === "text" }));
+  else {
+    const inp = el("input", { type: "text", value: value ?? "", spellcheck: "false", placeholder: info.def ?? "", style: /command|permission|key|flag|table|group|track|node/.test(key) ? { fontFamily: "var(--mono)", fontSize: "13.5px" } : null });
+    inp.addEventListener("input", () => set(inp.value));
+    ctl.append(inp);
+  }
+  const rowEl = el("div", { class: "field" + (key === "conditions" || key === "actions" ? " stack" : "") }, el("div", { class: "lab" }, el("span", { class: "name" }, LABEL[key] || humanize(key))), ctl);
+  return rowEl;
 }
+const LABEL = { "start-message": "When it starts", "end-message": "When it ends", time: "Time counts", stacking: "If already active", key: "Same-action key", chance: "Chance",
+  delay: "Delay", repeat: "Repeat every", conditions: "Only when", text: "Text", "take-back": "Take it back when it ends", "require-online": "Wait until they're online",
+  "revert-commands": "Commands to undo it", "countdown-to": "Counts down to", "fade-in": "Fade in", "fade-out": "Fade out", "min-amplifier": "Lowest level", amplifier: "Level (0 is I)" };
 
-/** A type picker with search, grouped. */
-function typePicker(onPick) {
+function typePicker(onPick, onCancel) {
   const T = types();
-  const q = el("input", { type: "search", placeholder: "Search 60 action types…" });
-  const list = el("div", { style: { maxHeight: "58vh", overflow: "auto", marginTop: "8px" } });
+  const q = el("input", { type: "search", placeholder: "Search actions", spellcheck: "false" });
+  const list = el("div");
   const draw = () => {
     list.innerHTML = "";
+    const s = q.value.trim().toLowerCase();
     const groups = {};
     for (const a of Object.values(T)) {
-      if (q.value && !(a.type + " " + a.settingsText + " " + a.group).toLowerCase().includes(q.value.toLowerCase())) continue;
+      if (s && !(a.type + " " + (DESC[a.type] || "") + " " + a.group).toLowerCase().includes(s)) continue;
       (groups[a.group] ||= []).push(a);
     }
-    for (const [g, as] of Object.entries(groups)) {
-      list.append(el("div", { class: "small", style: { fontWeight: 700, color: "var(--muted)", margin: "10px 0 4px", textTransform: "uppercase", letterSpacing: ".05em" } }, g));
-      for (const a of as) {
-        list.append(el("div", { class: "card click", style: { padding: "8px 12px", margin: "4px 0" }, onclick: () => onPick(a.type) },
-          el("div", { class: "row" }, el("span", { class: "typeicon" }, GROUP_ICON[a.group] || "⚡"), el("b", {}, a.type), el("span", { class: "small muted grow" }, a.settingsText.slice(0, 110)))));
-      }
-    }
-    // Named lists can be run too.
-    const names = listNames().filter((n) => !q.value || n.includes(q.value));
-    if (names.length) {
-      list.append(el("div", { class: "small", style: { fontWeight: 700, color: "var(--muted)", margin: "10px 0 4px", textTransform: "uppercase" } }, "Run a named list"));
-      for (const n of names) list.append(el("div", { class: "card click", style: { padding: "8px 12px", margin: "4px 0" }, onclick: () => onPick("@" + n) }, el("b", {}, n), " ", el("span", { class: "small muted" }, "from actions.yml")));
-    }
+    for (const [g, as] of Object.entries(groups)) list.append(el("div", { class: "typegroup" }, g), el("div", { class: "typegrid" }, as.map((a) => el("button", { type: "button", class: "typebtn", onclick: () => onPick(a.type) },
+      sprite(SPRITE[a.type] || "paper", 24), el("span", {}, el("b", {}, humanize(a.type)), el("small", {}, DESC[a.type] || a.settingsText.slice(0, 50)))))));
+    const names = listNames().filter((n) => !s || n.includes(s));
+    if (names.length) list.append(el("div", { class: "typegroup" }, "Your action lists"), el("div", { class: "typegrid" }, names.map((n) => el("button", { type: "button", class: "typebtn", onclick: () => onPick("@" + n) },
+      sprite("repeater", 24), el("span", {}, el("b", {}, n), el("small", {}, "From actions.yml"))))));
+    if (!list.children.length) list.append(el("div", { class: "empty" }, "No action matches."));
   };
   q.addEventListener("input", draw);
   draw();
   setTimeout(() => q.focus(), 30);
-  return el("div", {}, q, list);
+  return el("div", { class: "sheet", style: { padding: "12px 14px" } }, el("div", { class: "row", style: { flexWrap: "nowrap" } }, q, btn("Cancel", onCancel, "ghost")), list);
 }
 
 /**
- * Opens the action builder for the list at file/path. A string value (a named list's name) offers to edit that
- * list instead. Changes apply as you make them (undo with Ctrl+Z).
+ * An action list editor bound to a value. raw is the list (or a list name); onChange gets the new list. Used for
+ * hooks, rules, shop items, named lists and nested lists (bounty actions).
  */
-export function editActions(file, path, { title, hint, vars } = {}) {
-  const raw = S.get(file, path);
-  if (typeof raw === "string" && listNames().includes(raw)) {
-    const body = el("div", {}, el("p", {}, "This runs the named list ", el("b", {}, raw), " from actions.yml, which other places may use too."),
-      el("div", { class: "row" }, btn("Edit the list " + raw, () => editActions("actions.yml", "lists." + raw, { title: "List: " + raw }), "primary"),
-        btn("Copy it here instead", () => { S.set(file, path, clone(S.get("actions.yml", "lists." + raw)) || []); editActions(file, path, { title, hint }); })));
-    drawer(title || "Actions", body, { subtitle: file + " › " + path });
-    return;
+export function actionEditor(raw, onChange, { vars, nested } = {}) {
+  const box = el("div", { class: "acts-list" });
+  if (typeof raw === "string" && raw && !raw.includes(":")) {
+    const draw = () => {
+      box.innerHTML = "";
+      box.append(el("div", { class: "sheet", style: { padding: "14px 16px" } }, el("div", { class: "row" }, sprite("repeater", 28), el("div", { class: "grow" }, "Runs the action list ", el("b", {}, raw)),
+        select(listNames(), raw, (v) => { raw = v; onChange(v); draw(); })),
+        el("div", { class: "row", style: { marginTop: "12px" } }, btn("Edit " + raw, () => editActions("actions.yml", "lists." + raw, { title: "Action list " + raw })),
+          btn("Use its actions here instead", () => { const copy = clone(S.get("actions.yml", "lists." + raw)) || []; onChange(Array.isArray(copy) ? copy : [copy]); box.replaceWith(actionEditor(Array.isArray(copy) ? copy : [copy], onChange, { vars, nested })); }, "ghost"))));
+    };
+    draw();
+    return box;
   }
   let cards = (Array.isArray(raw) ? raw : raw === undefined || raw === null ? [] : [raw]).map(normalize);
   const openSet = new Set();
-  const commit = () => { S.set(file, path, cards.map(denormalize), file + "#" + path + "#actions"); };
-  const body = el("div");
-  let yamlMode = false;
+  let yamlMode = false, picking = false;
+  const commit = () => onChange(cards.map(denormalize));
   const draw = () => {
-    body.innerHTML = "";
-    if (hint) body.append(el("div", { class: "note", style: { marginBottom: "10px" } }, hint));
+    box.innerHTML = "";
     if (yamlMode) {
-      const ta = el("textarea", { rows: 24, spellcheck: "false" });
+      const ta = el("textarea", { rows: Math.max(8, toYamlText(cards.map(denormalize)).split("\n").length + 1), spellcheck: "false" });
       ta.value = toYamlText(cards.map(denormalize));
-      const err = el("div", { class: "small", style: { color: "var(--bad)" } });
+      const err = el("div", { class: "err" });
       ta.addEventListener("input", () => { try { const v = ta.value.trim() ? fromYamlText(ta.value) : []; cards = (Array.isArray(v) ? v : [v]).map(normalize); err.textContent = ""; commit(); } catch (x) { err.textContent = x.message; } });
-      body.append(ta, err);
+      box.append(ta, err, el("div", {}, btn("Back to cards", () => { yamlMode = false; draw(); }, "ghost small")));
       return;
     }
-    if (!cards.length) body.append(el("div", { class: "empty" }, "No actions yet. Add one below."));
     let dragIdx = null;
     cards.forEach((c, idx) => {
       const T = types()[c.type];
       const isOpen = openSet.has(idx);
-      const card = el("div", { class: "actioncard", draggable: "true" });
-      card.addEventListener("dragstart", () => { dragIdx = idx; card.classList.add("drag"); });
-      card.addEventListener("dragend", () => card.classList.remove("drag"));
-      card.addEventListener("dragover", (e) => { e.preventDefault(); card.classList.add("over"); });
+      const card = el("div", { class: "actioncard" + (isOpen ? " open" : "") });
+      const grip = el("span", { class: "grip", title: "Drag to reorder", draggable: "true" }, icon("grip"));
+      grip.addEventListener("dragstart", (e) => { dragIdx = idx; card.classList.add("drag"); e.dataTransfer.setData("text/plain", String(idx)); e.dataTransfer.setDragImage(card, 20, 20); });
+      grip.addEventListener("dragend", () => card.classList.remove("drag"));
+      card.addEventListener("dragover", (e) => { if (dragIdx !== null) { e.preventDefault(); card.classList.add("over"); } });
       card.addEventListener("dragleave", () => card.classList.remove("over"));
-      card.addEventListener("drop", (e) => { e.preventDefault(); card.classList.remove("over"); if (dragIdx !== null && dragIdx !== idx) { const [m] = cards.splice(dragIdx, 1); cards.splice(idx, 0, m); openSet.clear(); commit(); draw(); } });
-      const head = el("div", { class: "ah", onclick: () => { isOpen ? openSet.delete(idx) : openSet.add(idx); draw(); } },
-        el("span", { class: "grip", title: "Drag to reorder" }, "⠿"), el("span", { class: "typeicon" }, c.form === "ref" ? "↻" : GROUP_ICON[T?.group] || "⚡"),
-        el("div", { class: "grow" }, el("div", { style: { fontWeight: 600 } }, summarize(denormalize(c))),
-          T && T.online ? el("div", { class: "small faint" }, (T.online.startsWith("yes") ? "player must be online" : "works for offline players") + (T.undo && T.undo !== "-" ? " · undo: " + T.undo : "")) : null),
-        c.data.chance !== undefined && c.data.chance < 100 ? badge(c.data.chance + "%", "plain") : null,
-        c.data.duration ? badge(String(c.data.duration), "info") : null,
-        el("button", { class: "iconbtn", title: "Duplicate", onclick: (e) => { e.stopPropagation(); cards.splice(idx + 1, 0, clone(c)); commit(); draw(); } }, "⧉"),
-        el("button", { class: "iconbtn", title: "Delete", onclick: (e) => { e.stopPropagation(); cards.splice(idx, 1); openSet.clear(); commit(); draw(); } }, "🗑"));
+      card.addEventListener("drop", (e) => { e.preventDefault(); card.classList.remove("over"); if (dragIdx !== null && dragIdx !== idx) { const [m] = cards.splice(dragIdx, 1); cards.splice(idx, 0, m); openSet.clear(); commit(); draw(); } dragIdx = null; });
+      const spr = c.form === "ref" ? "repeater" : (["give-item", "equip", "take-item"].includes(c.type) && c.data.material) ? c.data.material : SPRITE[c.type] || "paper";
+      const t1 = el("div", { class: "t1" }, summarize(denormalize(c)));
+      const t2 = el("div", { class: "t2" }, meta(c));
+      const head = el("div", { class: "ah", onclick: (e) => { if (e.target.closest("button,.grip")) return; isOpen ? openSet.delete(idx) : openSet.add(idx); draw(); } },
+        grip, sprite(spr, 28), el("div", { class: "sum" }, t1, t2),
+        iconBtn("up", "Move up", () => { if (idx > 0) { [cards[idx - 1], cards[idx]] = [cards[idx], cards[idx - 1]]; openSet.clear(); commit(); draw(); } }, "sm"),
+        iconBtn("copy", "Duplicate", () => { cards.splice(idx + 1, 0, clone(c)); openSet.clear(); commit(); draw(); }, "sm"),
+        iconBtn("trash", "Delete", () => { cards.splice(idx, 1); openSet.clear(); commit(); draw(); }, "sm"),
+        el("span", { style: { color: "var(--ink-3)", display: "grid" } }, icon(isOpen ? "down" : "right")));
       card.append(head);
+      const refresh = () => { t1.textContent = summarize(denormalize(c)); t2.textContent = meta(c); };
       if (isOpen) {
         const ab = el("div", { class: "ab" });
-        if (c.form === "ref") {
-          ab.append(el("div", { class: "field" }, el("div", { class: "lbl" }, "List"),
-            el("div", { class: "ctl" }, el("select", { onchange: (e) => { c.data.list = e.target.value; commit(); draw(); } }, listNames().map((n) => el("option", { value: n, selected: n === c.data.list }, n))),
-              el("div", { class: "meta" }, el("button", { onclick: () => editActions("actions.yml", "lists." + c.data.list, { title: "List: " + c.data.list }) }, "edit this list")))));
-        } else {
-          ab.append(el("div", { class: "field" }, el("div", { class: "lbl" }, "Type"), el("div", { class: "ctl" },
-            el("select", { onchange: (e) => { c.type = e.target.value; c.form = "typed"; commit(); draw(); } }, Object.keys(types()).sort().map((t) => el("option", { value: t, selected: t === c.type }, t))),
-            T ? el("div", { class: "small muted", style: { marginTop: "4px" } }, T.settingsText) : el("div", { class: "small", style: { color: "var(--bad)" } }, "Unknown action type."))));
+        const upd = (k) => (v) => { if (v === undefined) delete c.data[k]; else c.data[k] = v; commit(); refresh(); };
+        if (c.form === "ref") ab.append(settingRow("run", "list", c.data.list, (v) => { c.data.list = v; commit(); refresh(); }));
+        else {
+          ab.append(el("div", { class: "field" }, el("div", { class: "lab" }, el("span", { class: "name" }, "Action")), el("div", { class: "ctl" },
+            select(Object.values(types()).reduce((gs, a) => { let g = gs.find((x) => x.group === a.group); if (!g) gs.push(g = { group: a.group, items: [] }); g.items.push([a.type, humanize(a.type)]); return gs; }, []), c.type, (v) => { c.type = v; c.form = "typed"; commit(); draw(); }),
+            T ? null : el("div", { class: "err" }, "Headcount has no action called " + c.type + "."))));
           const keys = [...new Set([T?.main, ...(T?.settings || []), ...(EXTRA[c.type] || []), ...Object.keys(c.data)].filter(Boolean))].filter((k) => !COMMON.includes(k));
-          for (const k of keys) ab.append(settingRow(k, c.data[k], (v) => { if (v === undefined) delete c.data[k]; else c.data[k] = v; commit(); refreshHead(); }, { main: k === T?.main }));
-          const opt = el("details", { class: "more" }, el("summary", {}, "Duration, chance, delay, repeat, conditions, messages"));
-          for (const k of COMMON) opt.append(settingRow(k, c.data[k], (v) => { if (v === undefined) delete c.data[k]; else c.data[k] = v; commit(); refreshHead(); }));
+          for (const k of keys) ab.append(settingRow(c.type, k, c.data[k], upd(k), { main: k === T?.main, vars }));
+          const opt = el("details", { class: "more" }, el("summary", {}, "Timing, chance and conditions"));
+          for (const k of COMMON) {
+            if (["time", "stacking", "key", "repeat", "start-message", "end-message"].includes(k) && (c.data.duration === undefined || c.data.duration === "instant") && c.data[k] === undefined) continue;
+            opt.append(settingRow(c.type, k, c.data[k], (v) => { upd(k)(v); if (k === "duration") draw(); }, { vars }));
+          }
           if (COMMON.some((k) => c.data[k] !== undefined)) opt.open = true;
           ab.append(opt);
         }
         card.append(ab);
       }
-      const refreshHead = () => { head.querySelector(".grow > div").textContent = summarize(denormalize(c)); };
-      body.append(card);
+      box.append(card);
     });
-    body.append(el("div", { class: "row", style: { marginTop: "10px" } }, btn("＋ Add action", () => {
-      const d = drawer("Add an action", typePicker((t) => {
-        closeDrawer();
-        if (t.startsWith("@")) cards.push({ form: "ref", type: "run", data: { list: t.slice(1) } });
-        else {
-          const T = types()[t];
-          const data = {};
-          if (T?.main) data[T.main] = /text|title|message/.test(T.main) ? "<yellow>Hello <player>!" : "";
-          cards.push({ form: T?.main ? "keyed" : "typed", type: t, data });
-        }
-        openSet.add(cards.length - 1);
-        commit();
-        reopen();
-      }), { onClose: () => {} });
-    }, "primary")));
+    if (picking) box.append(typePicker((t) => {
+      picking = false;
+      if (t.startsWith("@")) cards.push({ form: "ref", type: "run", data: { list: t.slice(1) } });
+      else {
+        const T = types()[t];
+        const data = {};
+        if (T?.main) data[T.main] = /text|title|message/.test(T.main) ? "<yellow>Hello <player>!" : "";
+        cards.push({ form: T?.main ? "keyed" : "typed", type: t, data });
+      }
+      openSet.add(cards.length - 1);
+      commit(); draw();
+    }, () => { picking = false; draw(); }));
+    else box.append(el("div", { class: "row" }, btn([icon("plus"), cards.length ? "Add an action" : "Add the first action"], () => { picking = true; draw(); }, nested ? "small" : ""), el("span", { class: "grow" }),
+      btn("Edit as YAML", () => { yamlMode = true; draw(); }, "ghost small")));
   };
-  let reopen;
-  const footer = el("div", { class: "row", style: { width: "100%" } },
-    el("span", { class: "small muted grow" }, "Changes apply as you edit. Ctrl+Z undoes."),
-    seg([["cards", "Cards"], ["yaml", "YAML"]], "cards", (m) => { yamlMode = m === "yaml"; draw(); }),
-    btn("Done", () => closeDrawer(), "primary"));
-  reopen = () => { drawer(title || "Actions", body, { subtitle: file + " › " + path, footer }); draw(); };
-  reopen();
+  draw();
+  return box;
+}
+
+/** An action list editor for a config path. */
+export function actionList(file, path, opts = {}) {
+  return el("div", { "data-key": file + "#" + path }, actionEditor(S.get(file, path), (v) => S.set(file, path, v, file + "#" + path + "#actions"), opts));
+}
+
+/** Opens the action builder for the list at file/path in a drawer. Changes apply as you make them. */
+export function editActions(file, path, { title, onClose } = {}) {
+  drawer(title || "Actions", actionList(file, path), { wide: true, subtitle: file + "  " + path, onClose,
+    footer: el("div", { class: "row", style: { width: "100%" } }, el("span", { class: "grow faint small" }, "Changes apply as you edit. Ctrl+Z undoes them."), btn("Done", () => closeDrawer(), "primary")) });
 }
 
 /** Every place an action list name is used (string items, run actions, outcome/shop "actions: name"). */
@@ -300,3 +422,4 @@ export function listUsages(name) {
   for (const f of ["config.yml", "outcomes.yml", "shop.yml", "actions.yml", "integrations.yml"]) scan(f, S.doc(f)?.data, "");
   return out.filter((u) => !(u.file === "actions.yml" && u.path === "lists." + name));
 }
+export { SPRITE as ACTION_SPRITES, DESC as ACTION_DESC };

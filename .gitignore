@@ -7,6 +7,9 @@ Headcount/tools/bot-tests/node_modules/
 Headcount/tools/bot-tests/work/
 Headcount/tools/bot-tests/bedrock/node_modules/
 
+# Studio: Minecraft textures and player skins it downloads for its previews (Mojang's, never committed)
+Headcount/tools/studio/cache/
+
 # Test server: only the files that build it are tracked. setup.sh downloads the server and plugins, and the
 # server makes the rest (world, logs, plugin data, and a server.properties with a generated secret).
 TestServer/*

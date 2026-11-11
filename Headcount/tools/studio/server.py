@@ -6,7 +6,9 @@
 Listens on 127.0.0.1 only. The page (web/) edits the config files line by line (comments and layout stay), reads the
 server's database read-only for the live pages, searches the audit log, and runs commands over RCON when the server
 has it on. Every save is checked as YAML first (PyYAML) and the old file is kept in <dir>/backups/studio/.
-Standard library only, plus PyYAML for checking saves.
+Minecraft's textures and font for the previews are downloaded from Mojang on first launch into cache/ (see
+mcassets.py); without them the previews fall back to flat colours. Standard library only, plus PyYAML for checking
+saves.
 """
 import argparse
 import datetime
@@ -26,18 +28,22 @@ import time
 import webbrowser
 import zipfile
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
-from urllib.parse import parse_qs, urlparse
+from urllib.parse import parse_qs, unquote, urlparse
+
+import mcassets
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 WEB = os.path.join(HERE, "web")
 PROJECT = os.path.abspath(os.path.join(HERE, "..", ".."))           # the Headcount/ folder
 RESOURCES = os.path.join(PROJECT, "src", "main", "resources")        # the bundled defaults
 DOCS = os.path.join(PROJECT, "docs")
+CACHE = os.path.join(HERE, "cache")                                  # downloaded textures and skins (git-ignored)
 DEFAULT_DIR = os.path.abspath(os.path.join(PROJECT, "..", "TestServer", "plugins", "Headcount"))
 FILES = ["config.yml", "integrations.yml", "statuses.yml", "trade.yml", "scoring.yml", "outcomes.yml",
          "shop.yml", "titles.yml", "actions.yml", "lang/en_US.yml"]
 TYPES = {".html": "text/html; charset=utf-8", ".css": "text/css; charset=utf-8", ".js": "text/javascript; charset=utf-8",
-         ".json": "application/json; charset=utf-8", ".svg": "image/svg+xml", ".png": "image/png"}
+         ".json": "application/json; charset=utf-8", ".svg": "image/svg+xml", ".png": "image/png",
+         ".ttf": "font/ttf", ".woff2": "font/woff2", ".txt": "text/plain; charset=utf-8"}
 
 try:
     import yaml  # PyYAML: checks a file before it is saved
@@ -50,8 +56,8 @@ APP_ID = "headcount-studio"
 
 def code_stamp():
     """Changes whenever Studio's own files change, so a launch can tell an instance running older code."""
-    newest = os.path.getmtime(os.path.abspath(__file__))
-    for p in glob.glob(os.path.join(WEB, "*")):
+    newest = max(os.path.getmtime(os.path.abspath(__file__)), os.path.getmtime(os.path.join(HERE, "mcassets.py")))
+    for p in glob.glob(os.path.join(WEB, "**", "*"), recursive=True):
         newest = max(newest, os.path.getmtime(p))
     return str(int(newest))
 
@@ -198,6 +204,7 @@ def read_lines(path):
 class Handler(BaseHTTPRequestHandler):
     server_version = "HeadcountStudio/1.1"
     srv: Server = None
+    assets: mcassets.Assets = None
 
     def log_message(self, fmt, *args):
         pass
@@ -248,6 +255,12 @@ class Handler(BaseHTTPRequestHandler):
         if not self._trusted(False):
             return
         try:
+            if path.startswith("/mc/"):
+                return self.texture(path[4:])
+            if path.startswith("/sound/"):
+                return self.sound(path[7:])
+            if path.startswith("/skin/"):
+                return self.skin(path[6:])
             if not path.startswith("/api/"):
                 return self.static(path)
             route = {
@@ -255,7 +268,7 @@ class Handler(BaseHTTPRequestHandler):
                 "/api/backups": self.backups, "/api/backup": self.backup, "/api/export": self.export,
                 "/api/live/summary": self.live_summary, "/api/live/players": self.live_players, "/api/live/player": self.live_player,
                 "/api/live/history": self.live_history, "/api/live/cycle": self.live_cycle, "/api/live/effects": self.live_effects,
-                "/api/audit": self.audit, "/api/audit/head": self.audit_head,
+                "/api/audit": self.audit, "/api/audit/head": self.audit_head, "/api/textures": self.textures,
             }.get(path)
             if route is None:
                 return self._json(404, {"error": "not found"})
@@ -273,7 +286,7 @@ class Handler(BaseHTTPRequestHandler):
             return
         try:
             route = {"/api/save": self.save, "/api/parse": self.parse, "/api/rcon": self.rcon, "/api/import": self.import_zip,
-                     "/api/quit": self.quit}.get(path)
+                     "/api/quit": self.quit, "/api/textures/download": self.textures_download}.get(path)
             if route is None:
                 return self._json(404, {"error": "not found"})
             route()
@@ -289,6 +302,38 @@ class Handler(BaseHTTPRequestHandler):
             return self._json(404, {"error": "not found"})
         with open(full, "rb") as f:
             self._send(200, f.read(), TYPES[ext])
+
+    # ---- Minecraft textures (cache/, downloaded from Mojang) and player skins
+    def texture(self, rel):
+        full = self.assets.path(unquote(rel))
+        ext = os.path.splitext(full or "")[1]
+        if not full or ext not in TYPES:
+            return self._json(404, {"error": "not found"})
+        with open(full, "rb") as f:
+            self._send(200, f.read(), TYPES[ext], {"Cache-Control": "max-age=86400"})
+
+    def skin(self, rel):
+        who = unquote(rel).removesuffix(".png")
+        p = mcassets.skin(CACHE, who)
+        if not p:
+            return self._json(404, {"error": "no skin"})
+        with open(p, "rb") as f:
+            self._send(200, f.read(), "image/png", {"Cache-Control": "max-age=3600"})
+
+    def sound(self, rel):
+        p = self.assets.sound(unquote(rel).removesuffix(".ogg"))
+        if not p:
+            return self._json(404, {"error": "no such sound"})
+        with open(p, "rb") as f:
+            self._send(200, f.read(), "audio/ogg", {"Cache-Control": "max-age=86400"})
+
+    def textures(self):
+        self._json(200, self.assets.status())
+
+    def textures_download(self):
+        body = json.loads(self._body().decode("utf-8") or "{}")
+        started = self.assets.start(force=bool(body.get("force")))
+        self._json(200, dict(self.assets.status(), started=started))
 
     def ping(self):
         LAST_PING[0] = time.time()
@@ -310,7 +355,7 @@ class Handler(BaseHTTPRequestHandler):
             out.append(item)
         self._json(200, {"dir": self.srv.data_dir, "files": out, "yamlCheck": yaml is not None,
                          "live": os.path.exists(self.srv.db_path()), "rcon": self.srv.rcon_conf() is not None,
-                         "plugins": self.srv.plugins()})
+                         "plugins": self.srv.plugins(), "textures": self.assets.status()})
 
     def catalog(self):
         p = os.path.join(HERE, "catalog.json")
@@ -620,12 +665,14 @@ def main():
     ap.add_argument("--dir", default=DEFAULT_DIR, help="the server's plugins/Headcount folder (default: the repository's test server)")
     ap.add_argument("--port", type=int, default=8765)
     ap.add_argument("--no-browser", action="store_true", help="don't open a browser tab")
+    ap.add_argument("--offline", action="store_true", help="don't download Minecraft's textures on first launch")
     ap.add_argument("--exit-when-idle", action="store_true", help="stop when no Studio page has been open for 2 minutes (the launchers use this)")
     args = ap.parse_args()
     data_dir = os.path.abspath(args.dir)
     if not os.path.isdir(data_dir):
         os.makedirs(data_dir, exist_ok=True)  # a server that hasn't started yet: edit the defaults
     Handler.srv = Server(data_dir)
+    Handler.assets = mcassets.Assets(os.path.join(CACHE, "minecraft"), Handler.srv.root)
     httpd, url = None, None
     for port in range(args.port, args.port + 10):
         url = f"http://127.0.0.1:{port}/"
@@ -658,6 +705,8 @@ def main():
     print(f"Server folder: {data_dir}")
     if yaml is None:
         print("PyYAML isn't installed, so saves aren't checked as YAML first. Install it with pip install pyyaml.")
+    if not args.offline and Handler.assets.start():
+        print("Downloading Minecraft's textures for the previews (once) into " + CACHE)
     if args.exit_when_idle:
         def watchdog():
             while True:
