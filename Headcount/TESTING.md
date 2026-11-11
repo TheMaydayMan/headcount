@@ -1,32 +1,22 @@
 # Manual test checklist
 
-> **1.1:** the new features (resets, defunct heads, time zone codes, `<score>` and the live vault title, the included PvP, permissions and AFK, the integrations rewrite) are not in the bot tests or the checklist below. They are tested by hand with the test night itinerary, [test-plan.md](../test-plan.md), which also covers everything below in a normal play session.
+This checklist predates 1.1. The 1.1 features (resets, defunct heads, time zone codes, `<score>` and the live vault title, the included PvP, permissions and AFK, and the reworked integrations) aren't in it or in the bot tests. They are covered by the test night plan, [test-plan.md](../test-plan.md), which also runs through most of what is below in a normal play session.
 
-These are already covered automatically and don't need repeating:
-- `./gradlew test` (expressions, ranges, durations, ranks, cycle boundaries across DST, vault modifiers, audit rotation and retention);
-- `/hca selftest` (every configured item, menu, message, action list, status reference, missing duration and permission);
-- the runtime checks done on the test server: a seeded end of cycle checked against a hand calculation, catch-up after 2 hours and 65 days down, warnings and a scheduled rollover, admin console commands, and the PlaceholderAPI expansion;
-- the bot tests in [tools/bot-tests](tools/bot-tests/README.md): about 350 checks that play sections 1 to 10 and 12 below with real (bot) clients, including crash tests. Run them with `tools/bot-tests/run-all.sh`.
+Some of it is already tested automatically:
+- `./gradlew test` runs the unit tests for the pure logic, such as expressions, durations, cycle boundaries across DST and audit rotation.
+- `/hca selftest` checks every configured item, menu, message, action list and status reference.
+- The bot tests in [tools/bot-tests](tools/bot-tests/README.md) play sections 1 to 10 and 12 with bot clients, crash tests included. Run them with `tools/bot-tests/run-all.sh`.
 
-What still needs a person:
-- **Bedrock** (section 11): how a real Bedrock client draws the menus and the sidebar, with a real Xbox sign-in through Floodgate. (Detection, the vault menu, the sidebar packets and the trade request text are covered by `tools/bot-tests/bedrock`.)
-- **DiscordSRV**: a `discord` action reaching a channel (needs DiscordSRV set up with a bot token).
-- **ItemsAdder, Oraxen or Nexo** items in item definitions (paid plugins; Headcount is compiled against their APIs).
-- **Statuses from movement**: `flying`, `gliding`, `swimming`, `sleeping`, `falling` (the bots can't move).
-- **Look and feel**: menus, messages, titles and the sidebar on a real client, and anything that seems off in play.
-
-The checklist below is the full manual pass, for a release or after big changes.
+A person is still needed for anything that depends on a real client or on something the test server lacks: how menus and the sidebar look, Bedrock with a real Xbox sign-in, the movement statuses (the bots can't move), DiscordSRV, LiteBans and the custom item plugins. Those are in the checklist below. Go through the whole list for a release or after big changes.
 
 ## Setup
 
 1. Set up the server once with `TestServer/setup.sh` and build Headcount (`cd Headcount && ./gradlew build`, which copies the jar into the server). Start it with `cd TestServer && ./start.sh` (Java 25, offline mode, port 25565).
 2. Join with two Java clients under different names. Offline mode accepts any name, e.g. two launcher profiles or instances. Call them **A** and **B**. Make A op (`op A` in the console).
 3. For Bedrock: join with a Bedrock client on port 19132 (Geyser), called **C**.
-4. PvPManager turns PvP on for everyone, and the default `in-pvp` status then blocks vault movement. Run `/pvp` as each player to turn it off, unless you are testing that rule.
+4. Headcount's included PvP starts everyone with PvP off. If PvPManager is still in `plugins/`, it turns PvP on for everyone, and the default `in-pvp` status then blocks vault movement. Delete its jar, or run `/pvp` as each player to turn PvP off (see [TestServer/README.md](../TestServer/README.md)).
 5. Start from clean data: stop the server, delete `TestServer/plugins/Headcount/`, and start again.
 6. Useful commands: `/hca status <player>`, `/hca effects <player>`, `/hca audit <player>`, `/hca inspect` (with a head in your hand), `/hca cycle simulate`, `/hca cycle end confirm`.
-
-Tick each line when the result matches.
 
 ## 1. First join and the vault
 
@@ -97,9 +87,10 @@ Tick each line when the result matches.
 
 ## 5. Statuses
 
-- [ ] `/hca status A` lists every status with its current value. Check: `in-pvp` follows `/pvp`; `combat-tagged` turns on when hitting B and off after the PvPManager tag ends; `creative-or-spectator`; `sleeping-or-dead` (in a bed); `vanished` (`/vanish`); `afk` (`/afk`); `low-health`, `on-fire`, `in-lava`, `falling-far`.
+- [ ] `/hca status A` lists every status with its current value. Check: `in-pvp` follows `/pvp`; `combat-tagged` turns on when hitting B and off when the combat tag ends; `creative-or-spectator`; `sleeping-or-dead` (in a bed); `vanished` (`/vanish`); `afk` (`/afk`); `low-health`, `on-fire`, `in-lava`, `falling-far`.
 - [ ] `%headcount_status_combat-tagged%` reads true/false (`/papi parse A %headcount_status_combat-tagged%`).
-- [ ] Remove PvPManager from plugins and restart: `combat-tagged` falls back to recent player damage (true for 15 s after a hit).
+- [ ] The sources that need a moving player, which the bots can't test. `sleeping` and `falling-far` are default statuses; add test statuses with `source: flying`, `gliding` and `swimming`. Each one turns true while you fly, glide with an elytra, swim, lie in a bed or fall 4 blocks, and false after.
+- [ ] With `pvp.provider: none` in integrations.yml and a restart, `combat-tagged` falls back to recent player damage: true for 15 seconds after a hit.
 
 ## 6. Shop
 
@@ -134,6 +125,7 @@ Set up A with a positive score and B with a negative one: put B's heads in A's v
 - [ ] `/hca cycle extend` or `setend` to 2 minutes from now: the 1-minute warning shows a title and a countdown boss bar, which also appears for a player joining during that minute. The cycle then ends by itself.
 - [ ] `/hca hook first-join A` and `/hca hook first-join-cycle A` show those messages again.
 - [ ] Join order: with a pending end-of-cycle report, rejoin and check it comes before the first-join-cycle message.
+- [ ] With the end set a little over an hour away, the 1-hour and 10-minute warnings show in chat. Only the 1-minute warning has been seen live so far.
 
 ## 10. Sidebar, titles, placeholders
 
@@ -145,6 +137,8 @@ Set up A with a positive score and B with a negative one: put B's heads in A's v
 
 ## 11. Bedrock (C)
 
+- [ ] C signs in with a real Xbox account through Floodgate, and Headcount treats C as a Bedrock player (`/hca status C` shows `bedrock-player` true).
+- [ ] The vault, shop, titles, history and confirmation menus and the sidebar look right on C's screen.
 - [ ] C's vault opens and heads can be moved in and out.
 - [ ] C can trade with A using `/trade accept`. Items and heads move correctly and nothing can be taken from A's side.
 - [ ] C's shop, titles, history and confirmation menus work and can't be looted.
@@ -156,3 +150,11 @@ Set up A with a positive score and B with a negative one: put B's heads in A's v
 - [ ] `/hca giveheads A 3 B current vault` puts 3 of B's heads in A's vault. `... next` queues them for next cycle's vault.
 - [ ] `/hca reset A vault confirm` empties A's vault; other reset options do what they say.
 - [ ] `/hca audit A`, `/hca audit <head id>`, and `/hca audit A type:trade_complete` find the right lines.
+
+## 13. Other plugins
+
+The test server has no Discord bot token and none of the paid plugins, so these are checked on a server that has them.
+
+- [ ] DiscordSRV, connected to a Discord bot: a `discord` action (for example in a test list run with `/hca run A <list>`) posts its text in the configured channel.
+- [ ] ItemsAdder, Oraxen or Nexo: a shop entry or `give-item` action with `custom: itemsadder:ns:id` (or `oraxen:id`, `nexo:id`) gives the custom item.
+- [ ] LiteBans with `moderation.provider: litebans`: warn, mute, kick and a timed ban reach LiteBans, and a status with `source: muted` reads true while LiteBans has the player muted.

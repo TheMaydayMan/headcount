@@ -1,6 +1,6 @@
 # Developer guide
 
-Headcount has a small public API in `com.gradychastain.headcount.api`, 13 events, and two extension points: **status sources** and **action types**. Every example here is compiled with each build (`src/test/java/com/example/headcountaddon/ExampleAddon.java`), so it is known to compile against the current API.
+Headcount has a small public API in `com.gradychastain.headcount.api`, events you can listen to, and two ways to extend it: your own status sources and action types. The Java examples on this page match `src/test/java/com/example/headcountaddon/ExampleAddon.java`, which is compiled with every build.
 
 ## Depending on Headcount
 
@@ -107,7 +107,7 @@ Checks run on the main thread, are cached for one tick, and should be fast.
 
 ## Adding an action type
 
-Implement `ActionType`. `parse` reads the settings once, when the config loads; the returned `ActionHandler` does the work. Headcount handles everything common: chance, delay, conditions, durations, stacking, repeats, persistence across restarts, offline players, and messages. A handler only applies and, for timed use, reverts.
+Implement `ActionType`. `parse` reads the settings once, when the config loads, and the `ActionHandler` it returns does the work. Headcount takes care of the options every action shares, like chance, delay, conditions, durations, repeats, offline players and keeping track across restarts. A handler only applies the effect and, for timed use, reverts it.
 
 ```java
 static final class SpeedBoostType implements ActionType {
@@ -165,8 +165,6 @@ static final class SpeedBoostType implements ActionType {
 
 ### Handler options
 
-Override these as needed:
-
 | Method | Default | Meaning |
 |---|---|---|
 | `revertible()` | false | `revert` does something. Timed actions that aren't revertible just expire. |
@@ -190,4 +188,4 @@ Register in your `onEnable`. Headcount parses statuses and actions on the first 
 ./gradlew test
 ```
 
-On a running server, `/hca selftest` checks every configured item, menu, message, action list and status reference.
+On a running server, `/hca selftest` checks the configs: every item, menu, message, action list and status reference.

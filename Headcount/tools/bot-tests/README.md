@@ -1,6 +1,6 @@
 # Bot tests
 
-Player tests for Headcount, played by [mineflayer](https://github.com/PrismarineJS/mineflayer) bots on a copy of the test server. They cover what console checks and unit tests can't: clicking in menus, trading, killing, buying, joining and leaving, and the timing of hooks and timed actions. Each suite prints `PASS` or `FAIL` per check and a summary.
+Player tests for Headcount, played by [mineflayer](https://github.com/PrismarineJS/mineflayer) bots on a copy of the test server. They cover what console checks and unit tests can't: clicking in menus, trading, killing, buying, joining and leaving, and the timing of hooks and timed actions. Each suite prints `PASS` or `FAIL` for each check, then a summary.
 
 mineflayer speaks Minecraft 26.1, so the bot server runs ViaVersion and ViaBackwards to let 26.1 clients join Paper 26.3. ViaBackwards rejects this mineflayer version's routine movement packets, so the bots don't send any (`lib.js` drops them): they stand where the server puts them, and the tests teleport them instead.
 
@@ -33,40 +33,36 @@ To run one suite: `./reset-bot.sh`, then `node tests-<name>.js`. Several take a 
 
 `reset-bot.sh` starts from Headcount's default configs and adds only test settings: a peaceful world with no weather, the action lists in `test-lists.yml`, and messages in the two empty player hooks. Suites change other settings for their own checks (test statuses, lower limits, a provider) and put them back when they finish. They set PvP from the console (`pvp <player> on|off`, then `untag`), because a player's own `/pvp` is held to PvPManager's toggle cooldown and a combat tag blocks trades.
 
-| Suite | Checks | What |
-|---|---|---|
-| tests-vault | 17 | join hooks, vault set-up, the PvP gate, every click type in the vault, refused items, audit |
-| tests-play | 35 | trading, mirror protection, kills, statuses, placeholders, shop, sidebar, titles, a live cycle end, expiry, history |
-| tests-more | 29 | PlaceholderAPI in Headcount text, player commands, tab completion, trade request rules, confirmation menu, admin vault view, placed heads (break, TNT), offline delivery and the hook order on rejoin |
-| tests-final | 20 | all join hooks for a non-op player, permissions, drag / offhand / double click, piston and water by placed heads, old-cycle heads, audit rotation |
-| tests-dupe | 8 | forged head copies found and refused, admin alerts, expired heads refreshed in chests, shulkers and bundles |
-| tests-rest | 29 | head protection, extra heads, bounties, keepInventory; trade expiry, cooldown, limits, types, range, worlds, every cancel case, overflow |
-| tests-actions | 61 | every action type on a live player, timed reverts, common options, moderation through LibertyBans and EssentialsX |
-| tests-outcomes | 13 | most-extreme outcomes, punishments that last the next cycle, shields, rollover |
-| tests-shop | 22 | tier locks, tier and page buttons, prices, limits, stock, cooldowns, requirements, confirmation |
-| tests-misc | 21 | title menu and force lock, LuckPerms prefix, sidebar toggles, admin history, a 60-slot paged vault, bypass permissions, the opening gate |
-| tests-status, tests-status2 | 46 | every status source a bot can drive, combinations, loops, the status placeholder |
-| tests-score | 11 | formula variables, PlaceholderAPI numbers, rounding, bonuses, activity and playtime |
-| tests-moderation | 18 | AdvancedBan, command templates and the vanilla fallback |
-| tests-api | 23 | every API method, an addon status source and action type, all 13 events, changing and cancelling them |
-| crash-offer, crash-take | 2 | kill -9 with a trade offer open or a take-item active: the items come back exactly once |
+| Suite | What it covers |
+|---|---|
+| tests-vault | join hooks, vault set-up, the PvP gate, every click type in the vault, refused items, audit |
+| tests-play | trading, mirror protection, kills, statuses, placeholders, shop, sidebar, titles, a live cycle end, expiry, history |
+| tests-more | PlaceholderAPI in Headcount text, player commands, tab completion, trade request rules, confirmation menu, admin vault view, placed heads (break, TNT), offline delivery and the hook order on rejoin |
+| tests-final | all join hooks for a non-op player, permissions, drag, offhand and double click, piston and water on placed heads, old-cycle heads, audit rotation |
+| tests-dupe | forged head copies found and refused, admin alerts, expired heads refreshed in chests, shulkers and bundles |
+| tests-rest | head protection, extra heads, bounties, keepInventory; trade expiry, cooldown, limits, types, range, worlds, every cancel case, overflow |
+| tests-actions | every action type on a live player, timed reverts, common options, moderation through LibertyBans and EssentialsX |
+| tests-outcomes | most-extreme outcomes, punishments that last the next cycle, shields, rollover |
+| tests-shop | tier locks, tier and page buttons, prices, limits, stock, cooldowns, requirements, confirmation |
+| tests-misc | title menu and force lock, LuckPerms prefix, sidebar toggles, admin history, a 60-slot paged vault, bypass permissions, the opening gate |
+| tests-status, tests-status2 | every status source a bot can drive, combinations, loops, the status placeholder |
+| tests-score | formula variables, PlaceholderAPI numbers, rounding, bonuses, activity and playtime |
+| tests-moderation | AdvancedBan, command templates and the vanilla fallback |
+| tests-api | every API method, an addon status source and action type, every event, changing and cancelling them |
+| crash-offer, crash-take | kill -9 with a trade offer open or a take-item active: the items come back exactly once |
 
 ## Bedrock (bedrock/)
 
 `bedrock/bedrock-test.js` joins the main test server through Geyser with [bedrock-protocol](https://github.com/PrismarineJS/bedrock-protocol) clients (`npm install` in `bedrock/`). Offline test clients can't sign in to Xbox, so for the test only, set in `TestServer/plugins/Geyser-Spigot/config.yml`: `auth-type: offline`, `validate-bedrock-login: false`, and `transport: both` with `webrtc-port: 19133` (the clients speak RakNet). Put the original file back afterwards. Run it with the server's console input file as the first argument:
 
-- `node bedrock-test.js <console-file> single`: one client, through Floodgate (`bedrock.provider: auto`). It checks that Headcount sees a Bedrock player, the vault opens as a chest menu, and the sidebar arrives as a Bedrock sidebar.
+- `node bedrock-test.js <console-file> single`: one client, through Floodgate (`bedrock.provider: floodgate`). It checks that Headcount sees a Bedrock player, the vault opens as a chest menu, and the sidebar arrives as a Bedrock sidebar.
 - `node bedrock-test.js <console-file> trade`: two clients, with Floodgate moved out of `plugins/` and `bedrock.provider: geyser` (offline clients all get the same Floodgate UUID). It checks Bedrock detection through Geyser and the typed `/trade accept` request text.
 
 Offline clients all have XUID 0. The script gives each client its own XUID; with bedrock-protocol 3.61.0 also change `XUID: '0'` to `XUID: String(client.profile.xuid || '0')` in `node_modules/bedrock-protocol/src/handshake/login.js`, or the second client is turned away as "already logged in". Delete the test players' files in `TestServer/world/players/data/` afterwards.
 
 ## What the bots can't test
 
-- How a real Bedrock client draws the menus and the sidebar, and Floodgate with a real Xbox sign-in (the Bedrock test checks the packets, not the picture).
-- DiscordSRV messages (needs a Discord bot token), and ItemsAdder, Oraxen and Nexo items (paid plugins).
-- Statuses that come from client movement: flying, gliding, swimming, sleeping, falling.
-
-[TESTING.md](../../TESTING.md) lists these as manual checks.
+The Bedrock test checks the packets, not what a real Bedrock client draws, and it can't sign in to Xbox. The bots also can't move, so the statuses that come from movement (flying, gliding, swimming, sleeping, falling) aren't covered, and there is no DiscordSRV bot token or paid plugin (ItemsAdder, Oraxen, Nexo) to test against. These are all in the manual checklist in [TESTING.md](../../TESTING.md).
 
 ## Files
 
