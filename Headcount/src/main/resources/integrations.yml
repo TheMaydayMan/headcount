@@ -113,7 +113,7 @@ pvp:
       tag-end:
         channel: actionbar
         sound: ""
-      # Your hit was stopped because the other player has PvP off or is protected (pvp.blocked-hit.*).
+      # Your hit was stopped because you or the other player has PvP off or is protected (pvp.blocked-hit.*).
       blocked-hit:
         channel: actionbar
         sound: ""

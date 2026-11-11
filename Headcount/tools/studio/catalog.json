@@ -293,7 +293,7 @@
     "headcount.admin.reset.hard",
     "headcount.admin"
    ],
-   "permissionText": "`headcount.admin.reset` and `headcount.admin.reset.hard` (op only, not part of `headcount.admin`. The console always has it.)",
+   "permissionText": "`headcount.admin.reset` and `headcount.admin.reset.hard` (op only and not part of `headcount.admin`; the console always has it)",
    "does": "Deletes all Headcount data and starts over from cycle 1 (see Resets)."
   },
   {
@@ -1398,7 +1398,7 @@
    "type": "jail",
    "group": "Moderation",
    "main": "reason",
-   "settingsText": "`reason`, `jail` (jail name for EssentialsX). Headcount's own jail uses `moderation.included-jail` in integrations.yml.",
+   "settingsText": "`reason`, `jail` (jail name for EssentialsX). The included jail uses `moderation.included-jail` in integrations.yml.",
    "settings": [
     "reason",
     "jail"
@@ -1726,14 +1726,14 @@
    "settings": [
     "check"
    ],
-   "trueWhen": "The player-state provider reports that state. With `included`, AFK comes from Headcount's idle timer, vanished from the `vanished` metadata, god from the invulnerable flag, and jailed and muted from Headcount's own jail and mute or the moderation plugin. With `essentials`, EssentialsX answers. The source's old name, `essentials`, still works."
+   "trueWhen": "The player-state provider reports that state. With `included`, AFK comes from Headcount's idle timer, vanished from the `vanished` metadata, god from the invulnerable flag, and jailed and muted from the included jail and mute or the moderation plugin. With `essentials`, EssentialsX answers. The source's old name, `essentials`, still works."
   },
   {
    "source": "muted",
    "group": "Plugin hooks",
    "settingsText": "none",
    "settings": [],
-   "trueWhen": "The moderation plugin reports a mute, or Headcount's own mute is active."
+   "trueWhen": "The moderation plugin reports a mute, or the included mute is active."
   },
   {
    "source": "bedrock",
@@ -2394,7 +2394,7 @@
    "file": "config.yml",
    "path": "cycle.time-zone",
    "default": "UTC",
-   "help": "Time zone for start-date and end-time. Use a region like America/Denver or Europe/London (follows daylight saving), an abbreviation like MST or CET (a fixed offset all year, so MST is always UTC-7), an offset like GMT-7 or UTC+5:30, or \"system\". If the server was offline at a rollover, the next start ends the stored cycle and starts the one that should be running now. The cycle number goes up by one at each end. /hca reset cycle keeps the number and /hca reset hard starts again at 1. /hca cycle info also shows each cycle's internal run ID."
+   "help": "Time zone for start-date and end-time. Use a region like America/Denver or Europe/London (follows daylight saving), an abbreviation like MST or CET (a fixed offset all year, so MST is always UTC-7), an offset like GMT-7 or UTC+5:30, or \"system\". If the server was offline at a rollover, the next start ends the stored cycle and starts the one that should be running now. The cycle number goes up by one at each end. /hca reset cycle keeps the number and /hca reset hard starts again at 1. /hca cycle info also shows the current cycle's internal run ID."
   },
   {
    "file": "config.yml",
@@ -3894,7 +3894,7 @@
    "file": "integrations.yml",
    "path": "pvp.included.messages.blocked-hit",
    "default": "(section)",
-   "help": "Your hit was stopped because the other player has PvP off or is protected (pvp.blocked-hit.*)."
+   "help": "Your hit was stopped because you or the other player has PvP off or is protected (pvp.blocked-hit.*)."
   },
   {
    "file": "integrations.yml",
@@ -4818,7 +4818,7 @@
    "file": "trade.yml",
    "path": "cancel",
    "default": "(section)",
-   "help": "When an open trade is cancelled, everything goes back to its owner. A trade always cancels when a player closes the screen, leaves, dies or changes world, and at a cycle end, a stop or a reload. range, statuses.cancel-open and the options below add more reasons."
+   "help": "When an open trade is cancelled, everything goes back to its owner. A trade always cancels when a player closes the screen, leaves or dies, at a cycle end, a stop or a reload. range (which covers changing world), statuses.cancel-open and the options below add more reasons."
   },
   {
    "file": "trade.yml",

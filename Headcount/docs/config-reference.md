@@ -259,7 +259,7 @@ The trade menu's text is written here. Everything else Headcount says is in lang
 | `statuses.block-request` | `[in-pvp, combat-tagged, creative-or-spectator, sleeping-or-dead]` | Statuses that stop a request from being sent, checked on both players. The sender sees gates.trade-send.&lt;status&gt; or gates.trade-send-target.&lt;status&gt;, depending on who has it. Bypass: headcount.bypass.trade-send.&lt;status&gt; |
 | `statuses.block-accept` | `[in-pvp, combat-tagged, creative-or-spectator, sleeping-or-dead]` | Statuses that stop a request from being accepted, checked on both players. Messages are gates.trade-accept.&lt;status&gt; and gates.trade-accept-target.&lt;status&gt;. |
 | `statuses.cancel-open` | `[in-pvp, combat-tagged, creative-or-spectator, sleeping-or-dead]` | Statuses that cancel an open trade, checked on both players every cancel.check-interval. Bypass: headcount.bypass.trade-cancel.&lt;status&gt; |
-| `cancel` | `(section)` | When an open trade is cancelled, everything goes back to its owner. A trade always cancels when a player closes the screen, leaves, dies or changes world, and at a cycle end, a stop or a reload. range, statuses.cancel-open and the options below add more reasons. |
+| `cancel` | `(section)` | When an open trade is cancelled, everything goes back to its owner. A trade always cancels when a player closes the screen, leaves or dies, at a cycle end, a stop or a reload. range (which covers changing world), statuses.cancel-open and the options below add more reasons. |
 | `cancel.on-teleport` | `true` | Also cancel when either player teleports. |
 | `cancel.teleport-min-distance` | `0` | Teleports shorter than this many blocks, within the same world, don't cancel. |
 | `cancel.on-gamemode-change` | `true` | Also cancel when either player's game mode changes. |
@@ -397,7 +397,7 @@ What each integration does is in [integrations.md](integrations.md).
 | `pvp.included.messages.tag-end` | `(section)` | Your combat tag ended (pvp.tag-end). |
 | `pvp.included.messages.tag-end.channel` | `actionbar` |  |
 | `pvp.included.messages.tag-end.sound` | `""` |  |
-| `pvp.included.messages.blocked-hit` | `(section)` | Your hit was stopped because the other player has PvP off or is protected (pvp.blocked-hit.*). |
+| `pvp.included.messages.blocked-hit` | `(section)` | Your hit was stopped because you or the other player has PvP off or is protected (pvp.blocked-hit.*). |
 | `pvp.included.messages.blocked-hit.channel` | `actionbar` |  |
 | `pvp.included.messages.blocked-hit.sound` | `""` |  |
 | `pvp.included.messages.blocked-action` | `(section)` | Something you tried was refused, like a blocked command or teleport, or /pvp during combat or a cooldown. |

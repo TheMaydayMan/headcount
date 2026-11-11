@@ -75,7 +75,7 @@ statuses:
     - sleeping-or-dead
 
 # When an open trade is cancelled, everything goes back to its owner. A trade always cancels when a player closes
-# the screen, leaves, dies or changes world, and at a cycle end, a stop or a reload. range, statuses.cancel-open
+# the screen, leaves or dies, at a cycle end, a stop or a reload. range (which covers changing world), statuses.cancel-open
 # and the options below add more reasons.
 cancel:
   # Also cancel when either player teleports.

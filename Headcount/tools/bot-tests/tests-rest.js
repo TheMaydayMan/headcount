@@ -242,7 +242,7 @@ const closeAll = async (...bots) => { for (const b of bots) if (b.currentWindow)
   await offer(a, (s) => s.name === 'cobblestone');
   ma = a.chatLog.length;
   serverConsole('execute as Bravo at @s run minecraft:tp @s ~30 ~ ~');
-  record('trade: moving out of range during a trade cancels it and returns the offer', await waitChat(a, /out of range/, ma, 3000) &&
+  record('trade: moving out of range during a trade cancels it and returns the offer', await waitChat(a, /too far apart/, ma, 3000) &&
     await waitFor(() => count(a, 'cobblestone') === 1, 2000));
   await closeAll(a, b);
   serverConsole('execute in minecraft:the_nether run minecraft:tp Bravo 0 100 0');

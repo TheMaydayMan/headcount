@@ -89,7 +89,7 @@ cycle:
   # GMT-7 or UTC+5:30, or "system".
   # If the server was offline at a rollover, the next start ends the stored cycle and starts the one that should be
   # running now. The cycle number goes up by one at each end. /hca reset cycle keeps the number and /hca reset hard
-  # starts again at 1. /hca cycle info also shows each cycle's internal run ID.
+  # starts again at 1. /hca cycle info also shows the current cycle's internal run ID.
   time-zone: UTC
 
 activity:

@@ -150,7 +150,7 @@ lists:
       end-message: "<green>Your health is back to normal."
 
   punish-severe:
-    - message: "<dark_red>Your score was <score>. Until the cycle ends you wear the dunce cap, glow, and have a bounty on you."
+    - message: "<dark_red>Your score was <score>. Until the end of the next cycle you wear the dunce cap, glow, and have a bounty on you."
     - dunce-cap
     - type: glowing
       duration: cycle
