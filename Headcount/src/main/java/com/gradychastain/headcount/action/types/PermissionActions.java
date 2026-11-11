@@ -18,7 +18,7 @@ final class PermissionActions {
 
     private static PermissionHook hook(HeadcountPlugin plugin, String action) {
         PermissionHook h = plugin.integrations().permissions();
-        if (h == null) plugin.getLogger().warning(action + " action skipped: no permissions plugin (LuckPerms or Vault) is installed.");
+        if (h == null) plugin.getLogger().warning(action + " action skipped: permissions are off (integrations.yml permissions.provider: none).");
         return h;
     }
 
@@ -55,7 +55,7 @@ final class PermissionActions {
                 @Override public boolean revertible() { return true; }
                 @Override public boolean requiresOnline() { return false; }
                 @Override public String stackKey() { return node; }
-                @Override public String describe(ActionContext ctx) { return (remove ? "lost " : "") + "permission " + node; }
+                @Override public String describe(ActionContext ctx) { return Types.describe(remove ? "permission-remove" : "permission", "permission", node); }
             };
         }));
 
@@ -84,7 +84,7 @@ final class PermissionActions {
                 @Override public boolean revertible() { return true; }
                 @Override public boolean requiresOnline() { return false; }
                 @Override public String stackKey() { return group; }
-                @Override public String describe(ActionContext ctx) { return (remove ? "removed from " : "in ") + "group " + group; }
+                @Override public String describe(ActionContext ctx) { return Types.describe(remove ? "group-remove" : "group", "group", group); }
             };
         }));
 
@@ -174,7 +174,7 @@ final class PermissionActions {
                     @Override public boolean revertible() { return true; }
                     @Override public boolean requiresOnline() { return false; }
                     @Override public String stackKey() { return kind + ":" + priority; }
-                    @Override public String describe(ActionContext ctx) { return kind + " " + text; }
+                    @Override public String describe(ActionContext ctx) { return Types.describe(kind, "text", text); }
                 };
             }));
         }

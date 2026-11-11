@@ -47,6 +47,11 @@ public final class Vars {
         return put(key, new Mini(miniMessage == null ? "" : miniMessage));
     }
 
+    /** A tag with arguments, such as {@code <score:green:red:gray>}; the key only names it in this set. */
+    public Vars tag(String key, TagResolver resolver) {
+        return put(key, resolver);
+    }
+
     public Vars putAll(Vars other) {
         if (other != null) values.putAll(other.values);
         return this;
@@ -74,7 +79,7 @@ public final class Vars {
     }
 
     public static String plainOf(Object v) {
-        if (v == null) return "";
+        if (v == null || v instanceof TagResolver) return "";
         if (v instanceof Component c) return PlainTextComponentSerializer.plainText().serialize(c);
         if (v instanceof Mini m) return MiniMessage.miniMessage().stripTags(m.text());
         if (v instanceof Double d && d == Math.rint(d) && !d.isInfinite()) return Long.toString(d.longValue());
@@ -99,7 +104,8 @@ public final class Vars {
         List<TagResolver> list = new ArrayList<>(values.size());
         for (Map.Entry<String, Object> e : values.entrySet()) {
             Object v = e.getValue();
-            if (v instanceof Component c) list.add(Placeholder.component(e.getKey(), c));
+            if (v instanceof TagResolver r) list.add(r);
+            else if (v instanceof Component c) list.add(Placeholder.component(e.getKey(), c));
             else if (v instanceof Mini m) list.add(Placeholder.parsed(e.getKey(), m.text()));
             else list.add(Placeholder.unparsed(e.getKey(), plainOf(v)));
         }
@@ -111,6 +117,7 @@ public final class Vars {
         Map<String, Object> out = new LinkedHashMap<>();
         for (Map.Entry<String, Object> e : values.entrySet()) {
             Object v = e.getValue();
+            if (v instanceof TagResolver) continue;   // live tags are rebuilt, never stored
             if (v instanceof Component c) out.put(e.getKey(), "mm:" + MiniMessage.miniMessage().serialize(c));
             else if (v instanceof Mini m) out.put(e.getKey(), "mm:" + m.text());
             else if (v instanceof Number || v instanceof Boolean) out.put(e.getKey(), v);

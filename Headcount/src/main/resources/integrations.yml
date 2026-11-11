@@ -1,55 +1,212 @@
 # ============================================================================================
 #  Headcount - integrations.yml
-#  Which installed plugin handles what. Every integration is optional: Headcount works fully with none of
-#  them, using a built-in fallback where one exists. 'auto' picks the first installed plugin in the order shown.
-#  /hca integrations shows what was chosen.
+#  Who handles each job that other plugins can do. Every job has a 'provider':
+#
+#    included   Headcount's own version, built in. Nothing else to install. The default wherever it exists.
+#    <plugin>   hand the job to that plugin (it must be installed).
+#    none       the job is off completely, Headcount's own version included.
+#
+#  If the chosen plugin isn't installed (or fails to load), Headcount logs a warning and uses 'included', or
+#  'none' where there is no included version. /hca integrations shows what is in use right now.
+#  Changes apply after /hca reload, except switching /pvp between plugins, which needs a restart.
+#
+#  Where text lives: this file holds settings only. What Headcount says to players (the PvP messages, AFK
+#  notices, ...) is in lang/en_US.yml; how those messages reach the player (chat, action bar, title, sound) is here.
 # ============================================================================================
-config-version: 1
+config-version: 2
 
+# --------------------------------------------------------------------------------------------
+#  PvP: the PvP toggle, the combat tag and new-player protection. They feed the in-pvp, combat-tagged and
+#  newbie-protected statuses (statuses.yml), which the default vault and trade rules use, and the pvp action.
+# --------------------------------------------------------------------------------------------
 pvp:
-  # PvP state, combat tag and newbie protection for statuses, and the pvp action.
-  # auto | pvpmanager | none
-  # Any other PvP or combat plugin can still be used through PlaceholderAPI statuses (statuses.yml).
-  provider: auto
-  # PvPManager only lets players use /pvp with the permission pvpmanager.command.pvp, which is off by default,
-  # and players start with PvP on. Headcount's default rules block moving heads and trading while PvP is on, so
-  # with this on, every player may use /pvp (the permission's default becomes true; a player or group that is
-  # explicitly denied it in your permissions plugin stays denied). Set false to hand the permission out yourself.
-  let-players-toggle: true
+  # included | pvpmanager | none
+  #   included:   Headcount's own PvP (everything under 'included' below). It owns the /pvp command.
+  #   pvpmanager: PvPManager does it all; the 'included' settings are ignored.
+  #   none:       no PvP handling. Players can always fight (vanilla), the PvP statuses read false, and
+  #               combat-tagged falls back to "hit by or hit a player in the last 15s" (statuses.yml).
+  provider: included
 
-placeholderapi:
-  # Use other plugins' placeholders in Headcount's text, formula and statuses. auto | true | false
-  # (Headcount's own %headcount_...% placeholders always work in its own text, with or without PlaceholderAPI.)
-  enabled: auto
-  # Register the %headcount_...% expansion so other plugins can show Headcount's data.
-  register-expansion: true
-  # How formatted values (like %headcount_title%) are given to other plugins: legacy | minimessage | plain
-  expansion-format: legacy
+  # ---- Headcount's own PvP (provider: included) ----
+  included:
+    toggle:
+      # PvP for players who never used /pvp: on | off. With off, players must opt in with /pvp before they can
+      # fight or be hit, which also keeps the default vault and trade rules (blocked while PvP is on) out of the way.
+      default: "off"
+      # Players may switch their own PvP with /pvp (also needs the permission headcount.pvp, default everyone).
+      allow-toggle: true
+      # Time between two switches. Bypass: headcount.bypass.pvp.cooldown
+      cooldown: 10s
+      # Put everyone back to the default each time they join.
+      reset-on-join: false
+      # Worlds where PvP is always on, or always off, whatever each player chose. Exact world names.
+      force-on-worlds: []
+      force-off-worlds: []
 
+    newbie-protection:
+      # New players can't attack or be attacked for this long after their first join (real time). 0 = off.
+      duration: 10m
+      # A protected player may end it early with /pvp on.
+      can-end-early: true
+
+    respawn-protection:
+      # Nobody can hurt a player for this long after they respawn (attacking someone ends it). 0 = off.
+      duration: 5s
+
+    combat-tag:
+      # A hit between two players puts them "in combat" (the combat-tagged status) for 'duration'; every new hit
+      # restarts it. Arrows, tridents, thrown potions, a player's TNT and their tamed pets count as their hits.
+      enabled: true
+      duration: 15s
+      # Who is tagged by a hit.
+      tag-attacker: true
+      tag-victim: true
+      # Dying ends the tag.
+      untag-on-death: true
+      # While in combat:
+      block-pvp-toggle: true       # can't turn PvP off
+      block-flight: true           # flying stops and can't start again (creative and spectator are never affected)
+      block-elytra: false          # can't start gliding
+      block-ender-pearls: false    # can't throw ender pearls
+      block-teleport: true         # teleports by commands and plugins (/spawn, /home, /tpa...) fail
+      # Commands that can't be used (no slash; namespaced forms like essentials:home are blocked too).
+      # Bypass for these and for teleports: headcount.bypass.combat-commands
+      blocked-commands: [spawn, home, homes, warp, warps, tpa, tpahere, tpaccept, tpyes, back, rtp, wild, ec, enderchest, hub, lobby]
+
+    combat-log:
+      # Leaving the server while in combat. Being kicked or banned doesn't count. Bypass: headcount.bypass.combat-log
+      enabled: true
+      # kill: the player dies as they leave, so their items and XP drop where they stood.
+      # none: nothing happens to them; only 'actions' and 'broadcast' below.
+      punishment: kill
+      # The player who last hit them gets the kill, and with it the kill head drop (config.yml kills).
+      credit-last-attacker: true
+      # Extra actions run on the player who left (any action from actions.yml; the ones that need the player
+      # online wait for their next join). For example:
+      #   actions:
+      #     - type: points
+      #       amount: -5
+      #     - message: "<red>You logged out during a fight and lost 5 points."
+      actions: []
+      # Tell everyone else (lang: pvp.combat-log-broadcast).
+      broadcast: true
+
+    # How each kind of PvP message reaches the player. The texts are in lang/en_US.yml under pvp.
+    #   channel: chat | actionbar | title | none
+    #   sound:   a sound key (e.g. "minecraft:block.note_block.bass"), or "" for none. volume and pitch: 0-2.
+    # The same message is sent at most once a second to a player.
+    messages:
+      # /pvp switched your PvP (pvp.toggled-on / toggled-off / newbie-ended).
+      toggled:
+        channel: chat
+        sound: "minecraft:ui.button.click"
+      # You hit someone or were hit, and are now in combat (pvp.tag-start).
+      tag-start:
+        channel: actionbar
+        sound: "minecraft:item.armor.equip_iron"
+      # Your combat tag ended (pvp.tag-end).
+      tag-end:
+        channel: actionbar
+        sound: ""
+      # Your hit was stopped because someone has PvP off or is protected (pvp.blocked-hit.*).
+      blocked-hit:
+        channel: actionbar
+        sound: ""
+      # Something was refused: a blocked command, teleport, flight, pearl, /pvp during combat or a cooldown.
+      blocked-action:
+        channel: chat
+        sound: "minecraft:block.note_block.bass"
+        pitch: 0.7
+      # The live countdown while in combat (pvp.countdown): actionbar | bossbar | none
+      countdown: actionbar
+      # Boss bar color when countdown is bossbar: pink | blue | red | green | yellow | purple | white
+      countdown-bossbar-color: red
+
+  # ---- PvPManager (provider: pvpmanager) ----
+  pvpmanager:
+    # PvPManager only lets players use /pvp with its permission pvpmanager.command.pvp, which is off by default,
+    # and players start with PvP on. Headcount's default rules block moving heads and trading while PvP is on, so
+    # with this on, every player may use /pvp (the permission's default becomes true; a player or group that is
+    # explicitly denied it in your permissions plugin stays denied). Set false to hand the permission out yourself.
+    let-players-toggle: true
+
+# --------------------------------------------------------------------------------------------
+#  Placeholders: %...% in Headcount's text, the score formula and statuses.
+# --------------------------------------------------------------------------------------------
+placeholders:
+  # included | placeholderapi | none
+  #   included:       Headcount's own %headcount_...% placeholders only (docs/placeholders.md lists them).
+  #   placeholderapi: those plus every PlaceholderAPI placeholder, and %headcount_...% for other plugins.
+  #   none:           no %...% placeholders at all, Headcount's own included (they show as written).
+  provider: included
+  placeholderapi:
+    # Register the %headcount_...% expansion so other plugins (scoreboards, tab, chat) can show Headcount's data.
+    register-expansion: true
+    # How formatted values (like %headcount_title%) are given to other plugins: legacy | minimessage | plain
+    expansion-format: legacy
+
+# --------------------------------------------------------------------------------------------
+#  Money, for the money action. (Points, Headcount's own currency, need nothing.)
+# --------------------------------------------------------------------------------------------
 economy:
-  # Money for the money action. auto | vault | none
-  provider: auto
+  # vault | none. vault uses whatever economy plugin is behind Vault (EssentialsX, CMI, ...).
+  provider: vault
 
+# --------------------------------------------------------------------------------------------
+#  Permissions: the permission, group, primary-group, track, prefix and suffix actions, and title prefixes
+#  (titles.yml permission-prefix).
+# --------------------------------------------------------------------------------------------
 permissions:
-  # Permission, group, track and prefix/suffix actions. auto (LuckPerms, then Vault) | luckperms | vault | none
-  provider: auto
+  # included | luckperms | vault | none
+  #   included:  Headcount gives permission nodes itself (saved, and re-applied on every join). It can't do groups,
+  #              tracks, prefixes or suffixes: those actions are skipped with a warning. Use luckperms or vault.
+  #   luckperms: everything, with LuckPerms' own expiry on timed changes.
+  #   vault:     through Vault's permission API (groups, prefixes and suffixes need a Vault chat plugin).
+  #   none:      every permission action is skipped.
+  provider: included
   luckperms:
     # Give timed changes LuckPerms' own expiry too, so they end even if Headcount is removed.
     use-expiry: true
     # Optional "server" context for nodes Headcount adds (empty = global).
     server-context: ""
 
+# --------------------------------------------------------------------------------------------
+#  Moderation: the ban, mute, kick, warn and jail actions.
+# --------------------------------------------------------------------------------------------
 moderation:
-  # ban, mute, kick, warn and jail actions.
-  # auto (LiteBans, LibertyBans, AdvancedBan, EssentialsX) | litebans | libertybans | advancedban | essentials |
-  # commands | vanilla. Each punishment kind uses the first provider that supports it, then the vanilla fallback:
-  # vanilla bans, kicks and warnings (a message), and Headcount's own mutes and jails.
-  provider: auto
+  # included | litebans | libertybans | advancedban | essentials | commands | none
+  #   included:    vanilla bans (the server's ban list), kicks, warnings (a message), and Headcount's own mute and
+  #                jail (settings below).
+  #   commands:    any moderation plugin, driven by the command templates under 'commands'.
+  #   none:        every moderation action is skipped.
+  # A plugin that can't do one kind (LibertyBans and LiteBans have no jail) leaves that kind to 'included'.
+  provider: included
+  # Give single kinds their own provider (same choices), e.g. bans by LibertyBans but jail by EssentialsX:
+  #   kinds:
+  #     jail: essentials
+  # Kinds: ban, mute, kick, warn, jail. Leave out a kind to use 'provider'.
+  kinds: {}
   # Name shown as the punisher where the plugin supports it.
   operator-name: Headcount
   # Hide punishment broadcasts where the plugin supports it.
   silent: false
-  # LiteBans' API cannot create punishments, so LiteBans is driven by its commands. <player> <uuid> <reason> <duration>
+
+  # Headcount's own jail (used by 'included', and for jail with any plugin that has none).
+  included-jail:
+    # world,x,y,z[,yaw,pitch]. Must be set for jail actions to work. E.g. "world,0,64,0"
+    location: ""
+    # Jailed players further than this many blocks are pulled back.
+    radius: 8
+    # Where release sends them: previous | spawn
+    release-to: previous
+    # Commands jailed players may still use (everything else is blocked).
+    allowed-commands: [msg, tell, r, hc, headcount]
+  # Headcount's own mute (used by 'included'): blocks chat and these commands.
+  included-mute:
+    blocked-commands: [msg, tell, w, r, me, say]
+
+  # LiteBans' API cannot create punishments, so LiteBans is driven by its commands.
+  # Variables: <player> <uuid> <reason> <duration>
   litebans-commands:
     ban: "litebans:ban <player> <reason>"
     tempban: "litebans:tempban <player> <duration> <reason>"
@@ -59,7 +216,7 @@ moderation:
     unmute: "litebans:unmute <player>"
     kick: "litebans:kick <player> <reason>"
     warn: "litebans:warn <player> <reason>"
-  # Used when provider is "commands": drive any moderation plugin from templates. Leave a kind empty if unsupported.
+  # Templates for provider 'commands'. Leave a kind empty if your plugin can't do it (it then goes to 'included').
   # Variables: <player> <uuid> <reason> <duration> <jail>
   commands:
     ban: "ban <player> <reason>"
@@ -73,36 +230,48 @@ moderation:
     jail: ""
     tempjail: ""
     unjail: ""
-  # Headcount's own jail, used when no plugin provides jails.
-  vanilla-jail:
-    # world,x,y,z[,yaw,pitch]. Must be set for jail actions to work without a jail plugin.
-    location: ""
-    # Jailed players further than this are pulled back.
-    radius: 8
-    # Where release sends them: previous | spawn
-    release-to: previous
-    # Commands jailed players may still use.
-    allowed-commands: [msg, tell, r, hc, headcount]
-  # Headcount's own mute (when no plugin provides mutes) blocks chat and these commands.
-  vanilla-mute:
-    blocked-commands: [msg, tell, w, r, me, say]
 
+# --------------------------------------------------------------------------------------------
+#  Discord, for the discord action.
+# --------------------------------------------------------------------------------------------
 discord:
-  # Discord messages for the discord action. auto | discordsrv | none
-  provider: auto
-  # DiscordSRV game channel name used when an action does not name one.
+  # discordsrv | none
+  provider: discordsrv
+  # DiscordSRV game channel used when an action doesn't name one.
   default-channel: global
 
+# --------------------------------------------------------------------------------------------
+#  Custom items: item definitions written as "custom: itemsadder:ns:id", "custom: oraxen:id", "custom: nexo:id".
+# --------------------------------------------------------------------------------------------
 items:
-  # Custom item plugins for item definitions written as "custom: itemsadder:ns:id", "custom: oraxen:id",
-  # "custom: nexo:id". auto uses every installed one; or list some: [itemsadder, nexo]
-  providers: [auto]
+  # Which of itemsadder, oraxen and nexo to use (the ones not installed are skipped). [] turns custom items off.
+  providers: [itemsadder, oraxen, nexo]
 
+# --------------------------------------------------------------------------------------------
+#  Bedrock players (through Geyser). Bedrock players get /trade accept instead of the chat link; every menu and
+#  the sidebar work for them. Also the bedrock status.
+# --------------------------------------------------------------------------------------------
 bedrock:
-  # Detect Bedrock players (Geyser). auto (Floodgate, then Geyser) | floodgate | geyser | none
-  # Bedrock players use /trade accept instead of the chat link; every menu and the sidebar work for them.
-  provider: auto
+  # floodgate | geyser | none. floodgate also knows players who have no Java account.
+  provider: floodgate
 
-essentials:
-  # Read EssentialsX afk/vanish/god/jail/mute state for the essentials status source. auto | false
-  enabled: auto
+# --------------------------------------------------------------------------------------------
+#  Player states: afk, vanished, god, jailed and muted, for the player-state status source (the afk and vanished
+#  statuses in statuses.yml).
+# --------------------------------------------------------------------------------------------
+player-state:
+  # included | essentials | none
+  #   included:   AFK after 'afk.after' without activity; vanished from the "vanished" flag most vanish plugins
+  #               set; god mode from the player's invulnerable flag; jailed and muted from Headcount's own jail and
+  #               mute (or the moderation plugin, when it can tell).
+  #   essentials: EssentialsX's own /afk, /vanish, /god, jail and mute.
+  #   none:       all five read false.
+  provider: included
+  included:
+    afk:
+      # Time without moving, looking around, chatting, commands or clicking before a player is AFK. 0 = never.
+      after: 5m
+      # Turning the camera counts as activity.
+      looking-counts: true
+      # Who is told when someone goes AFK or comes back: self | everyone | none (lang: player-state.*)
+      announce: self

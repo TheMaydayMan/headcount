@@ -3,6 +3,10 @@
 #  /trade <player> sends a request; the target accepts with /trade accept (or the chat link on Java),
 #  denies with /trade deny, and the sender withdraws with /trade cancel.
 #  Each player can have at most one active trade or pending request at a time, incoming or outgoing.
+#
+#  Where text lives: this file holds text you design (menu titles, item names and lore, and the messages inside
+#  action lists). Everything Headcount itself says (command replies, errors, confirmations, help, effect
+#  descriptions) is in lang/en_US.yml.
 # ============================================================================================
 config-version: 1
 

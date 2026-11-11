@@ -25,7 +25,7 @@ statuses:
     description: "..."     # optional note
 ```
 
-A source "can't answer" when the plugin it needs is missing, or when a placeholder doesn't resolve. In that case Headcount uses `fallback` if set, otherwise `unavailable`.
+A source "can't answer" when its provider is `none`, when the plugin it needs is missing, or when a placeholder doesn't resolve. In that case Headcount uses `fallback` if set, otherwise `unavailable`.
 
 Results are cached for one server tick, so checking the same status many times in a tick is cheap. A status that refers back to itself through combinations or fallbacks is found when the file loads: it is disabled and named in a warning and in `/hca selftest`. A loop that only appears while running (through `nearby-player`) is still stopped and treated as false.
 
@@ -33,14 +33,14 @@ Results are cached for one server tick, so checking the same status many times i
 
 | Status | Meaning |
 |---|---|
-| `in-pvp` | PvPManager's PvP toggle is on. PvPManager turns PvP on for everyone by default; players turn it off with `/pvp`. Without a PvP plugin it is never active. |
-| `combat-tagged` | PvPManager's combat tag. Without PvPManager it falls back to `recent-pvp-damage`. |
+| `in-pvp` | The player's PvP is on, from the PvP provider in `integrations.yml` (Headcount's own `/pvp`, or PvPManager). With provider `none` it is never active. |
+| `combat-tagged` | In combat (the PvP provider's combat tag). With provider `none` it falls back to `recent-pvp-damage`. |
 | `recent-pvp-damage` | Dealt or took damage from a player in the last 15 seconds. |
-| `newbie-protected` | PvPManager's newbie protection. |
+| `newbie-protected` | The PvP provider's new-player protection. |
 | `creative-or-spectator` | In creative or spectator mode. |
 | `sleeping-or-dead` | Sleeping or dead. |
-| `vanished` | Vanished through any plugin that sets the `vanished` metadata, or through EssentialsX. |
-| `afk` | EssentialsX AFK. |
+| `vanished` | Vanished through any plugin that sets the `vanished` metadata, or through EssentialsX when the player-state provider is `essentials`. |
+| `afk` | AFK, from the player-state provider: Headcount's own idle timer (`integrations.yml player-state.included.afk`, 5 minutes by default), or EssentialsX's `/afk`. |
 | `bedrock-player` | Joined through Geyser. |
 | `low-health`, `on-fire`, `in-lava`, `falling-far`, `in-danger` | Examples built from the built-in checks. |
 
@@ -50,8 +50,8 @@ Results are cached for one server tick, so checking the same status many times i
 
 | Source | Settings | True when |
 |---|---|---|
-| `pvp` | `check`: `pvp-enabled`, `pvp-disabled`, `combat-tagged`, `newbie`, `respawn-protected`, `override` | The PvP plugin chosen in `integrations.yml` reports that state (PvPManager is hooked directly). |
-| `essentials` | `check`: `afk`, `vanished`, `god`, `jailed`, `muted` | EssentialsX reports that state. |
+| `pvp` | `check`: `pvp-enabled`, `pvp-disabled`, `combat-tagged`, `newbie`, `respawn-protected`, `override` | The PvP provider chosen in `integrations.yml` (Headcount's included PvP, or PvPManager) reports that state. With provider `none` it can't answer. |
+| `player-state` | `check`: `afk`, `vanished`, `god`, `jailed`, `muted` | The player-state provider reports that state. `included`: AFK from Headcount's idle timer, vanished from the `vanished` metadata, god from the invulnerable flag, jailed and muted from Headcount's own jail and mute (or the moderation plugin). `essentials`: EssentialsX. `essentials` is still accepted as the source's old name. |
 | `muted` | none | The moderation plugin reports a mute, or Headcount's own mute is active. |
 | `bedrock` | none | The player joined through Geyser (Floodgate or Geyser is asked). |
 

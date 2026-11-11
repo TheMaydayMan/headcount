@@ -35,7 +35,7 @@ final class TitleActions {
                 @Override public boolean revertible() { return true; }
                 @Override public boolean requiresOnline() { return false; }
                 @Override public String stackKey() { return title; }
-                @Override public String describe(ActionContext ctx) { return "title " + title; }
+                @Override public String describe(ActionContext ctx) { return Types.describe("grant-title", "title", title); }
             };
         }));
 
@@ -125,7 +125,7 @@ final class TitleActions {
                 @Override public boolean stateful() { return true; }
                 @Override public boolean requiresOnline() { return false; }
                 @Override public String stackKey() { return "forced"; }
-                @Override public String describe(ActionContext ctx) { return "forced title " + title; }
+                @Override public String describe(ActionContext ctx) { return Types.describe("force-title", "title", title); }
             };
         }));
     }

@@ -11,6 +11,8 @@ public final class HeadKeys {
     public final NamespacedKey id;
     public final NamespacedKey created;
     public final NamespacedKey source;
+    /** The cycle run's token (1.1+). */
+    public final NamespacedKey token;
     /** Fingerprint of how the name/lore was last rendered, so expired heads are re-rendered once. */
     public final NamespacedKey render;
     /** On a placed skull block: the full serialized economy head item. */
@@ -31,6 +33,7 @@ public final class HeadKeys {
         id = new NamespacedKey(plugin, "head_id");
         created = new NamespacedKey(plugin, "head_created");
         source = new NamespacedKey(plugin, "head_source");
+        token = new NamespacedKey(plugin, "head_token");
         render = new NamespacedKey(plugin, "head_render");
         placedItem = new NamespacedKey(plugin, "placed_item");
         placedId = new NamespacedKey(plugin, "placed_id");

@@ -5,8 +5,11 @@ import com.gradychastain.headcount.audit.AuditType;
 import com.gradychastain.headcount.gui.Gui;
 import com.gradychastain.headcount.gui.MenuLayout;
 import com.gradychastain.headcount.head.HeadData;
+import com.gradychastain.headcount.text.ScoreTag;
 import com.gradychastain.headcount.text.Vars;
 import com.gradychastain.headcount.util.Items;
+import net.kyori.adventure.text.Component;
+import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.HumanEntity;
 import org.bukkit.entity.Player;
@@ -15,6 +18,7 @@ import org.bukkit.event.inventory.InventoryAction;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
+import org.bukkit.inventory.InventoryView;
 import org.bukkit.inventory.ItemStack;
 
 import java.util.ArrayList;
@@ -52,6 +56,8 @@ final class VaultGui extends Gui {
     /** False until the inventory has been drawn once; syncing before that would read empty slots as removals. */
     private boolean rendered;
     private Player clicker;
+    /** The title as last sent, so it is only re-sent when the counts in it change. */
+    private String shownTitle;
 
     static int pages(int size) {
         return size <= 54 ? 1 : (int) Math.ceil(size / (double) PAGED_SLOTS);
@@ -65,9 +71,9 @@ final class VaultGui extends Gui {
         this.ownerName = ownerName;
         this.paged = data.size > 54;
         int rows = paged ? 6 : Math.max(1, (int) Math.ceil(data.size / 9.0));
-        VaultTally t = data.tally();
-        Vars vars = Vars.of("owner", ownerName, "page", page + 1, "pages", pages(data.size), "unique", t.unique(), "total", t.total(), "size", data.size);
-        create(rows, layout().title(plugin, opener, vars, "<dark_gray><owner>'s Head Vault"));
+        Component title = layout().title(plugin, opener, vars(), DEFAULT_TITLE);
+        shownTitle = plugin.text().legacy(title);
+        create(rows, title);
         inventory.setMaxStackSize(1);
         storage = new int[rows * 9];
         Arrays.fill(storage, -1);
@@ -75,6 +81,40 @@ final class VaultGui extends Gui {
         for (int i = 0; i < perPage; i++) {
             int global = page * perPage + i;
             if (global < data.size) storage[i] = global;
+        }
+    }
+
+    private static final String DEFAULT_TITLE = "<dark_gray><owner>'s Head Vault";
+
+    /**
+     * Variables for the title and buttons: <owner> <page> <pages> <unique> <total> <size> <used>, and the owner's
+     * score if the cycle ended now as <score> or <score:positive:negative:zero> (colours from vault.gui.score-colors).
+     */
+    private Vars vars() {
+        VaultTally t = data.tally();
+        Player owner = Bukkit.getPlayer(data.owner);
+        Integer score = owner != null && plugin.cycles().current() != null ? plugin.scores().preview(owner) : null;
+        var colors = plugin.configs().main().getSection("vault.gui.score-colors");
+        return Vars.of("owner", ownerName, "page", page + 1, "pages", pages(data.size), "unique", t.unique(), "total", t.total(),
+                "size", data.size, "used", data.used())
+                .tag("score", ScoreTag.of("score", score, colors.getString("positive", "green"), colors.getString("negative", "red"),
+                        colors.getString("zero", "gray"), plugin.lang().raw("vault.score-unknown")));
+    }
+
+    /** Recomputes the title (the score depends on other players' vaults too). */
+    void refreshTitle() {
+        if (rendered && !closing) updateTitle(vars());
+    }
+
+    /** Re-sends the title to everyone viewing when the counts in it changed (the menu stays open). */
+    @SuppressWarnings("deprecation") // InventoryView#setTitle is the only way to retitle an open menu; it takes legacy text
+    private void updateTitle(Vars vars) {
+        String title = plugin.text().legacy(layout().title(plugin, viewer, vars, DEFAULT_TITLE));
+        if (title.equals(shownTitle)) return;
+        shownTitle = title;
+        for (HumanEntity h : new ArrayList<>(inventory.getViewers())) {
+            InventoryView view = h.getOpenInventory();
+            if (view.getTopInventory() == inventory) view.setTitle(title);
         }
     }
 
@@ -100,9 +140,8 @@ final class VaultGui extends Gui {
         // Capture anything placed since the last sync before redrawing, so a redraw can never overwrite it.
         if (rendered) sync(clicker);
         rendered = true;
-        VaultTally t = data.tally();
-        Vars vars = Vars.of("owner", ownerName, "page", page + 1, "pages", pages(data.size), "unique", t.unique(), "total", t.total(),
-                "size", data.size, "used", data.used());
+        Vars vars = vars();
+        updateTitle(vars);
         MenuLayout layout = layout();
         List<Integer> taken = new ArrayList<>();
         for (int slot = 0; slot < storage.length; slot++) {
@@ -178,7 +217,7 @@ final class VaultGui extends Gui {
             return false;
         }
         if (!plugin.heads().isCurrent(h)) {
-            plugin.lang().send(p, "vault.expired-head", Vars.of("cycle", h.cycle()));
+            plugin.lang().send(p, plugin.heads().isVoid(h) ? "vault.reset-head" : "vault.expired-head", Vars.of("cycle", h.cycle()));
             return false;
         }
         if (item.getAmount() > 1) {

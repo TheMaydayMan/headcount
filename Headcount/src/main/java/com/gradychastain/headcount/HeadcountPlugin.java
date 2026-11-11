@@ -29,6 +29,7 @@ import com.gradychastain.headcount.player.Deliveries;
 import com.gradychastain.headcount.player.PlayerManager;
 import com.gradychastain.headcount.player.PlayerStore;
 import com.gradychastain.headcount.points.PointsService;
+import com.gradychastain.headcount.reset.ResetManager;
 import com.gradychastain.headcount.scoring.LiveStats;
 import com.gradychastain.headcount.scoring.ScoreService;
 import com.gradychastain.headcount.shop.ShopManager;
@@ -99,6 +100,7 @@ public final class HeadcountPlugin extends JavaPlugin implements Listener {
     private GuiManager guis;
     private KillManager kills;
     private Placeholders placeholders;
+    private ResetManager resets;
     private HeadcountAPI api;
     private final List<BukkitTask> tasks = new ArrayList<>();
     private final List<Permission> registeredPermissions = new ArrayList<>();
@@ -150,6 +152,7 @@ public final class HeadcountPlugin extends JavaPlugin implements Listener {
         guis = new GuiManager(this);
         kills = new KillManager(this);
         placeholders = new Placeholders(this);
+        resets = new ResetManager(this);
         placed = new PlacedHeadListener(this);
         dupes = new DuplicateGuard(this);
         refresher = new HeadRefresher(this);
@@ -165,6 +168,7 @@ public final class HeadcountPlugin extends JavaPlugin implements Listener {
         AdminCommand admin = new AdminCommand(this);
         register("headcount", new HeadcountCommand(this, admin));
         register("trade", new TradeCommand(this));
+        register("pvp", integrations.includedPvP());
         register("hcadmin", admin);
 
         api = new HeadcountAPIImpl(this);
@@ -193,7 +197,7 @@ public final class HeadcountPlugin extends JavaPlugin implements Listener {
         java.time.ZoneId zone;
         try {
             String z = configs.main().getString("cycle.time-zone", "UTC");
-            zone = z.equalsIgnoreCase("system") ? java.time.ZoneId.systemDefault() : java.time.ZoneId.of(z);
+            zone = com.gradychastain.headcount.util.Zones.parse(z);
         } catch (RuntimeException e) {
             zone = java.time.ZoneId.of("UTC");
         }
@@ -205,6 +209,7 @@ public final class HeadcountPlugin extends JavaPlugin implements Listener {
         try {
             parseAll();
             statuses.reportErrors();
+            heads.loadVoided();
             cycles.load();
             vaults.loadIndex();
             kills.load();
@@ -265,6 +270,7 @@ public final class HeadcountPlugin extends JavaPlugin implements Listener {
             safely("action tick", actions::tick);
             safely("boss bar tick", bossBars::tick);
             safely("chat refresh", denyListener::refreshChat);
+            safely("vault titles", vaults::refreshTitles);
         }, 20L, 20L));
         long activity = Math.max(20, configs.main().getMillis("activity.check-interval", 30_000) / 50);
         tasks.add(s.runTaskTimer(this, () -> safely("activity tick", players::tick), activity, activity));
@@ -431,5 +437,6 @@ public final class HeadcountPlugin extends JavaPlugin implements Listener {
     public GuiManager guis() { return guis; }
     public KillManager kills() { return kills; }
     public Placeholders placeholders() { return placeholders; }
+    public ResetManager resets() { return resets; }
     public HeadcountAPI api() { return api; }
 }

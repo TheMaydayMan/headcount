@@ -30,6 +30,8 @@ public final class PlayerData {
     public Double rolloverOverride;
     public int scoreBonus;
     public boolean bedrock;
+    /** The player's own PvP toggle for the included PvP system; null = never toggled (uses the default). */
+    public Boolean pvp;
     public final Set<String> titles = new HashSet<>();
     public final Set<String> flags = new HashSet<>();
     public CycleStats stats;        // current cycle; null before joining it

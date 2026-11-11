@@ -109,7 +109,7 @@ public final class DenyAction {
 
         @Override public boolean stateful() { return true; }
         @Override public boolean requiresOnline() { return false; }
-        @Override public String describe(ActionContext ctx) { return "denied: " + String.join(", ", categories); }
+        @Override public String describe(ActionContext ctx) { return Types.describe("deny", "categories", String.join(", ", categories)); }
 
         public Set<String> categories() {
             return categories;

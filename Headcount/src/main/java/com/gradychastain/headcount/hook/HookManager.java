@@ -94,7 +94,7 @@ public final class HookManager {
         v.mini("outcomes", names.isEmpty() ? plugin.lang().raw("hooks.no-outcomes") : String.join("<gray>, </gray>", names));
         v.put("active_flag", r.active() ? 1 : 0).put("is_active", r.active() ? 1 : 0);
         v.mini("tier", r.tier() == null || r.tier().isEmpty() ? plugin.lang().raw("hooks.no-tier") : r.tier());
-        v.put("streak_text", streakText(r.streak()));
+        v.mini("streak_text", streakText(r.streak()));
         return v;
     }
 
@@ -209,7 +209,7 @@ public final class HookManager {
         if (list.isEmpty()) return;
         Vars v = cycleVars(plugin.cycles().current()).put("player", p.getName());
         var d = plugin.players().get(p);
-        v.put("points", d.points).put("streak", d.streak).put("streak_text", streakText(d.streak));
+        v.put("points", d.points).put("streak", d.streak).mini("streak_text", streakText(d.streak));
         plugin.actions().run(list, p.getUniqueId(), v, "hook:player." + id);
     }
 

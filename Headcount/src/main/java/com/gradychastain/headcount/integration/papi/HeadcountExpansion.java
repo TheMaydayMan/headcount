@@ -24,7 +24,10 @@ public final class HeadcountExpansion extends PlaceholderExpansion {
         PlaceholderValue v = plugin.placeholders().resolve(player, params);
         if (v == null) return null;
         if (!v.mini()) return v.text();
-        String format = plugin.configs().integrations().getString("placeholderapi.expansion-format", "legacy");
+        var cfg = plugin.configs().integrations();
+        // placeholders.placeholderapi.expansion-format; before 1.1 it was placeholderapi.expansion-format
+        String format = cfg.has("placeholderapi.expansion-format") ? cfg.getString("placeholderapi.expansion-format", "legacy")
+                : cfg.getString("placeholders.placeholderapi.expansion-format", "legacy");
         return switch (format.toLowerCase(java.util.Locale.ROOT)) {
             case "minimessage" -> v.text();
             case "plain" -> plugin.text().mini().stripTags(v.text());

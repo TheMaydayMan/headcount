@@ -13,6 +13,7 @@ TestServer/*
 !TestServer/README.md
 !TestServer/setup.sh
 !TestServer/start.sh
+!TestServer/restart.sh
 !TestServer/server.properties.template
 
 # Editors and the OS
@@ -21,3 +22,6 @@ TestServer/*
 .vscode/
 .DS_Store
 *.part
+
+# Python
+__pycache__/

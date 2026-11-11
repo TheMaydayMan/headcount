@@ -38,7 +38,7 @@ Anywhere an action list is expected, you can also give one list name as a string
 | `delay` | duration | Wait before running. Not kept across restarts. |
 | `repeat` | duration | Run again every interval while the action is active (needs a duration). For example, lightning every 5m for 1h, or a location broadcast every 30m. |
 | `conditions` | see below | Only run when these match. |
-| `start-message`, `end-message` | MiniMessage | Shown to the player when it starts and ends. `<duration>` and `<remaining>` are available. |
+| `start-message`, `end-message` | MiniMessage | Shown to the player when it starts and ends. `<duration>` and `<remaining>` are available (their words come from `effects.duration` in the language file). |
 
 ### Conditions
 
@@ -85,7 +85,7 @@ In **global hooks**, actions run without a player. Message-like actions then go 
 | `actionbar` | `text` | `text`, `audience` | yes | - |
 | `sound` | `sound` | `sound` (a key like `entity.experience_orb.pickup`), `volume: 1`, `pitch: 1`, `source: master`, `audience` | yes | - |
 | `particle` | `particle` | `particle: happy_villager`, `count: 20`, `offset: 0.5` (or `offset-x/y/z`), `speed: 0.05`, `height: 1` | yes | - |
-| `bossbar` | `text` | `text`, `color: red`, `overlay: progress` (or `notched_6/10/12/20`), `progress: 1.0`, `countdown-to`: `cycle-end`, a duration like `60s`, or a date-time `2026-12-01T00:00`; `seconds: 10` (how long an instant bar shows). Text variables: `<countdown>`, `<countdown_clock>`, `<seconds>`. Timed: shown while active. In a global hook: everyone online sees it, players who join while it runs see it too, and it disappears at the end of the countdown. | yes | hides it |
+| `bossbar` | `text` | `text`, `color: red`, `overlay: progress` (or `notched_6/10/12/20`), `progress: 1.0`, `countdown-to`: `cycle-end`, a duration like `60s`, or a date-time `2026-12-01T00:00`; `seconds: 10` (how long an instant bar shows). Text variables: `<countdown>`, `<countdown_clock>`, `<seconds>`, plus every variable of the list it runs in (such as `<cycle>` in a hook). Timed: shown while active. In a global hook: everyone online sees it, players who join while it runs see it too, and it disappears at the end of the countdown. | yes | hides it |
 | `discord` | `text` | `text`, `channel` (a DiscordSRV channel; default from integrations.yml) | no | - |
 | `broadcast-location` | `text` | `text` (`<player> <x> <y> <z> <world>`), `audience: all`. Add `repeat` to report it regularly. | yes | - |
 
@@ -118,7 +118,7 @@ Item definitions accept `material`, `amount`, `name`, `lore`, `enchants` (map of
 
 ### Permissions and ranks
 
-These work through LuckPerms, or Vault as a fallback. With LuckPerms, timed changes also get LuckPerms' own expiry, so they end even if Headcount is removed.
+These go through the permissions provider in `integrations.yml`. `included` (the default) gives permission nodes itself and re-applies them on every join, but can't do groups, tracks, prefixes or suffixes: those need `luckperms` or `vault` and are skipped with a warning otherwise. With LuckPerms, timed changes also get LuckPerms' own expiry, so they end even if Headcount is removed.
 
 | Type | Main | Settings | Online | Undo |
 |---|---|---|---|---|
@@ -139,13 +139,13 @@ These work through LuckPerms, or Vault as a fallback. With LuckPerms, timed chan
 
 ### Moderation
 
-These go through the moderation plugin chosen in `integrations.yml`, falling back to vanilla bans, kicks and warnings, and Headcount's own mutes and jails.
+These go through the moderation provider in `integrations.yml` (each kind can have its own under `moderation.kinds`). `included` uses vanilla bans, kicks and warnings, and Headcount's own mutes and jails; a plugin that can't do a kind leaves it to `included`.
 
 | Type | Main | Settings | Online | Undo |
 |---|---|---|---|---|
 | `ban`, `mute`, `warn` | `reason` | `reason` | no | timed: lifts the ban or mute |
 | `kick` | `reason` | `reason` (skipped for offline players) | - | - |
-| `jail` | `reason` | `reason`, `jail` (jail name for EssentialsX). Headcount's own jail uses `moderation.vanilla-jail` in integrations.yml. | yes | releases |
+| `jail` | `reason` | `reason`, `jail` (jail name for EssentialsX). Headcount's own jail uses `moderation.included-jail` in integrations.yml. | yes | releases |
 
 A timed `duration` makes the punishment temporary and is passed to the plugin. `instant` or `permanent` makes it permanent. For `cycle`, the time left in the cycle is passed. For `death`, `manual` and `cycles:N`, Headcount lifts the punishment itself when the action ends.
 
@@ -153,7 +153,7 @@ A timed `duration` makes the punishment temporary and is passed to the plugin. `
 
 | Type | Main | Settings | Online | Undo |
 |---|---|---|---|---|
-| `pvp` | `state` | `state`: `on` or `off`, `lock: true` (the player can't toggle it while active), `restore: true` | yes | unlocks and restores the previous state |
+| `pvp` | `state` | `state`: `on` or `off`, `lock: true` (the player can't toggle it while active), `restore: true`. Works with the included PvP or PvPManager; skipped with `pvp.provider: none`. | yes | unlocks and restores the previous state |
 
 ### Buffs and debuffs
 

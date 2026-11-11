@@ -72,8 +72,8 @@ public final class OutcomeManager {
         return Vars.of("player", r.name(), "score", r.score() == null ? 0 : r.score(), "unique", r.unique(), "total", r.total(),
                 "own", r.own(), "rank", r.rank() == null ? 0 : r.rank(), "percentile", r.percentile() == null ? 0 : Math.round(r.percentile()),
                 "streak", r.streak(), "points_earned", r.pointsEarned(), "points", r.pointsAfter(), "rolled_over", r.rolledOver(),
-                "cycle", cycle.id(), "tier", r.tier() == null ? "" : r.tier(), "playtime", Formats.duration(r.playtimeMs()),
-                "kills", r.kills(), "deaths", r.deaths(), "trades", r.trades());
+                "cycle", cycle.id(), "playtime", Formats.duration(r.playtimeMs()),
+                "kills", r.kills(), "deaths", r.deaths(), "trades", r.trades()).mini("tier", r.tier() == null ? "" : r.tier());
     }
 
     /** The rules a result gets, after the all / most-extreme selection. */
@@ -133,7 +133,7 @@ public final class OutcomeManager {
                     applied.add("shielded:" + rule.id());
                     plugin.audit().log(AuditType.OUTCOME, "cycle", cycle.id(), "player", r.name() + "(" + r.uuid() + ")", "rule", rule.id(), "result", "blocked-by-shield");
                     Player p = Bukkit.getPlayer(r.uuid());
-                    if (p != null) plugin.lang().send(p, "outcomes.shield-used", Vars.of("outcome", rule.display()));
+                    if (p != null) plugin.lang().send(p, "outcomes.shield-used", Vars.empty().mini("outcome", rule.display()));
                     continue;
                 }
             }

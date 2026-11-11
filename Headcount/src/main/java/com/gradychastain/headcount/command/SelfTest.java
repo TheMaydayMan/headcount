@@ -133,7 +133,7 @@ public final class SelfTest {
             fail(g, "no cycle is running, so current-cycle heads cannot be checked");
             return;
         }
-        HeadData d = new HeadData(UUID.randomUUID(), UUID.randomUUID(), "SelfTest", c.id(), System.currentTimeMillis(), "selftest");
+        HeadData d = new HeadData(UUID.randomUUID(), UUID.randomUUID(), "SelfTest", c.id(), System.currentTimeMillis(), "selftest", c.token());
         ItemStack item = plugin.heads().createItem(d);
         HeadData back = plugin.heads().read(item);
         check(g, back != null && back.id().equals(d.id()) && back.owner().equals(d.owner()) && back.cycle() == d.cycle()
@@ -145,12 +145,15 @@ public final class SelfTest {
         check(g, !plugin.heads().refresh(item), "a freshly made head was re-rendered (render fingerprint unstable)");
         check(g, plugin.heads().readCurrent(item) != null, "a current-cycle head is not seen as current");
         check(g, plugin.heads().read(new ItemStack(Material.PLAYER_HEAD)) == null, "a vanilla head was read as an economy head");
-        ItemStack other = plugin.heads().createItem(new HeadData(UUID.randomUUID(), d.owner(), "SelfTest", c.id(), d.created(), "selftest"));
+        ItemStack other = plugin.heads().createItem(new HeadData(UUID.randomUUID(), d.owner(), "SelfTest", c.id(), d.created(), "selftest", c.token()));
         check(g, !item.isSimilar(other), "two heads with different IDs would stack");
         int max = plugin.configs().main().getInt("heads.item.max-stack-size", 1);
         check(g, item.getMaxStackSize() == max, "max stack size is " + item.getMaxStackSize() + ", config says " + max);
-        HeadData old = new HeadData(UUID.randomUUID(), d.owner(), "SelfTest", c.id() - 1, d.created(), "selftest");
+        HeadData old = new HeadData(UUID.randomUUID(), d.owner(), "SelfTest", c.id() - 1, d.created(), "selftest", null);
         ItemStack expired = plugin.heads().createItem(old);
+        HeadData otherRun = new HeadData(UUID.randomUUID(), d.owner(), "SelfTest", c.id(), d.created(), "selftest", "selftest-run");
+        check(g, !plugin.heads().isCurrent(otherRun), "a head from another run of this cycle (before a reset) counts as current");
+        check(g, plugin.heads().read(plugin.heads().createItem(otherRun)).token().equals("selftest-run"), "a head's cycle token did not read back from the item");
         check(g, plugin.heads().readCurrent(expired) == null && plugin.heads().read(expired) != null, "an older cycle's head is not treated as expired-but-intact");
         String curName = item.getItemMeta().hasDisplayName() ? PlainTextComponentSerializer.plainText().serialize(item.getItemMeta().displayName()) : "";
         String oldName = expired.getItemMeta().hasDisplayName() ? PlainTextComponentSerializer.plainText().serialize(expired.getItemMeta().displayName()) : "";

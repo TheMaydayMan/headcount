@@ -17,10 +17,24 @@ if [ -z "$JAVA" ]; then
   echo "Paper 26.3 needs Java 25 or newer (looked in ~/.jdks/jdk-25.0.5+8, JAVA_HOME and the PATH)." >&2
   exit 1
 fi
-exec "$JAVA" -Xms1G -Xmx2G \
+# `restart` (or a crash) makes restart.sh leave a .restart marker; then the server starts again here, in this
+# terminal. `stop` exits for good.
+rm -f .restart
+while true; do
+# Paper writes spigot.yml on the first start; point its restart script at restart.sh (not this script, which would
+# start a second server detached from this terminal).
+if [ -f spigot.yml ] && grep -q "restart-script: ./start.sh" spigot.yml; then
+  sed 's#restart-script: ./start.sh#restart-script: ./restart.sh#' spigot.yml > spigot.yml.tmp && mv spigot.yml.tmp spigot.yml
+fi
+"$JAVA" -Xms1G -Xmx2G \
   -XX:+UseCompactObjectHeaders -XX:+AlwaysPreTouch -XX:+DisableExplicitGC -XX:+PerfDisableSharedMem \
   -XX:+UnlockExperimentalVMOptions -XX:+UseG1GC -XX:G1HeapRegionSize=8M -XX:G1MaxNewSizePercent=40 \
   -XX:G1MixedGCCountTarget=4 -XX:G1MixedGCLiveThresholdPercent=90 -XX:G1NewSizePercent=30 \
   -XX:G1RSetUpdatingPauseTimePercent=5 -XX:G1ReservePercent=20 -XX:InitiatingHeapOccupancyPercent=15 \
   -XX:MaxTenuringThreshold=1 -XX:SurvivorRatio=32 \
   -jar paper-26.3-246.jar --nogui "$@"
+  [ -f .restart ] || break
+  rm -f .restart
+  echo "Restarting in 3 seconds (Ctrl+C to quit)..."
+  sleep 3
+done

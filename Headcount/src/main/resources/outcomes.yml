@@ -15,6 +15,10 @@
 #
 #  Variables in outcome actions: <player> <score> <unique> <total> <own> <rank> <percentile> <streak>
 #  <points_earned> <points> <rolled_over> <cycle> <tier> <playtime> <kills> <deaths> <trades> <outcome>
+#
+#  Where text lives: this file holds text you design (menu titles, item names and lore, and the messages inside
+#  action lists). Everything Headcount itself says (command replies, errors, confirmations, help, effect
+#  descriptions) is in lang/en_US.yml.
 # ============================================================================================
 config-version: 1
 

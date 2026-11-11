@@ -40,7 +40,7 @@ final class ModerationActions {
     }
 
     static Location jailLocation(HeadcountPlugin plugin) {
-        String raw = plugin.configs().integrations().getString("moderation.vanilla-jail.location", "");
+        String raw = plugin.integrations().includedJail().getString("location", "");
         String[] p = raw.split(",");
         if (p.length < 4) return null;
         World w = Bukkit.getWorld(p[0].trim());
@@ -86,7 +86,7 @@ final class ModerationActions {
                     Location jailAt = jailLocation(plugin);
                     if (p == null) return false;
                     if (jailAt == null) {
-                        plugin.getLogger().warning("jail action: set moderation.vanilla-jail.location in integrations.yml (world,x,y,z).");
+                        plugin.getLogger().warning("jail action: set moderation.included-jail.location in integrations.yml (world,x,y,z).");
                         return false;
                     }
                     Location from = p.getLocation();
@@ -104,7 +104,7 @@ final class ModerationActions {
                 Player p = ctx.player();
                 Location jailAt = jailLocation(plugin);
                 if (p == null || jailAt == null) return;
-                double radius = plugin.configs().integrations().getDouble("moderation.vanilla-jail.radius", 8);
+                double radius = plugin.integrations().includedJail().getDouble("radius", 8);
                 if (!p.getWorld().equals(jailAt.getWorld()) || p.getLocation().distanceSquared(jailAt) > radius * radius) p.teleport(jailAt);
             }
 
@@ -115,7 +115,7 @@ final class ModerationActions {
                 if (kind == Kind.JAIL && h.enforcedByHeadcount(Kind.JAIL)) {
                     Player p = ctx.player();
                     if (p == null) return;
-                    String release = plugin.configs().integrations().getString("moderation.vanilla-jail.release-to", "previous");
+                    String release = plugin.integrations().includedJail().getString("release-to", "previous");
                     Location back = null;
                     if (release.equalsIgnoreCase("previous") && ctx.data().get("return") instanceof String s) {
                         String[] parts = s.split(",");
@@ -141,7 +141,7 @@ final class ModerationActions {
             /** Headcount's own mutes and jails exist only while tracked, so "permanent" keeps them tracked. */
             @Override public boolean stateful() { return kind == Kind.MUTE || kind == Kind.JAIL; }
             @Override public String stackKey() { return kind.name(); }
-            @Override public String describe(ActionContext ctx) { return kind.name().toLowerCase(Locale.ROOT) + (reason.isBlank() ? "" : ": " + ctx.format(reason)); }
+            @Override public String describe(ActionContext ctx) { return Types.describe(reason.isBlank() ? kind.name().toLowerCase(Locale.ROOT) : kind.name().toLowerCase(Locale.ROOT) + "-reason", "reason", reason.isBlank() ? "" : ctx.format(reason)); }
         };
     }
 }

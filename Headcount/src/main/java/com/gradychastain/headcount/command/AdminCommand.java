@@ -137,7 +137,7 @@ public final class AdminCommand implements TabExecutor {
                 plugin.lang().send(s, "admin.cycle.info", Vars.of("cycle", c.id(), "start", Formats.date(c.startMs()), "end", Formats.date(c.endMs()),
                         "time_left", Formats.duration(c.remainingMs()), "length", c.lengthDays(), "vault_size", c.vaultSize(),
                         "starting_heads", c.startingHeads(), "active", plugin.stats().activeCount(), "players", plugin.stats().totalPlayers(),
-                        "zone", plugin.cycles().schedule().zone().getId()));
+                        "zone", plugin.cycles().schedule().zone().getId(), "run", c.token() == null ? "-" : c.token()));
             }
             case "end" -> {
                 if (a.length < 2 || !a[1].equalsIgnoreCase("confirm")) {
@@ -345,7 +345,45 @@ public final class AdminCommand implements TabExecutor {
         for (Vars v : list) plugin.lang().send(s, "admin.effects.line", v);
     }
 
+    private static final List<String> RESET_PARTS = List.of("vault", "points", "titles", "streak", "effects", "history", "all");
+
+    /** "cycle" or "hard" as the first word means the whole-server reset, unless a player of that name is being reset. */
+    private static boolean serverReset(String[] a, String word) {
+        return a.length >= 1 && a[0].equalsIgnoreCase(word) && (a.length == 1 || !RESET_PARTS.contains(a[1].toLowerCase(Locale.ROOT)));
+    }
+
+    private void resetCycle(CommandSender s, String[] a) {
+        if (!perm(s, "headcount.admin.reset.cycle")) return;
+        Cycle c = plugin.cycles().current();
+        if (c == null) {
+            plugin.lang().send(s, "cycle.not-started");
+            return;
+        }
+        boolean delete = plugin.resets().deleteHeads(a);
+        if (Arrays.stream(a).noneMatch(x -> x.equalsIgnoreCase("confirm"))) {
+            plugin.lang().send(s, "admin.reset.cycle-confirm", Vars.of("cycle", c.id(), "args", delete ? "delete-heads" : "keep-heads")
+                    .mini("old_heads", plugin.lang().raw(delete ? "admin.reset.old-heads-delete" : "admin.reset.old-heads-keep")));
+            return;
+        }
+        if (!plugin.cycles().restart(actor(s), delete)) {
+            plugin.lang().send(s, "admin.cycle.cannot");
+            return;
+        }
+        Cycle now = plugin.cycles().current();
+        plugin.lang().send(s, "admin.reset.cycle-done", "cycle", now.id(), "end", Formats.date(now.endMs()));
+        for (Player p : plugin.getServer().getOnlinePlayers()) plugin.lang().send(p, "admin.reset.cycle-broadcast", "cycle", now.id());
+    }
+
     private void reset(CommandSender s, String[] a) {
+        if (serverReset(a, "cycle")) {
+            resetCycle(s, a);
+            return;
+        }
+        if (serverReset(a, "hard")) {
+            String code = a.length > 1 && a[1].chars().allMatch(Character::isDigit) ? a[1] : null;
+            plugin.resets().hardCommand(s, code, plugin.resets().deleteHeads(a), actor(s));
+            return;
+        }
         if (a.length < 2) {
             usage(s, "reset");
             return;
@@ -513,8 +551,9 @@ public final class AdminCommand implements TabExecutor {
         }
         UUID inVault = plugin.vaults().vaultHolding(d.id());
         plugin.lang().send(s, "admin.inspect.head", Vars.of("head", d.id(), "owner", d.ownerName(), "owner_uuid", d.owner(), "cycle", d.cycle(),
-                "current", plugin.heads().isCurrent(d) ? "yes" : "no", "source", d.source(), "created", Formats.date(d.created()),
-                "in_vault", inVault == null ? "no" : plugin.players().name(inVault), "amount", item.getAmount()));
+                "current", plugin.lang().plain(plugin.heads().isCurrent(d) ? "admin.inspect.current" : plugin.heads().isVoid(d) ? "admin.inspect.defunct" : "admin.inspect.expired"),
+                "run", d.token() == null ? "-" : d.token(), "source", d.source(), "created", Formats.date(d.created()),
+                "in_vault", inVault == null ? plugin.lang().plain("admin.inspect.not-in-vault") : plugin.players().name(inVault), "amount", item.getAmount()));
     }
 
     private void placeholders(CommandSender s, String[] a) {
@@ -601,12 +640,22 @@ public final class AdminCommand implements TabExecutor {
                 case 3 -> HeadcountCommand.filter(List.of("all"), last);
                 default -> List.of();
             };
-            case "reset" -> switch (i) {
-                case 1 -> plugin.players().complete(last, true);
-                case 2 -> HeadcountCommand.filter(List.of("vault", "points", "titles", "streak", "effects", "history", "all"), last);
-                case 3 -> List.of("confirm");
-                default -> List.of();
-            };
+            case "reset" -> {
+                if (i == 1) {
+                    List<String> out = new ArrayList<>();
+                    if (sender.hasPermission("headcount.admin.reset.cycle")) out.add("cycle");
+                    if (com.gradychastain.headcount.reset.ResetManager.mayHardReset(sender)) out.add("hard");
+                    out.addAll(plugin.players().complete(last, true));
+                    yield HeadcountCommand.filter(out, last);
+                }
+                if (args[1].equalsIgnoreCase("cycle") && i <= 3) yield HeadcountCommand.filter(List.of("delete-heads", "keep-heads", "confirm"), last);
+                if (args[1].equalsIgnoreCase("hard") && i == 2) yield HeadcountCommand.filter(List.of("delete-heads", "keep-heads"), last);
+                yield switch (i) {
+                    case 2 -> HeadcountCommand.filter(RESET_PARTS, last);
+                    case 3 -> List.of("confirm");
+                    default -> List.of();
+                };
+            }
             case "trade" -> i == 1 ? HeadcountCommand.filter(List.of("cancel"), last) : i == 2 ? plugin.players().complete(last, false) : List.of();
             case "flag" -> i == 1 ? plugin.players().complete(last, true) : i == 2 ? HeadcountCommand.filter(List.of("set", "clear"), last) : List.of();
             case "run" -> i == 1 ? plugin.players().complete(last, true) : i == 2 ? HeadcountCommand.filter(new ArrayList<>(plugin.actions().namedLists()), last) : List.of();

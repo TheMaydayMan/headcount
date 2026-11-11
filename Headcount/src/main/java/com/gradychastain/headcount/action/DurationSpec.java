@@ -42,15 +42,17 @@ public record DurationSpec(Kind kind, long millis, int cycles) {
         return kind == Kind.INSTANT;
     }
 
+    /** The &lt;duration&gt; text in start and end messages, from lang effects.duration.*. */
     public String describe() {
+        var lang = org.bukkit.plugin.java.JavaPlugin.getPlugin(com.gradychastain.headcount.HeadcountPlugin.class).lang();
         return switch (kind) {
-            case INSTANT -> "instant";
-            case TIME -> com.gradychastain.headcount.util.Formats.duration(millis);
-            case CYCLE -> "until the cycle ends";
-            case CYCLES -> cycles + " cycles";
-            case DEATH -> "until death";
-            case PERMANENT -> "permanent";
-            case MANUAL -> "until removed";
+            case INSTANT -> lang.plain("effects.duration.instant");
+            case TIME -> lang.plain("effects.duration.time", "time", com.gradychastain.headcount.util.Formats.duration(millis));
+            case CYCLE -> lang.plain("effects.duration.cycle");
+            case CYCLES -> lang.plain("effects.duration.cycles", "n", cycles);
+            case DEATH -> lang.plain("effects.duration.death");
+            case PERMANENT -> lang.plain("effects.duration.permanent");
+            case MANUAL -> lang.plain("effects.duration.manual");
         };
     }
 }

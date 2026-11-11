@@ -64,6 +64,23 @@ public final class Lang {
         return String.valueOf(v);
     }
 
+    /**
+     * A template with {@code <name>} variables filled in; values are escaped, so the result is still MiniMessage
+     * (for text built here and shown later, like effect descriptions).
+     */
+    public String fill(String key, Object... keyValues) {
+        String s = raw(key);
+        for (int i = 0; i + 1 < keyValues.length; i += 2) {
+            s = s.replace("<" + keyValues[i] + ">", text.mini().escapeTags(Vars.plainOf(keyValues[i + 1])));
+        }
+        return s;
+    }
+
+    /** {@link #fill} with the formatting removed, for plain-text places (console lines, admin summaries). */
+    public String plain(String key, Object... keyValues) {
+        return text.mini().stripTags(fill(key, keyValues));
+    }
+
     /** Raw template or null when the key does not exist in either file (no warning). */
     public String optional(String key) {
         Object v = messages.get(key);

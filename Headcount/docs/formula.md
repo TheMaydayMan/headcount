@@ -44,7 +44,7 @@ An unknown variable counts as 0 and is warned about when the plugin loads. A for
 | `last_score`, `last_unique`, `has_last` | Last cycle's score and unique heads (0 if none), and 1 if there was a last cycle. |
 | `bonus` | Total of `score-bonus` actions waiting for this cycle end. |
 | `titles` | Titles you own. |
-| `cycle`, `cycle_length` | The cycle ID and its length in days. |
+| `cycle`, `cycle_length` | The cycle number and its length in days. |
 | `days_elapsed`, `days_left` | Days since the cycle started, and days until it ends. |
 | `is_active` | 1 if you are active this cycle. |
 | `%any_placeholder%` | Any numeric PlaceholderAPI placeholder, e.g. `%statistic_player_kills%`. Offline players resolve whatever the placeholder supports; anything that isn't a number counts as 0. |

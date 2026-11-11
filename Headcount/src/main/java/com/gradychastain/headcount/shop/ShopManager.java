@@ -198,11 +198,16 @@ public final class ShopManager {
         Long last = d.lastPurchase.get(e.id());
         long cd = e.cooldownMs() > 0 && last != null ? Math.max(0, e.cooldownMs() - (System.currentTimeMillis() - last)) : 0;
         Tier t = tiers.get(e.tier());
-        return Vars.of("price", e.price(), "points", d.points, "name", e.name(), "stock", stock < 0 ? plugin.lang().raw("shop.unlimited") : stock,
-                "purchases_left", e.limitPerCycle() <= 0 ? plugin.lang().raw("shop.unlimited") : Math.max(0, e.limitPerCycle() - bought),
-                "limit", e.limitPerCycle() <= 0 ? plugin.lang().raw("shop.unlimited") : e.limitPerCycle(), "bought", bought,
+        String unlimited = plugin.lang().raw("shop.unlimited");
+        Vars v = Vars.of("price", e.price(), "points", d.points, "name", e.name(), "bought", bought,
                 "cooldown", Formats.duration(cd), "missing", Math.max(0, e.price() - d.points),
-                "tier", t == null ? "" : t.name(), "threshold", t == null || t.threshold() == null ? "-" : t.threshold());
+                "threshold", t == null || t.threshold() == null ? "-" : t.threshold()).mini("tier", t == null ? "" : t.name());
+        // The lang file's "unlimited" text may be formatted, so it goes in as MiniMessage.
+        if (stock < 0) v.mini("stock", unlimited);
+        else v.put("stock", stock);
+        if (e.limitPerCycle() <= 0) v.mini("purchases_left", unlimited).mini("limit", unlimited);
+        else v.put("purchases_left", Math.max(0, e.limitPerCycle() - bought)).put("limit", e.limitPerCycle());
+        return v;
     }
 
     /** The config key for a state's look; optional states fall back when neither the entry nor default-states define them. */

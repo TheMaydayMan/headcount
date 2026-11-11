@@ -7,17 +7,23 @@ import org.bukkit.entity.Player;
 import java.util.Locale;
 
 /** Reads EssentialsX player state for statuses: afk, vanished, god, jailed, muted. */
-public final class EssentialsHook {
+public final class EssentialsHook implements PlayerStateHook {
     private final Essentials ess;
 
     public EssentialsHook(Essentials ess) {
         this.ess = ess;
     }
 
+    @Override
+    public String name() {
+        return "EssentialsX";
+    }
+
     public Essentials essentials() {
         return ess;
     }
 
+    @Override
     public Boolean check(Player player, String what) {
         User u;
         try {

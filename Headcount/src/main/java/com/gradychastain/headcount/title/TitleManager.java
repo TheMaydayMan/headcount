@@ -12,9 +12,12 @@ import org.bukkit.entity.Player;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
@@ -230,6 +233,21 @@ public final class TitleManager {
         }
         appliedMeta.clear();
         if (enabled) for (Player p : Bukkit.getOnlinePlayers()) applyMeta(p.getUniqueId());
+    }
+
+    /** Hard reset: takes off every equipped and forced title, which also removes any prefix or suffix Headcount set. */
+    public void unequipAll() {
+        List<UUID> equipped = plugin.db().sync(c -> {
+            List<UUID> out = new ArrayList<>();
+            try (PreparedStatement ps = c.prepareStatement("SELECT uuid FROM players WHERE equipped_title IS NOT NULL"); ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) out.add(UUID.fromString(rs.getString(1)));
+            }
+            return out;
+        });
+        Set<UUID> all = new HashSet<>(equipped);
+        all.addAll(forced.keySet());
+        forced.clear();
+        for (UUID id : all) unequip(id);
     }
 
     public void onJoin(Player p) {

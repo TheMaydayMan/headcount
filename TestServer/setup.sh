@@ -49,6 +49,24 @@ fetch https://download.geysermc.org/v2/projects/floodgate/versions/2.2.5/builds/
 
 if [ ! -f server.properties ]; then cp server.properties.template server.properties; echo "wrote     server.properties"; fi
 
+# RCON, so Headcount Studio (Headcount/tools/studio) can run commands like /hca reload. Each server gets its own
+# random password; Studio reads it from this file. (RCON listens on every network interface: keep 25575 closed in
+# your firewall, or set server-ip to 127.0.0.1 if nothing else needs to reach the server.)
+setprop() {  # setprop <key> <value>: sets or adds a key in server.properties
+  if grep -q "^$1=" server.properties; then
+    sed "s|^$1=.*|$1=$2|" server.properties > server.properties.tmp && mv server.properties.tmp server.properties
+  else
+    echo "$1=$2" >> server.properties
+  fi
+}
+if ! grep -qx "enable-rcon=true" server.properties || grep -qx "rcon.password=" server.properties; then
+  setprop enable-rcon true
+  setprop rcon.port 25575
+  setprop rcon.password "$(od -An -tx1 -N16 /dev/urandom | tr -d ' \n')"
+  setprop broadcast-rcon-to-ops false
+  echo "set       RCON on port 25575 for Headcount Studio (password in server.properties)"
+fi
+
 if ! grep -qx "eula=true" eula.txt 2>/dev/null; then
   if [ -z "$ACCEPT" ]; then
     read -r -p "Do you accept the Minecraft EULA (https://aka.ms/MinecraftEULA)? [y/N] " answer

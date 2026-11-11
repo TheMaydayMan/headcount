@@ -102,6 +102,7 @@ public final class Deliveries implements org.bukkit.event.Listener {
             }
             return out;
         });
+        items.removeIf(i -> plugin.refresher().removeIfVoid(i, "delivery:" + player.getName() + "(" + player.getUniqueId() + ")"));
         if (items.isEmpty()) return;
         for (ItemStack i : items) plugin.heads().refresh(i);
         int dropped = Items.giveOrDrop(player, items);

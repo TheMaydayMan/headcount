@@ -108,6 +108,11 @@ public final class PlayerManager implements Listener {
         if (firstEver) {
             store.insertPlayer(p.getUniqueId(), p.getName(), now);
             d.exists = true;
+            // New players start with the sidebar shown or hidden as config.yml sidebar.shown-for-new-players says.
+            if (plugin.configs().main().getBool("sidebar.shown-for-new-players", false)) {
+                d.sidebar = true;
+                store.set(p.getUniqueId(), "sidebar", true);
+            }
             d.firstJoin = now;
             d.name = p.getName();
         } else if (!p.getName().equals(d.name)) {
@@ -306,6 +311,12 @@ public final class PlayerManager implements Listener {
             for (String n : store.knownNames(prefix, 20)) if (!out.contains(n)) out.add(n);
         }
         return out;
+    }
+
+    /** Hard reset: forgets every cached player. {@link #loadOnline()} then sets up the players online as new. */
+    public void forgetAll() {
+        online.clear();
+        preloaded.clear();
     }
 
     /** Loads data for players already online (plugin enabled while players are connected). */

@@ -4,9 +4,11 @@ Headcount's placeholders are written `%headcount_<name>%`. They work:
 
 - in all of Headcount's own text (messages, menus, items, sidebar, hooks, actions), with or without PlaceholderAPI;
 - in the score formula and in `placeholder` statuses;
-- in any other plugin, through PlaceholderAPI (the expansion registers itself; see `integrations.yml placeholderapi`).
+- in any other plugin, through PlaceholderAPI when `integrations.yml placeholders.provider` is `placeholderapi` (the expansion registers itself).
 
-Formatted values (like the title) are given to other plugins as legacy color codes by default. Set `placeholderapi.expansion-format` to `minimessage` or `plain` to change that. True/false values read `yes`/`no` (`config.yml placeholders`); status placeholders use `statuses.yml settings`. `/hca placeholders <player>` lists every value for a player.
+With `placeholders.provider: none`, no `%...%` placeholder is filled in anywhere, Headcount's own included.
+
+Formatted values (like the title) are given to other plugins as legacy color codes by default. Set `placeholders.placeholderapi.expansion-format` to `minimessage` or `plain` to change that. True/false values read `yes`/`no` (`config.yml placeholders`); status placeholders use `statuses.yml settings`. `/hca placeholders <player>` lists every value for a player.
 
 ## Player
 
@@ -37,7 +39,7 @@ Formatted values (like the title) are given to other plugins as legacy color cod
 
 | Placeholder | Value |
 |---|---|
-| `cycle` | Current cycle ID (0 before the first). |
+| `cycle` | Current cycle number (0 before the first). A `/hca reset cycle` keeps it. |
 | `cycle_start`, `cycle_end` | Dates. |
 | `time_left`, `time_left_clock`, `seconds_left` | Time until the cycle ends, as `3d 4h`, `HH:MM:SS` or seconds. |
 | `cycle_length`, `starting_heads` | Days per cycle; starting heads this cycle. |

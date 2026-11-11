@@ -2,9 +2,18 @@
 
 ## Economy heads
 
-An **economy head** is a player head whose PersistentDataContainer carries Headcount's owner UUID, cycle ID and a unique head ID. Only those count. Vanilla heads, `/give` heads and other plugins' heads never count, even with the same skin or owner name. The unique ID keeps every economy head in its own stack.
+An **economy head** is a player head whose PersistentDataContainer carries Headcount's owner UUID, cycle number, the cycle's run ID and a unique head ID. Only those count. Vanilla heads, `/give` heads and other plugins' heads never count, even with the same skin or owner name. The unique ID keeps every economy head in its own stack.
 
-An economy head works like any player head: you can wear it, place it, put it in a chest, ender chest, shulker box, bundle or item frame, and trade it. A head from an older cycle keeps all its data and still works as a normal head, but it is worthless: it can't go in a vault and doesn't count. Its name and lore change to show that it expired (when a player joins, opens a container, or picks it up). The format is in `config.yml heads.item`.
+An economy head works like any player head: you can wear it, place it, put it in a chest, ender chest, shulker box, bundle or item frame, and trade it. A head from an older cycle keeps all its data and still works as a normal head, but it is worthless: it can't go in a vault and doesn't count. Its name and lore change to show that it expired (when a player joins, opens a container, or picks it up). The format is in `config.yml heads.item`; by default the cycle number is gold on current heads and gray on expired and defunct ones.
+
+### Cycle runs and resets
+
+Each run of a cycle has a hidden **run ID** next to its display number. `/hca reset cycle` keeps the number and gives the cycle a new run, and `/hca reset hard` starts again at cycle 1. Either way, every head made before the reset stops counting. Each reset chooses what happens to those heads (`delete-heads` or `keep-heads`, default `reset.delete-old-heads`):
+
+- **deleted:** wherever Headcount sees them: inventories, ender chests and the cursor (online players at once, offline players on join), containers when opened (including shulkers and bundles in them), items picked up or dropped, so a broken placed head drops nothing, queued deliveries and recovered trade offers. Each is logged as `HEAD_DELETE`.
+- **defunct:** they stay, renamed with `heads.item.defunct-name` and `defunct-lore`, and the vault refuses them.
+
+`/hca inspect` tells current, expired and defunct heads apart and shows the run. See [commands.md](commands.md#resets) for what else each reset does.
 
 ### Placed heads
 
@@ -24,7 +33,9 @@ Creative mode can clone any item. Headcount protects the economy in layers:
 
 `/hc` opens a virtual inventory (`vault.size`, default 27; more than 54 becomes pages of 45, and slots past the size on the last page are locked) that holds only current-cycle economy heads. Heads move freely between it and the inventory, unless the player has a status in `vault.block-movement.statuses`. Then they can look but not move heads, or can't open it at all with `block-opening: true`. Every status has its own message (`gates.vault-move.<status>` in the language file) and bypass permission.
 
-At each cycle start, every player who has ever joined (online or not) gets `vault.starting-heads` of their own head, capped at the vault size, plus any next-cycle heads from actions. A player who joins mid-cycle gets their vault set up as it would have been at that cycle's start. Size and starting heads changes only apply from the next cycle.
+At each cycle start, every player who has ever joined (online or not) gets `vault.starting-heads` of their own head, capped at the vault size, plus any next-cycle heads from actions. A player who joins mid-cycle gets their vault set up as it would have been at that cycle's start. Size and starting heads changes apply from the next cycle, or at a `/hca reset cycle`.
+
+The title can show live numbers: `<unique>`, `<total>` and `<score>` (the owner's score if the cycle ended now, colored by `vault.gui.score-colors`, or set in place with `<score:green:red:gray>`). It updates while the vault is open, for everyone viewing it.
 
 Every click and drag type is handled. Inside the vault, pick-up, place, swap, number-key and offhand swap, shift-click either way, and single-slot drags are allowed. Drop keys, middle-click cloning, double-click collecting and bundle interactions are blocked. Changes are saved as they happen, and the player's inventory is saved to disk within about a second, so a crash can't roll back only one side. Admins can open anyone's vault (`/hca vault`), online or offline, and it updates live for everyone viewing it.
 
@@ -61,7 +72,7 @@ Offers are saved as they change, and the owner's inventory is saved to disk with
 ## Audit log
 
 `plugins/Headcount/audit/` holds one line per economy event, with head IDs so any head can be traced:
-- heads made (cycle start, kill, admin, action), deleted at cycle end, placed, broken or destroyed;
+- heads made (cycle start, kill, admin, action), deleted at cycle end or after a reset, placed, broken or destroyed;
 - vault moves and admin vault edits;
 - trades with their full contents;
 - cycle results, scores and outcomes;
@@ -69,4 +80,4 @@ Offers are saved as they change, and the owner's inventory is saved to disk with
 - actions applied and reverted;
 - admin actions, and duplicates.
 
-Files rotate daily and by size, old files are gzipped, and files older than `keep-days` are deleted. Each type can be switched off under `audit.types`. Search with `/hca audit <player|head-id|text> [type:<type>]`.
+Files rotate daily and by size, old files are gzipped, and files older than `keep-days` are deleted. Each type can be switched off under `audit.types`. Search with `/hca audit <player|head-id|text> [type:<type>]`, or in Headcount Studio's audit page, which can also trace one head from creation to deletion. A hard reset moves the log files into its backup folder (`reset.hard.archive-audit-log`).

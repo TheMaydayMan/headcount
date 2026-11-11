@@ -90,7 +90,7 @@ public final class DenyListener implements Listener {
             if (p.hasPermission("headcount.admin")) return;
         }
         if (vanillaJailed(p)) {
-            List<String> allowed = plugin.configs().integrations().getStringList("moderation.vanilla-jail.allowed-commands");
+            List<String> allowed = plugin.integrations().includedJail().getStringList("allowed-commands");
             if (allowed.stream().noneMatch(a -> DenyAction.Handler.normalize(a).equals(label))) {
                 event.setCancelled(true);
                 plugin.lang().send(p, "moderation.jailed-command");
@@ -98,7 +98,7 @@ public final class DenyListener implements Listener {
             }
         }
         if (vanillaMuted(p)) {
-            List<String> blocked = plugin.configs().integrations().getStringList("moderation.vanilla-mute.blocked-commands");
+            List<String> blocked = plugin.integrations().includedMute().getStringList("blocked-commands");
             if (blocked.stream().anyMatch(b -> DenyAction.Handler.normalize(b).equals(label))) {
                 event.setCancelled(true);
                 plugin.lang().send(p, "moderation.muted-chat");

@@ -3,8 +3,10 @@ package com.gradychastain.headcount.cycle;
 import com.gradychastain.headcount.HeadcountPlugin;
 import com.gradychastain.headcount.api.event.CycleStartEvent;
 import com.gradychastain.headcount.audit.AuditType;
+import com.gradychastain.headcount.head.HeadService;
 import com.gradychastain.headcount.util.Cfg;
 import com.gradychastain.headcount.util.Formats;
+import com.gradychastain.headcount.vault.VaultManager;
 import org.bukkit.Bukkit;
 
 import java.sql.PreparedStatement;
@@ -55,10 +57,11 @@ public final class CycleManager {
 
     /** Loads the stored cycle. Does not process rollovers (see {@link #catchUp()}). */
     public void load() {
+        firedWarnings.clear();
         current = plugin.db().sync(c -> {
-            try (PreparedStatement ps = c.prepareStatement("SELECT id, start_ms, end_ms, length_days, vault_size, starting_heads FROM cycles WHERE state='active' ORDER BY id DESC LIMIT 1");
+            try (PreparedStatement ps = c.prepareStatement("SELECT id, start_ms, end_ms, length_days, vault_size, starting_heads, token FROM cycles WHERE state='active' ORDER BY id DESC LIMIT 1");
                  ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) return new Cycle(rs.getInt(1), rs.getLong(2), rs.getLong(3), rs.getInt(4), rs.getInt(5), rs.getInt(6));
+                if (rs.next()) return new Cycle(rs.getInt(1), rs.getLong(2), rs.getLong(3), rs.getInt(4), rs.getInt(5), rs.getInt(6), rs.getString(7));
             }
             return null;
         });
@@ -196,16 +199,17 @@ public final class CycleManager {
             CycleSchedule s = schedule();
             int lengthDays = (int) Math.max(1, Math.round((end - start) / 86_400_000.0));
             if (lengthDays <= 0) lengthDays = s.lengthDays();
-            cycle = new Cycle(id, start, end, lengthDays, size, Math.min(startingHeads, size));
+            cycle = new Cycle(id, start, end, lengthDays, size, Math.min(startingHeads, size), Cycle.newToken());
             final Cycle c0 = cycle;
             plugin.db().syncTransaction(c -> {
-                try (PreparedStatement ps = c.prepareStatement("INSERT OR REPLACE INTO cycles(id, start_ms, end_ms, length_days, vault_size, starting_heads, state) VALUES (?,?,?,?,?,?, 'active')")) {
+                try (PreparedStatement ps = c.prepareStatement("INSERT OR REPLACE INTO cycles(id, start_ms, end_ms, length_days, vault_size, starting_heads, state, token) VALUES (?,?,?,?,?,?, 'active', ?)")) {
                     ps.setInt(1, c0.id());
                     ps.setLong(2, c0.startMs());
                     ps.setLong(3, c0.endMs());
                     ps.setInt(4, c0.lengthDays());
                     ps.setInt(5, c0.vaultSize());
                     ps.setInt(6, c0.startingHeads());
+                    ps.setString(7, c0.token());
                     ps.executeUpdate();
                 }
             });
@@ -262,7 +266,7 @@ public final class CycleManager {
     public boolean setEnd(long endMs, String actor) {
         if (current == null || processing || endMs <= current.startMs()) return false;
         Cycle old = current;
-        current = new Cycle(old.id(), old.startMs(), endMs, old.lengthDays(), old.vaultSize(), old.startingHeads());
+        current = new Cycle(old.id(), old.startMs(), endMs, old.lengthDays(), old.vaultSize(), old.startingHeads(), old.token());
         plugin.db().write(c -> {
             try (PreparedStatement ps = c.prepareStatement("UPDATE cycles SET end_ms=? WHERE id=?")) {
                 ps.setLong(1, endMs);
@@ -284,6 +288,89 @@ public final class CycleManager {
         }
         plugin.audit().log(AuditType.ADMIN, "action", "cycle-set-end", "cycle", old.id(), "from", Formats.date(old.endMs()),
                 "to", Formats.date(endMs), "actor", actor);
+        return true;
+    }
+
+    /**
+     * /hca reset cycle: starts the running cycle over under the same ID, as if it had just started. Nothing is scored.
+     * It gets a new token, so every head made before stops counting: it goes defunct, or with {@code deleteHeads} it
+     * is removed wherever Headcount sees it. Vaults are refilled with the current vault settings; kills, activity and
+     * playtime, shop limits and stock, warnings and per-player cycle-start hooks waiting for offline players start
+     * over; the cycle runs from now to the next scheduled end. Points, titles, streaks, history and effects are kept.
+     */
+    public boolean restart(String actor, boolean deleteHeads) {
+        if (current == null || processing) return false;
+        Cycle old = current;
+        Cycle fresh;
+        processing = true;
+        try {
+            plugin.trades().cancelAll("cycle-reset");
+            plugin.guis().closeAll();
+            plugin.vaults().closeAllViews();
+            plugin.players().flushPlaytime();
+            plugin.db().flush();
+            Cfg vaultCfg = plugin.configs().main().getSection("vault");
+            int size = Math.max(1, vaultCfg.getInt("size", 27));
+            int startingHeads = Math.max(0, vaultCfg.getInt("starting-heads", 27));
+            CycleSchedule s = schedule();
+            long now = System.currentTimeMillis();
+            long end = s.boundaryAfter(now, s.lengthDays());
+            int lengthDays = (int) Math.max(1, Math.round((end - now) / 86_400_000.0));
+            fresh = new Cycle(old.id(), now, end, lengthDays, size, Math.min(startingHeads, size), Cycle.newToken());
+            final Cycle f0 = fresh;
+            VaultManager.Fill[] fill = new VaultManager.Fill[1];
+            plugin.db().syncTransaction(c -> {
+                HeadService.voidRun(c, old.id(), old.token(), now, "cycle-reset", deleteHeads);
+                try (PreparedStatement ps = c.prepareStatement("UPDATE cycles SET start_ms=?, end_ms=?, length_days=?, vault_size=?, starting_heads=?, token=? WHERE id=?")) {
+                    ps.setLong(1, f0.startMs());
+                    ps.setLong(2, f0.endMs());
+                    ps.setInt(3, f0.lengthDays());
+                    ps.setInt(4, f0.vaultSize());
+                    ps.setInt(5, f0.startingHeads());
+                    ps.setString(6, f0.token());
+                    ps.setInt(7, f0.id());
+                    ps.executeUpdate();
+                }
+                for (String table : new String[]{"kill_drops", "cycle_players", "cycle_warnings", "shop_stock", "pending_hooks"}) {
+                    try (PreparedStatement ps = c.prepareStatement("DELETE FROM " + table + " WHERE cycle=?")) {
+                        ps.setInt(1, f0.id());
+                        ps.executeUpdate();
+                    }
+                }
+                // Purchases stay on record (cooldowns and "bought before" requirements still see them) but no longer
+                // count toward this cycle's limits: a negative cycle means "cycle N, before it was reset".
+                try (PreparedStatement ps = c.prepareStatement("UPDATE purchases SET cycle=? WHERE cycle=?")) {
+                    ps.setInt(1, -f0.id());
+                    ps.setInt(2, f0.id());
+                    ps.executeUpdate();
+                }
+                fill[0] = plugin.vaults().refillForRestart(c, f0);
+            });
+            current = fresh;
+            firedWarnings.clear();
+            plugin.heads().loadVoided();
+            plugin.audit().log(AuditType.ADMIN, "action", "cycle-reset", "cycle", old.id(), "old-token", old.token(), "new-token", fresh.token(), "old-heads", deleteHeads ? "delete" : "defunct", "actor", actor);
+            plugin.audit().log(AuditType.CYCLE_START, "cycle", fresh.id(), "start", Formats.date(fresh.startMs()), "end", Formats.date(fresh.endMs()),
+                    "vault-size", fresh.vaultSize(), "starting-heads", fresh.startingHeads(), "cause", "reset by " + actor);
+            int filled = plugin.vaults().afterFill(fresh, fill[0]);
+            plugin.getLogger().info("Cycle " + fresh.id() + " was reset by " + actor + " and started over (ends " + Formats.date(fresh.endMs()) + "); " + filled + " vaults refilled.");
+            plugin.kills().resetCycle();
+            plugin.shop().resetCycle();
+            plugin.refresher().refreshOnline();
+            plugin.stats().refreshNow();
+        } catch (RuntimeException e) {
+            processing = false;
+            plugin.getLogger().log(Level.SEVERE, "Error while resetting cycle " + old.id(), e);
+            return false;
+        }
+        processing = false;
+        try {
+            Bukkit.getPluginManager().callEvent(new CycleStartEvent(fresh.id(), fresh.startMs(), fresh.endMs()));
+            plugin.hooks().runCycleStart(fresh);
+            plugin.players().onCycleStarted(fresh);
+        } catch (RuntimeException e) {
+            plugin.getLogger().log(Level.SEVERE, "Error in cycle start hooks", e);
+        }
         return true;
     }
 

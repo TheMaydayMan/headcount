@@ -22,8 +22,11 @@ import java.util.Map;
  * when its countdown reaches zero or its time runs out.
  */
 public final class BossBars implements Listener {
-    /** A bar's look and countdown. {@code countdownTo} is an epoch millisecond, or 0 for no countdown. */
-    record Spec(String text, BossBar.Color color, BossBar.Overlay overlay, float progress, long countdownTo, long countdownFrom) {}
+    /**
+     * A bar's look and countdown. {@code countdownTo} is an epoch millisecond, or 0 for no countdown. {@code vars} are
+     * the action's variables (<cycle>, <player>, ...), used each time the text is redrawn.
+     */
+    record Spec(String text, BossBar.Color color, BossBar.Overlay overlay, float progress, long countdownTo, long countdownFrom, Vars vars) {}
 
     private record Global(BossBar bar, Spec spec, long endsAt) {}
 
@@ -38,7 +41,7 @@ public final class BossBars implements Listener {
 
     private Component text(Spec s, Player subject) {
         long remaining = s.countdownTo() > 0 ? Math.max(0, s.countdownTo() - System.currentTimeMillis()) : 0;
-        Vars v = Vars.of("countdown", Formats.duration(remaining), "countdown_clock", Formats.clock(remaining), "seconds", (remaining + 999) / 1000);
+        Vars v = (s.vars() == null ? Vars.empty() : s.vars().copy()).putAll(Vars.of("countdown", Formats.duration(remaining), "countdown_clock", Formats.clock(remaining), "seconds", (remaining + 999) / 1000));
         return plugin.text().render(s.text(), subject, v);
     }
 

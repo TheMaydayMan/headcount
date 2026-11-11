@@ -174,7 +174,8 @@ final class MessageActions {
                 BossBars.Spec spec(ActionContext ctx) {
                     long to = target(ctx);
                     Object from = ctx.data().get("countdown_from");
-                    return new BossBars.Spec(text, color, overlay, progress, to, from instanceof Number n ? n.longValue() : System.currentTimeMillis());
+                    return new BossBars.Spec(text, color, overlay, progress, to, from instanceof Number n ? n.longValue() : System.currentTimeMillis(),
+                            Types.impl(ctx).vars());
                 }
 
                 @Override
@@ -207,7 +208,7 @@ final class MessageActions {
                 @Override public boolean revertible() { return true; }
                 @Override public boolean needsPlayer() { return false; } // with no target the audience is everyone
                 @Override public void repeat(ActionContext ctx) { maintain(ctx); }
-                @Override public String describe(ActionContext ctx) { return "boss bar"; }
+                @Override public String describe(ActionContext ctx) { return Types.describe("bossbar"); }
             };
         }));
 
@@ -240,7 +241,7 @@ final class MessageActions {
                     for (Player to : Types.audience(audienceCfg, ctx)) to.sendMessage(plugin.text().render(text, ctx.offlinePlayer(), vars));
                     return true;
                 }
-                @Override public String describe(ActionContext ctx) { return "your location is being broadcast"; }
+                @Override public String describe(ActionContext ctx) { return Types.describe("broadcast-location"); }
             };
         }));
     }

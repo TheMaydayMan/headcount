@@ -3,8 +3,12 @@
 #  /hc shop. Points are earned from a positive score at the end of a cycle and spent during the next one.
 #  Each tier unlocks at a threshold of the player's score from LAST cycle and is its own set of pages.
 #  Locked tiers can still be browsed: entries show their "locked" look and the banner shows the threshold.
+#
+#  Where text lives: this file holds text you design (menu titles, item names and lore, and the messages inside
+#  action lists). Everything Headcount itself says (command replies, errors, confirmations, help, effect
+#  descriptions) is in lang/en_US.yml.
 # ============================================================================================
-config-version: 1
+config-version: 2
 
 settings:
   # Purchases at or above this price open a confirmation menu first (an entry can override with confirm: true/false).
@@ -120,7 +124,11 @@ default-states:
       - "<gray>Needs a last cycle score of <white><threshold>"
 
 # Tiers in order. 'threshold: none' is always unlocked.
+# Tier settings: name, threshold (a last-cycle score, or none), pages (at least; entries can add more), enabled,
+# entries.
 # Entry settings:
+#   name                 how the entry is called in messages (default: its display name without formatting)
+#   enabled              false hides it
 #   page, slot           where it goes (page starts at 1)
 #   price                in points
 #   display              item definition (material, name, lore, item-model, glint, enchants, custom ...)

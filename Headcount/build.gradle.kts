@@ -3,7 +3,7 @@ plugins {
 }
 
 group = "com.gradychastain.headcount"
-version = "1.0.0"
+version = "1.1.0"
 description = "Head-economy cycles: collect heads, score, shop, outcomes."
 
 val paperVersion = "26.3.build.246-stable"
@@ -105,3 +105,22 @@ val deployToTestServer = tasks.register<Copy>("deployToTestServer") {
 }
 
 tasks.build { finalizedBy(deployToTestServer) }
+
+// Regenerates Headcount Studio's reference catalog (tools/studio/catalog.json) from plugin.yml, the docs and the code,
+// so the app always matches the jar. Skipped with a note if python3 is not installed (the committed catalog is used).
+val studioCatalog = tasks.register("studioCatalog") {
+    description = "Rebuilds tools/studio/catalog.json for Headcount Studio"
+    group = "build"
+    val script = layout.projectDirectory.file("tools/studio/build-catalog.py").asFile
+    val dir = layout.projectDirectory.asFile
+    doLast {
+        try {
+            val p = ProcessBuilder("python3", script.absolutePath).directory(dir).redirectErrorStream(true).start()
+            val out = p.inputStream.bufferedReader().readText().trim()
+            if (p.waitFor() == 0) logger.lifecycle(out) else logger.warn("Studio catalog not rebuilt: $out")
+        } catch (e: java.io.IOException) {
+            logger.lifecycle("Studio catalog not rebuilt (python3 not found); using the committed one.")
+        }
+    }
+}
+tasks.build { finalizedBy(studioCatalog) }

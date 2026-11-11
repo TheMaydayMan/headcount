@@ -574,6 +574,20 @@ public final class ActionManager implements Listener {
         return false;
     }
 
+    /**
+     * Hard reset: ends every tracked action for everyone. One that can only be undone with its player online (a
+     * potion, an attribute) waits for them as usual. @return how many were ended
+     */
+    public int expireAll(String reason) {
+        int n = 0;
+        for (ActiveAction a : new ArrayList<>(active)) {
+            if (a.state == ActiveAction.State.PENDING_REVERT) continue;
+            expire(a, reason);
+            n++;
+        }
+        return n;
+    }
+
     public int removeAll(UUID player, String actor) {
         int n = 0;
         for (ActiveAction a : new ArrayList<>(byPlayer.getOrDefault(player, List.of()))) {
@@ -590,17 +604,21 @@ public final class ActionManager implements Listener {
         for (ActiveAction a : byPlayer.getOrDefault(player, List.of())) {
             String desc = a.spec.handler().describe(ctx(a));
             long rem = a.remaining();
+            var lang = plugin.lang();
             String left = switch (a.duration().kind()) {
-                case TIME -> Formats.duration(rem) + (a.spec.common().onlineTime() ? " (online)" : "");
-                case CYCLE -> "until the cycle ends";
-                case CYCLES -> a.cyclesLeft + " more cycle end" + (a.cyclesLeft == 1 ? "" : "s");
-                case DEATH -> "until you die";
-                case PERMANENT -> "permanent";
-                case MANUAL -> "until removed";
+                case TIME -> lang.fill(a.spec.common().onlineTime() ? "effects.remaining.online-time" : "effects.remaining.time", "time", Formats.duration(rem));
+                case CYCLE -> lang.fill("effects.remaining.cycle");
+                case CYCLES -> lang.fill(a.cyclesLeft == 1 ? "effects.remaining.cycles-one" : "effects.remaining.cycles", "n", a.cyclesLeft);
+                case DEATH -> lang.fill("effects.remaining.death");
+                case PERMANENT -> lang.fill("effects.remaining.permanent");
+                case MANUAL -> lang.fill("effects.remaining.manual");
                 case INSTANT -> "";
             };
-            out.add(Vars.of("id", a.id.substring(0, 8), "type", a.spec.type(), "description", desc == null ? a.spec.type() : desc,
-                    "remaining", left, "source", a.source, "state", a.state.name().toLowerCase(Locale.ROOT).replace('_', ' ')));
+            // Descriptions are MiniMessage (the built-in ones come from lang effects.describe.*).
+            String description = desc == null ? plugin.text().escape(a.spec.type()) : desc;
+            out.add(Vars.of("id", a.id.substring(0, 8), "type", a.spec.type(), "source", a.source)
+                    .mini("description", description).mini("remaining", left)
+                    .mini("state", lang.fill("effects.state." + a.state.name().toLowerCase(Locale.ROOT).replace('_', '-'))));
         }
         return out;
     }

@@ -51,7 +51,7 @@ public final class HeadcountActions {
 
     public static final class HeadProtection extends Charged {
         HeadProtection(Cfg c) { super(c, 0); }
-        @Override public String describe(ActionContext ctx) { return "your head will not drop when you are killed"; }
+        @Override public String describe(ActionContext ctx) { return Types.describe("head-protection"); }
     }
 
     public static final class ExtraHeads extends Charged {
@@ -62,7 +62,7 @@ public final class HeadcountActions {
             amount = Math.max(1, c.getInt("amount", 1));
         }
 
-        @Override public String describe(ActionContext ctx) { return amount + " extra head(s) drop when you are killed"; }
+        @Override public String describe(ActionContext ctx) { return Types.describe("extra-heads", "amount", amount); }
     }
 
     public static final class Bounty extends Charged {
@@ -87,12 +87,12 @@ public final class HeadcountActions {
             return true;
         }
 
-        @Override public String describe(ActionContext ctx) { return "bounty on your head" + (points > 0 ? " (" + points + " points)" : ""); }
+        @Override public String describe(ActionContext ctx) { return Types.describe(points > 0 ? "bounty-points" : "bounty", "points", points); }
     }
 
     public static final class Shield extends Charged {
         Shield(Cfg c) { super(c, 1); }
-        @Override public String describe(ActionContext ctx) { return "shield against the next punishment"; }
+        @Override public String describe(ActionContext ctx) { return Types.describe("shield"); }
     }
 
     static void register(ActionManager m, HeadcountPlugin plugin) {
@@ -169,7 +169,7 @@ public final class HeadcountActions {
                 @Override public boolean revertible() { return true; }
                 @Override public boolean requiresOnline() { return false; }
                 @Override public String stackKey() { return flag; }
-                @Override public String describe(ActionContext ctx) { return (clear ? "cleared flag " : "flag ") + flag; }
+                @Override public String describe(ActionContext ctx) { return Types.describe(clear ? "flag-clear" : "flag", "flag", flag); }
             };
         }));
 
@@ -193,7 +193,7 @@ public final class HeadcountActions {
 
                 @Override public boolean revertible() { return true; }
                 @Override public boolean requiresOnline() { return false; }
-                @Override public String describe(ActionContext ctx) { return (amount >= 0 ? "+" : "") + amount + " score at cycle end"; }
+                @Override public String describe(ActionContext ctx) { return Types.describe("score-bonus", "amount", (amount >= 0 ? "+" : "") + amount); }
             };
         }));
     }

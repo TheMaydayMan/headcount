@@ -15,10 +15,14 @@ import org.bukkit.inventory.meta.SkullMeta;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
 
+import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -31,6 +35,10 @@ public final class HeadService {
     private final HeadKeys keys;
     private final Map<UUID, ProfileProperty> textures = new ConcurrentHashMap<>();
     private String renderHash = "";
+    /** "cycle:token" of every cycle run undone by a reset ('' for a pre-1.1 run without a token). */
+    private final Set<String> voided = ConcurrentHashMap.newKeySet();
+    /** The runs whose reset chose to delete their heads (the rest are only defunct). */
+    private final Set<String> removable = ConcurrentHashMap.newKeySet();
 
     public HeadService(HeadcountPlugin plugin) {
         this.plugin = plugin;
@@ -48,14 +56,20 @@ public final class HeadService {
     public void reload() {
         Cfg c = itemCfg();
         renderHash = Integer.toHexString(Objects.hash(c.getString("name"), c.getStringList("lore"), c.getString("expired-name"),
-                c.getStringList("expired-lore"), c.getInt("max-stack-size", 1), c.getBool("glint", false), c.getString("item-model", "")));
+                c.getStringList("expired-lore"), c.getString("defunct-name"), c.getStringList("defunct-lore"), c.getInt("max-stack-size", 1), c.getBool("glint", false), c.getString("item-model", "")));
     }
 
     // ---------------------------------------------------------------- creation
 
+    /** The token for heads made now for this cycle: the running cycle's, or none for any other cycle. */
+    public String tokenFor(int cycle) {
+        var cur = plugin.cycles().current();
+        return cur != null && cur.id() == cycle ? cur.token() : null;
+    }
+
     /** Makes a new head with a fresh ID, records it and logs its creation. */
     public HeadData newHead(UUID owner, String ownerName, int cycle, String source, UUID recipient, String actor) {
-        HeadData data = new HeadData(UUID.randomUUID(), owner, ownerName, cycle, System.currentTimeMillis(), source);
+        HeadData data = new HeadData(UUID.randomUUID(), owner, ownerName, cycle, System.currentTimeMillis(), source, tokenFor(cycle));
         register(data, recipient);
         plugin.audit().log(AuditType.HEAD_CREATE, "head", data.id(), "owner", ownerName + "(" + owner + ")", "cycle", cycle,
                 "source", source, "recipient", recipient, "actor", actor);
@@ -89,6 +103,7 @@ public final class HeadService {
             pdc.set(keys.id, PersistentDataType.STRING, data.id().toString());
             pdc.set(keys.created, PersistentDataType.LONG, data.created());
             pdc.set(keys.source, PersistentDataType.STRING, data.source());
+            if (data.token() != null) pdc.set(keys.token, PersistentDataType.STRING, data.token());
         });
         render(item, data);
         return item;
@@ -108,7 +123,8 @@ public final class HeadService {
             return new HeadData(UUID.fromString(id), UUID.fromString(owner),
                     Objects.requireNonNullElse(pdc.get(keys.ownerName, PersistentDataType.STRING), "?"), cycle,
                     Objects.requireNonNullElse(pdc.get(keys.created, PersistentDataType.LONG), 0L),
-                    Objects.requireNonNullElse(pdc.get(keys.source, PersistentDataType.STRING), "unknown"));
+                    Objects.requireNonNullElse(pdc.get(keys.source, PersistentDataType.STRING), "unknown"),
+                    pdc.get(keys.token, PersistentDataType.STRING));
         } catch (IllegalArgumentException e) {
             return null;
         }
@@ -118,9 +134,61 @@ public final class HeadService {
         return read(item) != null;
     }
 
-    /** True when the head belongs to the cycle running right now. */
+    /** True when the head belongs to the cycle running right now (the same ID and the same run of it). */
     public boolean isCurrent(HeadData data) {
-        return data != null && plugin.cycles().current() != null && data.cycle() == plugin.cycles().current().id();
+        var cur = plugin.cycles().current();
+        return data != null && cur != null && data.cycle() == cur.id() && Objects.equals(data.token(), cur.token());
+    }
+
+    // ---------------------------------------------------------------- heads from before a reset
+
+    /** True when the head was made in a cycle run that a reset undid. Such heads are worthless and get removed. */
+    public boolean isVoid(HeadData data) {
+        return data != null && voided.contains(voidKey(data.cycle(), data.token()));
+    }
+
+    /** An economy head from a reset that chose to delete its heads (they are removed wherever they are seen). */
+    public boolean shouldRemove(ItemStack item) {
+        if (item == null || item.getType() != Material.PLAYER_HEAD || removable.isEmpty()) return false;
+        HeadData d = read(item);
+        return d != null && removable.contains(voidKey(d.cycle(), d.token()));
+    }
+
+    private static String voidKey(int cycle, String token) {
+        return cycle + ":" + (token == null ? "" : token);
+    }
+
+    public void loadVoided() {
+        Set<String> all = new java.util.HashSet<>(), remove = new java.util.HashSet<>();
+        plugin.db().sync(c -> {
+            try (PreparedStatement ps = c.prepareStatement("SELECT cycle, token, remove FROM void_heads"); ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    String k = voidKey(rs.getInt(1), rs.getString(2));
+                    all.add(k);
+                    if (rs.getInt(3) != 0) remove.add(k);
+                }
+            }
+            return null;
+        });
+        voided.clear();
+        voided.addAll(all);
+        removable.clear();
+        removable.addAll(remove);
+    }
+
+    /**
+     * Marks a cycle run as undone, inside the caller's transaction. Call {@link #loadVoided()} after it commits.
+     * @param remove delete its heads wherever they are seen (else they only go defunct)
+     */
+    public static void voidRun(Connection c, int cycle, String token, long now, String kind, boolean remove) throws SQLException {
+        try (PreparedStatement ps = c.prepareStatement("INSERT OR REPLACE INTO void_heads(cycle, token, reset_ms, kind, remove) VALUES (?,?,?,?,?)")) {
+            ps.setInt(1, cycle);
+            ps.setString(2, token == null ? "" : token);
+            ps.setLong(3, now);
+            ps.setString(4, kind);
+            ps.setInt(5, remove ? 1 : 0);
+            ps.executeUpdate();
+        }
     }
 
     /** A current-cycle economy head: the only thing allowed in vaults and counted as a head in trades. */
@@ -142,16 +210,29 @@ public final class HeadService {
         return true;
     }
 
+    private String state(HeadData data) {
+        return isCurrent(data) ? "current" : isVoid(data) ? "defunct" : "expired";
+    }
+
     private String fingerprint(HeadData data) {
-        return (isCurrent(data) ? "current" : "expired") + ":" + renderHash;
+        return state(data) + ":" + renderHash;
     }
 
     private void render(ItemStack item, HeadData data) {
         Cfg c = itemCfg();
-        boolean current = isCurrent(data);
+        String state = state(data);
+        boolean current = state.equals("current");
         Vars vars = vars(data);
-        String nameTemplate = current ? c.getString("name", "<yellow><owner>'s Head") : c.getString("expired-name", "<gray><owner>'s Head <dark_gray>(expired)");
-        List<String> lore = current ? c.getStringList("lore") : c.getStringList("expired-lore");
+        String nameTemplate = switch (state) {
+            case "current" -> c.getString("name", "<yellow><owner>'s Head");
+            case "defunct" -> c.getString("defunct-name", "<gray><owner>'s Head <dark_gray>(defunct)");
+            default -> c.getString("expired-name", "<gray><owner>'s Head <dark_gray>(expired)");
+        };
+        List<String> lore = switch (state) {
+            case "current" -> c.getStringList("lore");
+            case "defunct" -> c.getStringList("defunct-lore");
+            default -> c.getStringList("expired-lore");
+        };
         String fp = fingerprint(data);
         item.editMeta(meta -> {
             meta.displayName(plugin.text().item(nameTemplate, null, vars));

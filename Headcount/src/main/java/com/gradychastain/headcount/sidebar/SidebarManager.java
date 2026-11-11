@@ -87,6 +87,14 @@ public final class SidebarManager {
         if (serverEnabled() && d != null && d.sidebar) show(p);
     }
 
+    /** Shows or hides the sidebar to match the player's setting (after a hard reset replaced their data). */
+    public void resync(Player p) {
+        PlayerData d = plugin.players().get(p.getUniqueId());
+        boolean want = serverEnabled() && d != null && d.sidebar;
+        if (want) show(p);
+        else if (isShown(p)) hide(p);
+    }
+
     public void onQuit(Player p) {
         boards.remove(p.getUniqueId());
         previous.remove(p.getUniqueId());

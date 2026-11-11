@@ -54,7 +54,10 @@ public interface ActionHandler {
         return null;
     }
 
-    /** One line describing the action for /hc effects. Null uses the type name. */
+    /**
+     * One line describing the action for /hc effects, as MiniMessage (escape any player-supplied text). Null uses the
+     * type name.
+     */
     default String describe(ActionContext ctx) {
         return null;
     }

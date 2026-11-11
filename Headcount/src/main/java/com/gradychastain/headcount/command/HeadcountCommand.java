@@ -90,8 +90,8 @@ public final class HeadcountCommand implements TabExecutor {
                 PlayerData d = plugin.players().get(p);
                 plugin.lang().send(p, "score.preview", Vars.of("score", score, "unique", t.unique(), "total", t.total(), "own", t.own(),
                         "active", Formats.number(vars.getOrDefault("active", 0.0)), "rank", Formats.number(vars.getOrDefault("rank", 0.0)),
-                        "time_left", Formats.duration(c.remainingMs()), "formula", plugin.scores().formula().source(),
-                        "is_active", d.stats != null && d.stats.active ? plugin.lang().raw("score.you-are-active") : plugin.lang().raw("score.you-are-not-active")));
+                        "time_left", Formats.duration(c.remainingMs()), "formula", plugin.scores().formula().source())
+                        .mini("is_active", d.stats != null && d.stats.active ? plugin.lang().raw("score.you-are-active") : plugin.lang().raw("score.you-are-not-active")));
             }
             case "top" -> {
                 if (perm(p, "headcount.top")) top(p, args.length > 1 && args[1].equalsIgnoreCase("last"));

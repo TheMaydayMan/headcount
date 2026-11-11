@@ -21,6 +21,11 @@ import java.util.function.Function;
 public final class Types {
     private Types() {}
 
+    /** An effect's line for /hc effects: lang effects.describe.&lt;key&gt; with its variables filled in. */
+    public static String describe(String key, Object... keyValues) {
+        return org.bukkit.plugin.java.JavaPlugin.getPlugin(HeadcountPlugin.class).lang().fill("effects.describe." + key, keyValues);
+    }
+
     /** Registers every built-in action type. */
     public static void registerAll(ActionManager m, HeadcountPlugin plugin) {
         MessageActions.register(m, plugin);

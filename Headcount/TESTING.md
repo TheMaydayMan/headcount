@@ -1,5 +1,7 @@
 # Manual test checklist
 
+> **1.1:** the new features (resets, defunct heads, time zone codes, `<score>` and the live vault title, the included PvP, permissions and AFK, the integrations rewrite) are not in the bot tests or the checklist below. They are tested by hand with the test night itinerary, [test-plan.md](../test-plan.md), which also covers everything below in a normal play session.
+
 These are already covered automatically and don't need repeating:
 - `./gradlew test` (expressions, ranges, durations, ranks, cycle boundaries across DST, vault modifiers, audit rotation and retention);
 - `/hca selftest` (every configured item, menu, message, action list, status reference, missing duration and permission);

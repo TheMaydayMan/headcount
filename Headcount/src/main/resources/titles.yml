@@ -3,8 +3,12 @@
 #  Titles players can own (from the shop, outcomes or admins) and equip with /hc titles.
 #  The equipped title is %headcount_title% for chat and tab plugins, and can also be applied as a LuckPerms
 #  (or Vault) prefix or suffix. An action can force a title on a player for a while (force-title).
+#
+#  Where text lives: this file holds text you design (menu titles, item names and lore, and the messages inside
+#  action lists). Everything Headcount itself says (command replies, errors, confirmations, help, effect
+#  descriptions) is in lang/en_US.yml.
 # ============================================================================================
-config-version: 1
+config-version: 2
 
 settings:
   # %headcount_title% when nothing is equipped.
@@ -24,6 +28,9 @@ settings:
     priority: 100
     format: "<title> "
 
+# Each title: display (MiniMessage, what players see), description (lore lines in the menu), icon (an item
+# definition for the menu, see config.yml), enabled (false hides it). The key (champion, ...) is the ID used by
+# /hca title, the grant-title action and shop requirements.
 titles:
   champion:
     display: "<gold>[Champion]"

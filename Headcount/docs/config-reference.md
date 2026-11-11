@@ -28,7 +28,40 @@ Text uses MiniMessage (https://docs.advntr.dev/minimessage/format) and placehold
   %other_placeholder%  any PlaceholderAPI placeholder, when PlaceholderAPI is installed
 
 Durations accept 30s, 10m, 2h, 3d, 1w, combinations like 1h30m, or a plain number of seconds.
-Changes apply after /hca reload, except where noted.
+Changes apply after /hca reload, except where noted. /hca selftest then checks every item, menu, message and list.
+
+Quick start: the settings most servers change first
+  cycle.length-days, cycle.start-date, cycle.end-time, cycle.time-zone     when cycles run
+  vault.size, vault.starting-heads                                          how big the game is
+  activity.min-playtime                                                     who counts as active
+  scoring.yml formula                                                       what a score is worth
+  outcomes.yml, shop.yml                                                    rewards, punishments, the shop
+  integrations.yml                                                          PvP, permissions, moderation...
+
+Sections in this file: general, storage, cycle, activity, vault, heads, duplicates, kills, points,
+gates / gui / placeholders / top (small display settings), history, sidebar, audit, reset, hooks.
+
+Item definitions (any 'material:' item here and in the other files: menu buttons, shop displays, give-item...):
+  material      a Minecraft material, e.g. DIAMOND_SWORD (or custom: below instead)
+  name, lore    MiniMessage text (lore is a list)
+  amount        stack size;  max-stack-size  1-99
+  glint         true/false enchantment shine;  enchants  {sharpness: 3, unbreaking: 2}
+  unbreakable   true;  flags  [HIDE_ENCHANTS, HIDE_ATTRIBUTES, ...]
+  item-model    namespace:key (resource packs);  custom-model-data  a number
+  head          viewer | <player name> | <uuid> for PLAYER_HEAD items
+  custom        itemsadder:ns:id | oraxen:id | nexo:id (integrations.yml items)
+  pdc           {namespace:key: value} persistent data, for other plugins to recognize the item
+
+Menus (vault.gui, history.gui, and the menus in trade.yml, shop.yml and titles.yml):
+  title         the window title;  rows  1-6
+  filler        an item definition for empty slots
+  filler-slots  a list like [0-8, 45-53], or: empty (every free slot) | border (the outer ring) | none
+  buttons.<id>  an item definition plus slot: N (or slots: [..]); enabled: false hides that button
+  Slot numbers start at 0 in the top-left and go left to right, 9 per row.
+
+Where text lives: this file holds text you design (menu titles, item names and lore, and the messages inside
+action lists). Everything Headcount itself says (command replies, errors, confirmations, help, effect
+descriptions) is in lang/en_US.yml.
 ```
 
 Hooks are explained in [hooks.md](hooks.md).
@@ -43,15 +76,15 @@ Hooks are explained in [hooks.md](hooks.md).
 | `storage` | `(section)` |  |
 | `storage.file` | `headcount.db` | SQLite database file inside plugins/Headcount/. Every change is saved as it happens. |
 | `cycle` | `(section)` | Cycle |
-| `cycle.length-days` | `30` | Length of a cycle in days. A change applies starting with the next cycle (the running cycle keeps its end). |
+| `cycle.length-days` | `30` | Length of a cycle in days. A change applies from the next cycle, or a /hca reset cycle (the running cycle keeps its end). |
 | `cycle.start-date` | `auto` | The day the first cycle starts, as YYYY-MM-DD, or "auto" to start immediately (aligned to end-time today). Before a configured future date, Headcount waits and no cycle runs. |
 | `cycle.end-time` | `"00:00"` | Exact time of day (24h HH:MM) cycles roll over. |
-| `cycle.time-zone` | `UTC` | Time zone for start-date and end-time, e.g. UTC, America/Denver, Europe/London, or "system". (If the server was offline at a rollover, the next start ends the stored cycle and starts whichever cycle should be running now. Cycle IDs always go up by exactly one.) |
+| `cycle.time-zone` | `UTC` | Time zone for start-date and end-time. Any of: a region (America/Denver, Europe/London; follows daylight saving), an abbreviation (MST, EST, CET, ...; a fixed offset all year: MST is always UTC-7), an offset (GMT-7, UTC+5:30), or "system". (If the server was offline at a rollover, the next start... (the full comment is in the file) |
 | `activity` | `(section)` |  |
 | `activity.min-playtime` | `0` | Playtime during a cycle needed to count as active. 0 means joining once is enough. Only active players get a score, points and outcomes. |
 | `activity.check-interval` | `30s` | How often playtime is saved and the active threshold checked. |
 | `vault` | `(section)` | Head vault (/hc) |
-| `vault.size` | `27` | Slots in each vault. Up to 54 fits one screen; more than 54 is split into pages of 45. Size and starting heads only change at the start of the next cycle. |
+| `vault.size` | `27` | Slots in each vault. Up to 54 fits one screen; more than 54 is split into pages of 45. Size and starting heads only change at the start of the next cycle (or at a /hca reset cycle). |
 | `vault.starting-heads` | `27` | Heads of their own every player starts each cycle with (capped at the vault size). Extra starting heads from next-cycle actions (a shop purchase, the streak bonus) that don't fit are given as items instead. |
 | `vault.max-size` | `270` | Largest size actions (next-cycle vault-size) may grow a vault to. |
 | `vault.block-movement` | `(section)` |  |
@@ -61,7 +94,11 @@ Hooks are explained in [hooks.md](hooks.md).
 | `vault.duplicate-insert` | `reject` | A head whose ID is already in some vault can only be a copy (creative cloning). reject \| allow |
 | `vault.save-player-data-after-change` | `true` | Save the player's own inventory to disk shortly after a vault change, so a crash cannot roll back only one side. |
 | `vault.gui` | `(section)` |  |
-| `vault.gui.title` | `"&lt;dark_gray&gt;&lt;owner&gt;'s Head Vault &lt;gray&gt;(&lt;uniqu...` | &lt;owner&gt; &lt;unique&gt; &lt;total&gt; &lt;size&gt; &lt;page&gt; &lt;pages&gt; |
+| `vault.gui.title` | `"&lt;dark_gray&gt;&lt;owner&gt;'s Head Vault &lt;gray&gt;(&lt;uniqu...` | &lt;owner&gt; &lt;unique&gt; &lt;total&gt; &lt;size&gt; &lt;used&gt; &lt;page&gt; &lt;pages&gt;, and &lt;score&gt;: the owner's score if the cycle ended now (shown as ? while the owner is offline). &lt;score&gt; uses score-colors below; &lt;score:green:red:gray&gt; picks the positive, negative and zero colours in place (any MiniMessage colour or tag,... (the full comment is in the file) |
+| `vault.gui.score-colors` | `(section)` |  |
+| `vault.gui.score-colors.positive` | `green` |  |
+| `vault.gui.score-colors.negative` | `red` |  |
+| `vault.gui.score-colors.zero` | `gray` |  |
 | `vault.gui.locked-slot` | `(section)` | Slots past the vault size on the last row. |
 | `vault.gui.locked-slot.material` | `BLACK_STAINED_GLASS_PANE` |  |
 | `vault.gui.locked-slot.name` | `" "` |  |
@@ -89,9 +126,11 @@ Hooks are explained in [hooks.md](hooks.md).
 | `heads` | `(section)` | Economy heads |
 | `heads.item` | `(section)` |  |
 | `heads.item.name` | `"&lt;yellow&gt;&lt;owner&gt;'s Head"` | Variables: &lt;owner&gt; &lt;owner_uuid&gt; &lt;cycle&gt; &lt;current_cycle&gt; &lt;head_id&gt; &lt;head_id_short&gt; &lt;created&gt; &lt;source&gt; |
-| `heads.item.lore` | `["&lt;gray&gt;Cycle &lt;white&gt;&lt;cycle&gt;&lt;/white&gt; econom...` |  |
+| `heads.item.lore` | `["&lt;gray&gt;Cycle &lt;gold&gt;&lt;cycle&gt;&lt;/gold&gt; economy ...` |  |
 | `heads.item.expired-name` | `"&lt;gray&gt;&lt;owner&gt;'s Head &lt;dark_gray&gt;(expired)"` | A head from an older cycle keeps its data and works as a normal head but is worthless. |
 | `heads.item.expired-lore` | `["&lt;red&gt;Expired&lt;/red&gt; &lt;dark_gray&gt;- from cycle &lt;...` |  |
+| `heads.item.defunct-name` | `"&lt;gray&gt;&lt;owner&gt;'s Head &lt;dark_gray&gt;(defunct)"` | A defunct head: made before a /hca reset cycle or /hca reset hard that kept the old heads (keep-heads). |
+| `heads.item.defunct-lore` | `["&lt;red&gt;Defunct&lt;/red&gt; &lt;dark_gray&gt;- cycle &lt;gray&...` |  |
 | `heads.item.max-stack-size` | `1` | 1 keeps every head in its own slot (each head has a unique ID anyway). 1-99. |
 | `heads.item.glint` | `false` | Enchantment glint on current heads. |
 | `heads.item.item-model` | `""` | Optional item model (namespace:key) for resource packs; leave empty for the normal head. |
@@ -147,8 +186,9 @@ Hooks are explained in [hooks.md](hooks.md).
 | `history.gui.buttons.next-page` | `{ slot: 53, material: ARROW, name: "&lt;yellow&gt;Older", lore: ["&...` |  |
 | `history.gui.buttons.close` | `{ slot: 49, material: BARRIER, name: "&lt;red&gt;Close" }` |  |
 | `sidebar` | `(section)` | Sidebar |
-| `sidebar.enabled` | `true` | Server-wide switch. false removes Headcount's sidebar entirely so another scoreboard plugin can show Headcount's placeholders instead. Players toggle it with /hc sidebar; it starts off for everyone. |
-| `sidebar.update-interval` | `1s` |  |
+| `sidebar.enabled` | `true` | Server-wide switch. false removes Headcount's sidebar entirely so another scoreboard plugin can show Headcount's placeholders instead. Players toggle their own with /hc sidebar. |
+| `sidebar.shown-for-new-players` | `false` | Whether a player's sidebar starts shown the first time they join (they can still hide it with /hc sidebar). Players who already joined keep their own choice. |
+| `sidebar.update-interval` | `1s` | How often the lines are redrawn. |
 | `sidebar.title` | `"&lt;gold&gt;&lt;bold&gt;HEADCOUNT"` |  |
 | `sidebar.lines` | `list of 8` | Up to 15 lines. Headcount placeholders and PlaceholderAPI placeholders work here. |
 | `sidebar.lines-before-start` | `["&lt;gray&gt;Headcount starts in", "&lt;white&gt;a little while"]` |  |
@@ -163,7 +203,15 @@ Hooks are explained in [hooks.md](hooks.md).
 | `audit.log-each-cycle-start-head` | `true` | Log each head made at cycle start (one line per head) instead of one summary line. |
 | `audit.search-page-size` | `10` | Lines per page in /hca audit. |
 | `audit.types` | `(section)` | Switch individual event types off (all on by default). (see the linked page) |
-| `hooks` | `(section)` | Hooks: action lists that run at moments in the cycle and in a player's time on the server. Every list uses the actions system (see actions.yml for every type and the common options). Cycle hooks (cycle-start, cycle-end, and each warning) have: global:      runs once for the server, with... (the full comment is in the file) |
+| `reset` | `(section)` | Resets (/hca reset cycle, /hca reset hard) |
+| `reset.delete-old-heads` | `true` | Every head made before a reset is worthless (it can't go in a vault and never counts). Each reset chooses what happens to them: add delete-heads or keep-heads to the command, or leave it out to use this default. delete (true): deleted wherever Headcount sees them: inventories and ender chests at... (the full comment is in the file) |
+| `reset.hard` | `(section)` |  |
+| `reset.hard.enabled` | `true` | /hca reset hard deletes every player's Headcount data and starts again from cycle 1, keeping these config files. It needs the headcount.admin.reset.hard permission (the console always has it). |
+| `reset.hard.confirmations` | `3` | How many times the admin must type a new random code to confirm (at least 1). |
+| `reset.hard.confirm-timeout` | `60s` | Time to type each code. |
+| `reset.hard.backup-database` | `true` | Copy the database to plugins/Headcount/backups/hard-reset-&lt;time&gt;/ first. |
+| `reset.hard.archive-audit-log` | `true` | Move the audit log files there too, so the audit log starts empty. |
+| `hooks` | `(section)` | Hooks: action lists that run at moments in the cycle and in a player's time on the server. Every list uses the actions system (see actions.yml for every type and the common options). Cycle hooks (cycle-start, cycle-end, and each warning) have (cycle-start also runs after /hca reset cycle):... (the full comment is in the file) |
 | `hooks.join-delay` | `1s` | Wait this long after a join before running join hooks, so messages come after the join message. |
 | `hooks.missed-warning-grace` | `5m` | A warning whose moment passed while the server was offline still fires if it is at most this late. |
 | `hooks.top-count` | `3` | How many players &lt;top_list&gt; lists. |
@@ -178,6 +226,10 @@ Hooks are explained in [hooks.md](hooks.md).
 /trade <player> sends a request; the target accepts with /trade accept (or the chat link on Java),
 denies with /trade deny, and the sender withdraws with /trade cancel.
 Each player can have at most one active trade or pending request at a time, incoming or outgoing.
+
+Where text lives: this file holds text you design (menu titles, item names and lore, and the messages inside
+action lists). Everything Headcount itself says (command replies, errors, confirmations, help, effect
+descriptions) is in lang/en_US.yml.
 ```
 
 | Option | Default | Description |
@@ -267,6 +319,10 @@ Each player can have at most one active trade or pending request at a time, inco
 ```text
 How each active player's end-of-cycle score is calculated. A positive score gives that many points
 (config.yml points.earn-multiplier); a negative score triggers punishments (outcomes.yml).
+
+Where text lives: this file holds text you design (menu titles, item names and lore, and the messages inside
+action lists). Everything Headcount itself says (command replies, errors, confirmations, help, effect
+descriptions) is in lang/en_US.yml.
 ```
 
 Every formula variable and function is in [formula.md](formula.md).
@@ -284,34 +340,103 @@ Every formula variable and function is in [formula.md](formula.md).
 ## integrations.yml
 
 ```text
-Which installed plugin handles what. Every integration is optional: Headcount works fully with none of
-them, using a built-in fallback where one exists. 'auto' picks the first installed plugin in the order shown.
-/hca integrations shows what was chosen.
+Who handles each job that other plugins can do. Every job has a 'provider':
+
+  included   Headcount's own version, built in. Nothing else to install. The default wherever it exists.
+  <plugin>   hand the job to that plugin (it must be installed).
+  none       the job is off completely, Headcount's own version included.
+
+If the chosen plugin isn't installed (or fails to load), Headcount logs a warning and uses 'included', or
+'none' where there is no included version. /hca integrations shows what is in use right now.
+Changes apply after /hca reload, except switching /pvp between plugins, which needs a restart.
+
+Where text lives: this file holds settings only. What Headcount says to players (the PvP messages, AFK
+notices, ...) is in lang/en_US.yml; how those messages reach the player (chat, action bar, title, sound) is here.
 ```
 
 What each integration does is in [integrations.md](integrations.md).
 
 | Option | Default | Description |
 |---|---|---|
-| `pvp` | `(section)` |  |
-| `pvp.provider` | `auto` | PvP state, combat tag and newbie protection for statuses, and the pvp action. auto \| pvpmanager \| none Any other PvP or combat plugin can still be used through PlaceholderAPI statuses (statuses.yml). |
-| `pvp.let-players-toggle` | `true` | PvPManager only lets players use /pvp with the permission pvpmanager.command.pvp, which is off by default, and players start with PvP on. Headcount's default rules block moving heads and trading while PvP is on, so with this on, every player may use /pvp (the permission's default becomes true; a... (the full comment is in the file) |
-| `placeholderapi` | `(section)` |  |
-| `placeholderapi.enabled` | `auto` | Use other plugins' placeholders in Headcount's text, formula and statuses. auto \| true \| false (Headcount's own %headcount_...% placeholders always work in its own text, with or without PlaceholderAPI.) |
-| `placeholderapi.register-expansion` | `true` | Register the %headcount_...% expansion so other plugins can show Headcount's data. |
-| `placeholderapi.expansion-format` | `legacy` | How formatted values (like %headcount_title%) are given to other plugins: legacy \| minimessage \| plain |
-| `economy` | `(section)` |  |
-| `economy.provider` | `auto` | Money for the money action. auto \| vault \| none |
-| `permissions` | `(section)` |  |
-| `permissions.provider` | `auto` | Permission, group, track and prefix/suffix actions. auto (LuckPerms, then Vault) \| luckperms \| vault \| none |
+| `pvp` | `(section)` | PvP: the PvP toggle, the combat tag and new-player protection. They feed the in-pvp, combat-tagged and newbie-protected statuses (statuses.yml), which the default vault and trade rules use, and the pvp action. |
+| `pvp.provider` | `included` | included \| pvpmanager \| none included:   Headcount's own PvP (everything under 'included' below). It owns the /pvp command. pvpmanager: PvPManager does it all; the 'included' settings are ignored. none:       no PvP handling. Players can always fight (vanilla), the PvP statuses read false, and... (the full comment is in the file) |
+| `pvp.included` | `(section)` | ---- Headcount's own PvP (provider: included) ---- |
+| `pvp.included.toggle` | `(section)` |  |
+| `pvp.included.toggle.default` | `"off"` | PvP for players who never used /pvp: on \| off. With off, players must opt in with /pvp before they can fight or be hit, which also keeps the default vault and trade rules (blocked while PvP is on) out of the way. |
+| `pvp.included.toggle.allow-toggle` | `true` | Players may switch their own PvP with /pvp (also needs the permission headcount.pvp, default everyone). |
+| `pvp.included.toggle.cooldown` | `10s` | Time between two switches. Bypass: headcount.bypass.pvp.cooldown |
+| `pvp.included.toggle.reset-on-join` | `false` | Put everyone back to the default each time they join. |
+| `pvp.included.toggle.force-on-worlds` | `[]` | Worlds where PvP is always on, or always off, whatever each player chose. Exact world names. |
+| `pvp.included.toggle.force-off-worlds` | `[]` |  |
+| `pvp.included.newbie-protection` | `(section)` |  |
+| `pvp.included.newbie-protection.duration` | `10m` | New players can't attack or be attacked for this long after their first join (real time). 0 = off. |
+| `pvp.included.newbie-protection.can-end-early` | `true` | A protected player may end it early with /pvp on. |
+| `pvp.included.respawn-protection` | `(section)` |  |
+| `pvp.included.respawn-protection.duration` | `5s` | Nobody can hurt a player for this long after they respawn (attacking someone ends it). 0 = off. |
+| `pvp.included.combat-tag` | `(section)` |  |
+| `pvp.included.combat-tag.enabled` | `true` | A hit between two players puts them "in combat" (the combat-tagged status) for 'duration'; every new hit restarts it. Arrows, tridents, thrown potions, a player's TNT and their tamed pets count as their hits. |
+| `pvp.included.combat-tag.duration` | `15s` |  |
+| `pvp.included.combat-tag.tag-attacker` | `true` | Who is tagged by a hit. |
+| `pvp.included.combat-tag.tag-victim` | `true` |  |
+| `pvp.included.combat-tag.untag-on-death` | `true` | Dying ends the tag. |
+| `pvp.included.combat-tag.block-pvp-toggle` | `true       # can't turn PvP off` | While in combat: |
+| `pvp.included.combat-tag.block-flight` | `true           # flying stops and can't start again (creative and s...` |  |
+| `pvp.included.combat-tag.block-elytra` | `false          # can't start gliding` |  |
+| `pvp.included.combat-tag.block-ender-pearls` | `false    # can't throw ender pearls` |  |
+| `pvp.included.combat-tag.block-teleport` | `true         # teleports by commands and plugins (/spawn, /home, /t...` |  |
+| `pvp.included.combat-tag.blocked-commands` | `[spawn, home, homes, warp, warps, tpa, tpahere, tpaccept, tpyes, ba...` | Commands that can't be used (no slash; namespaced forms like essentials:home are blocked too). Bypass for these and for teleports: headcount.bypass.combat-commands |
+| `pvp.included.combat-log` | `(section)` |  |
+| `pvp.included.combat-log.enabled` | `true` | Leaving the server while in combat. Being kicked or banned doesn't count. Bypass: headcount.bypass.combat-log |
+| `pvp.included.combat-log.punishment` | `kill` | kill: the player dies as they leave, so their items and XP drop where they stood. none: nothing happens to them; only 'actions' and 'broadcast' below. |
+| `pvp.included.combat-log.credit-last-attacker` | `true` | The player who last hit them gets the kill, and with it the kill head drop (config.yml kills). |
+| `pvp.included.combat-log.actions` | `[]` | Extra actions run on the player who left (any action from actions.yml; the ones that need the player online wait for their next join). For example: actions: - type: points amount: -5 - message: "&lt;red&gt;You logged out during a fight and lost 5 points." |
+| `pvp.included.combat-log.broadcast` | `true` | Tell everyone else (lang: pvp.combat-log-broadcast). |
+| `pvp.included.messages` | `(section)` | How each kind of PvP message reaches the player. The texts are in lang/en_US.yml under pvp. channel: chat \| actionbar \| title \| none sound:   a sound key (e.g. "minecraft:block.note_block.bass"), or "" for none. volume and pitch: 0-2. The same message is sent at most once a second to a player. |
+| `pvp.included.messages.toggled` | `(section)` | /pvp switched your PvP (pvp.toggled-on / toggled-off / newbie-ended). |
+| `pvp.included.messages.toggled.channel` | `chat` |  |
+| `pvp.included.messages.toggled.sound` | `"minecraft:ui.button.click"` |  |
+| `pvp.included.messages.tag-start` | `(section)` | You hit someone or were hit, and are now in combat (pvp.tag-start). |
+| `pvp.included.messages.tag-start.channel` | `actionbar` |  |
+| `pvp.included.messages.tag-start.sound` | `"minecraft:item.armor.equip_iron"` |  |
+| `pvp.included.messages.tag-end` | `(section)` | Your combat tag ended (pvp.tag-end). |
+| `pvp.included.messages.tag-end.channel` | `actionbar` |  |
+| `pvp.included.messages.tag-end.sound` | `""` |  |
+| `pvp.included.messages.blocked-hit` | `(section)` | Your hit was stopped because someone has PvP off or is protected (pvp.blocked-hit.*). |
+| `pvp.included.messages.blocked-hit.channel` | `actionbar` |  |
+| `pvp.included.messages.blocked-hit.sound` | `""` |  |
+| `pvp.included.messages.blocked-action` | `(section)` | Something was refused: a blocked command, teleport, flight, pearl, /pvp during combat or a cooldown. |
+| `pvp.included.messages.blocked-action.channel` | `chat` |  |
+| `pvp.included.messages.blocked-action.sound` | `"minecraft:block.note_block.bass"` |  |
+| `pvp.included.messages.blocked-action.pitch` | `0.7` |  |
+| `pvp.included.messages.countdown` | `actionbar` | The live countdown while in combat (pvp.countdown): actionbar \| bossbar \| none |
+| `pvp.included.messages.countdown-bossbar-color` | `red` | Boss bar color when countdown is bossbar: pink \| blue \| red \| green \| yellow \| purple \| white |
+| `pvp.pvpmanager` | `(section)` | ---- PvPManager (provider: pvpmanager) ---- |
+| `pvp.pvpmanager.let-players-toggle` | `true` | PvPManager only lets players use /pvp with its permission pvpmanager.command.pvp, which is off by default, and players start with PvP on. Headcount's default rules block moving heads and trading while PvP is on, so with this on, every player may use /pvp (the permission's default becomes true; a... (the full comment is in the file) |
+| `placeholders` | `(section)` | Placeholders: %...% in Headcount's text, the score formula and statuses. |
+| `placeholders.provider` | `included` | included \| placeholderapi \| none included:       Headcount's own %headcount_...% placeholders only (docs/placeholders.md lists them). placeholderapi: those plus every PlaceholderAPI placeholder, and %headcount_...% for other plugins. none:           no %...% placeholders at all, Headcount's own... (the full comment is in the file) |
+| `placeholders.placeholderapi` | `(section)` |  |
+| `placeholders.placeholderapi.register-expansion` | `true` | Register the %headcount_...% expansion so other plugins (scoreboards, tab, chat) can show Headcount's data. |
+| `placeholders.placeholderapi.expansion-format` | `legacy` | How formatted values (like %headcount_title%) are given to other plugins: legacy \| minimessage \| plain |
+| `economy` | `(section)` | Money, for the money action. (Points, Headcount's own currency, need nothing.) |
+| `economy.provider` | `vault` | vault \| none. vault uses whatever economy plugin is behind Vault (EssentialsX, CMI, ...). |
+| `permissions` | `(section)` | Permissions: the permission, group, primary-group, track, prefix and suffix actions, and title prefixes (titles.yml permission-prefix). |
+| `permissions.provider` | `included` | included \| luckperms \| vault \| none included:  Headcount gives permission nodes itself (saved, and re-applied on every join). It can't do groups, tracks, prefixes or suffixes: those actions are skipped with a warning. Use luckperms or vault. luckperms: everything, with LuckPerms' own expiry on... (the full comment is in the file) |
 | `permissions.luckperms` | `(section)` |  |
 | `permissions.luckperms.use-expiry` | `true` | Give timed changes LuckPerms' own expiry too, so they end even if Headcount is removed. |
 | `permissions.luckperms.server-context` | `""` | Optional "server" context for nodes Headcount adds (empty = global). |
-| `moderation` | `(section)` |  |
-| `moderation.provider` | `auto` | ban, mute, kick, warn and jail actions. auto (LiteBans, LibertyBans, AdvancedBan, EssentialsX) \| litebans \| libertybans \| advancedban \| essentials \| commands \| vanilla. Each punishment kind uses the first provider that supports it, then the vanilla fallback: vanilla bans, kicks and warnings (a... (the full comment is in the file) |
+| `moderation` | `(section)` | Moderation: the ban, mute, kick, warn and jail actions. |
+| `moderation.provider` | `included` | included \| litebans \| libertybans \| advancedban \| essentials \| commands \| none included:    vanilla bans (the server's ban list), kicks, warnings (a message), and Headcount's own mute and jail (settings below). commands:    any moderation plugin, driven by the command templates under 'commands'.... (the full comment is in the file) |
+| `moderation.kinds` | `{}` | Give single kinds their own provider (same choices), e.g. bans by LibertyBans but jail by EssentialsX: kinds: jail: essentials Kinds: ban, mute, kick, warn, jail. Leave out a kind to use 'provider'. |
 | `moderation.operator-name` | `Headcount` | Name shown as the punisher where the plugin supports it. |
 | `moderation.silent` | `false` | Hide punishment broadcasts where the plugin supports it. |
-| `moderation.litebans-commands` | `(section)` | LiteBans' API cannot create punishments, so LiteBans is driven by its commands. &lt;player&gt; &lt;uuid&gt; &lt;reason&gt; &lt;duration&gt; |
+| `moderation.included-jail` | `(section)` | Headcount's own jail (used by 'included', and for jail with any plugin that has none). |
+| `moderation.included-jail.location` | `""` | world,x,y,z[,yaw,pitch]. Must be set for jail actions to work. E.g. "world,0,64,0" |
+| `moderation.included-jail.radius` | `8` | Jailed players further than this many blocks are pulled back. |
+| `moderation.included-jail.release-to` | `previous` | Where release sends them: previous \| spawn |
+| `moderation.included-jail.allowed-commands` | `[msg, tell, r, hc, headcount]` | Commands jailed players may still use (everything else is blocked). |
+| `moderation.included-mute` | `(section)` | Headcount's own mute (used by 'included'): blocks chat and these commands. |
+| `moderation.included-mute.blocked-commands` | `[msg, tell, w, r, me, say]` |  |
+| `moderation.litebans-commands` | `(section)` | LiteBans' API cannot create punishments, so LiteBans is driven by its commands. Variables: &lt;player&gt; &lt;uuid&gt; &lt;reason&gt; &lt;duration&gt; |
 | `moderation.litebans-commands.ban` | `"litebans:ban &lt;player&gt; &lt;reason&gt;"` |  |
 | `moderation.litebans-commands.tempban` | `"litebans:tempban &lt;player&gt; &lt;duration&gt; &lt;reason&gt;"` |  |
 | `moderation.litebans-commands.unban` | `"litebans:unban &lt;player&gt;"` |  |
@@ -320,7 +445,7 @@ What each integration does is in [integrations.md](integrations.md).
 | `moderation.litebans-commands.unmute` | `"litebans:unmute &lt;player&gt;"` |  |
 | `moderation.litebans-commands.kick` | `"litebans:kick &lt;player&gt; &lt;reason&gt;"` |  |
 | `moderation.litebans-commands.warn` | `"litebans:warn &lt;player&gt; &lt;reason&gt;"` |  |
-| `moderation.commands` | `(section)` | Used when provider is "commands": drive any moderation plugin from templates. Leave a kind empty if unsupported. Variables: &lt;player&gt; &lt;uuid&gt; &lt;reason&gt; &lt;duration&gt; &lt;jail&gt; |
+| `moderation.commands` | `(section)` | Templates for provider 'commands'. Leave a kind empty if your plugin can't do it (it then goes to 'included'). Variables: &lt;player&gt; &lt;uuid&gt; &lt;reason&gt; &lt;duration&gt; &lt;jail&gt; |
 | `moderation.commands.ban` | `"ban &lt;player&gt; &lt;reason&gt;"` |  |
 | `moderation.commands.tempban` | `""` |  |
 | `moderation.commands.unban` | `"pardon &lt;player&gt;"` |  |
@@ -332,22 +457,20 @@ What each integration does is in [integrations.md](integrations.md).
 | `moderation.commands.jail` | `""` |  |
 | `moderation.commands.tempjail` | `""` |  |
 | `moderation.commands.unjail` | `""` |  |
-| `moderation.vanilla-jail` | `(section)` | Headcount's own jail, used when no plugin provides jails. |
-| `moderation.vanilla-jail.location` | `""` | world,x,y,z[,yaw,pitch]. Must be set for jail actions to work without a jail plugin. |
-| `moderation.vanilla-jail.radius` | `8` | Jailed players further than this are pulled back. |
-| `moderation.vanilla-jail.release-to` | `previous` | Where release sends them: previous \| spawn |
-| `moderation.vanilla-jail.allowed-commands` | `[msg, tell, r, hc, headcount]` | Commands jailed players may still use. |
-| `moderation.vanilla-mute` | `(section)` | Headcount's own mute (when no plugin provides mutes) blocks chat and these commands. |
-| `moderation.vanilla-mute.blocked-commands` | `[msg, tell, w, r, me, say]` |  |
-| `discord` | `(section)` |  |
-| `discord.provider` | `auto` | Discord messages for the discord action. auto \| discordsrv \| none |
-| `discord.default-channel` | `global` | DiscordSRV game channel name used when an action does not name one. |
-| `items` | `(section)` |  |
-| `items.providers` | `[auto]` | Custom item plugins for item definitions written as "custom: itemsadder:ns:id", "custom: oraxen:id", "custom: nexo:id". auto uses every installed one; or list some: [itemsadder, nexo] |
-| `bedrock` | `(section)` |  |
-| `bedrock.provider` | `auto` | Detect Bedrock players (Geyser). auto (Floodgate, then Geyser) \| floodgate \| geyser \| none Bedrock players use /trade accept instead of the chat link; every menu and the sidebar work for them. |
-| `essentials` | `(section)` |  |
-| `essentials.enabled` | `auto` | Read EssentialsX afk/vanish/god/jail/mute state for the essentials status source. auto \| false |
+| `discord` | `(section)` | Discord, for the discord action. |
+| `discord.provider` | `discordsrv` | discordsrv \| none |
+| `discord.default-channel` | `global` | DiscordSRV game channel used when an action doesn't name one. |
+| `items` | `(section)` | Custom items: item definitions written as "custom: itemsadder:ns:id", "custom: oraxen:id", "custom: nexo:id". |
+| `items.providers` | `[itemsadder, oraxen, nexo]` | Which of itemsadder, oraxen and nexo to use (the ones not installed are skipped). [] turns custom items off. |
+| `bedrock` | `(section)` | Bedrock players (through Geyser). Bedrock players get /trade accept instead of the chat link; every menu and the sidebar work for them. Also the bedrock status. |
+| `bedrock.provider` | `floodgate` | floodgate \| geyser \| none. floodgate also knows players who have no Java account. |
+| `player-state` | `(section)` | Player states: afk, vanished, god, jailed and muted, for the player-state status source (the afk and vanished statuses in statuses.yml). |
+| `player-state.provider` | `included` | included \| essentials \| none included:   AFK after 'afk.after' without activity; vanished from the "vanished" flag most vanish plugins set; god mode from the player's invulnerable flag; jailed and muted from Headcount's own jail and mute (or the moderation plugin, when it can tell). essentials:... (the full comment is in the file) |
+| `player-state.included` | `(section)` |  |
+| `player-state.included.afk` | `(section)` |  |
+| `player-state.included.afk.after` | `5m` | Time without moving, looking around, chatting, commands or clicking before a player is AFK. 0 = never. |
+| `player-state.included.afk.looking-counts` | `true` | Turning the camera counts as activity. |
+| `player-state.included.afk.announce` | `self` | Who is told when someone goes AFK or comes back: self \| everyone \| none (lang: player-state.*) |
 
 ## shop.yml
 
@@ -355,6 +478,10 @@ What each integration does is in [integrations.md](integrations.md).
 /hc shop. Points are earned from a positive score at the end of a cycle and spent during the next one.
 Each tier unlocks at a threshold of the player's score from LAST cycle and is its own set of pages.
 Locked tiers can still be browsed: entries show their "locked" look and the banner shows the threshold.
+
+Where text lives: this file holds text you design (menu titles, item names and lore, and the messages inside
+action lists). Everything Headcount itself says (command replies, errors, confirmations, help, effect
+descriptions) is in lang/en_US.yml.
 ```
 
 Tiers and entries are explained in [shop.md](shop.md).
@@ -440,7 +567,7 @@ Tiers and entries are explained in [shop.md](shop.md).
 | `default-states.locked.material` | `GRAY_DYE` |  |
 | `default-states.locked.glint` | `false` |  |
 | `default-states.locked.lore` | `["&lt;dark_gray&gt;Locked", "&lt;gray&gt;Needs a last cycle score o...` |  |
-| `tiers` | `(section)` | Tiers in order. 'threshold: none' is always unlocked. Entry settings: page, slot           where it goes (page starts at 1) price                in points display              item definition (material, name, lore, item-model, glint, enchants, custom ...) display-states       per-state overrides... (the full comment is in the file) |
+| `tiers` | `(section)` | Tiers in order. 'threshold: none' is always unlocked. Tier settings: name, threshold (a last-cycle score, or none), pages (at least; entries can add more), enabled, entries. Entry settings: name                 how the entry is called in messages (default: its display name without formatting)... (the full comment is in the file) |
 
 ## titles.yml
 
@@ -448,6 +575,10 @@ Tiers and entries are explained in [shop.md](shop.md).
 Titles players can own (from the shop, outcomes or admins) and equip with /hc titles.
 The equipped title is %headcount_title% for chat and tab plugins, and can also be applied as a LuckPerms
 (or Vault) prefix or suffix. An action can force a title on a player for a while (force-title).
+
+Where text lives: this file holds text you design (menu titles, item names and lore, and the messages inside
+action lists). Everything Headcount itself says (command replies, errors, confirmations, help, effect
+descriptions) is in lang/en_US.yml.
 ```
 
 Defining titles is explained in [titles.md](titles.md).
@@ -463,7 +594,7 @@ Defining titles is explained in [titles.md](titles.md).
 | `settings.permission-prefix.type` | `prefix` | prefix \| suffix |
 | `settings.permission-prefix.priority` | `100` | Headcount owns every prefix (or suffix) at this priority; pick one nothing else uses. |
 | `settings.permission-prefix.format` | `"&lt;title&gt; "` |  |
-| `titles` | `(section)` | (see the linked page) |
+| `titles` | `(section)` | Each title: display (MiniMessage, what players see), description (lore lines in the menu), icon (an item definition for the menu, see config.yml), enabled (false hides it). The key (champion, ...) is the ID used by /hca title, the grant-title action and shop requirements. (see the linked page) |
 | `gui` | `(section)` |  |
 | `gui.title` | `"&lt;dark_gray&gt;Your Titles"` | &lt;page&gt; |
 | `gui.rows` | `6` |  |
@@ -504,7 +635,8 @@ Each status has a 'source' plus that source's settings, and optionally:
 In any list of statuses, "!name" means "not name".
 
 Sources (full reference in docs/statuses.md):
-  pvp              PvP plugin hook. check: pvp-enabled | pvp-disabled | combat-tagged | newbie | respawn-protected | override
+  pvp              the PvP provider (integrations.yml pvp: included or PvPManager). check: pvp-enabled |
+                   pvp-disabled | combat-tagged | newbie | respawn-protected | override
   placeholder      placeholder: "%..%", operator: equals | not-equals | greater-than | less-than |
                    greater-or-equal | less-or-equal | contains | not-contains | starts-with | ends-with | regex,
                    value: "...", ignore-case: true. Works with any plugin's PlaceholderAPI placeholders.
@@ -531,13 +663,18 @@ Sources (full reference in docs/statuses.md):
   biome            biomes: [desert, minecraft:badlands]
   holding          materials: [DIAMOND_SWORD], hand: main | off | any
   world-time       from: 13000, to: 23000 (ticks; wraps past midnight)
-  essentials       check: afk | vanished | god | jailed | muted (EssentialsX)
+  player-state     the player-state provider (integrations.yml: included or EssentialsX).
+                   check: afk | vanished | god | jailed | muted   ("essentials" is the same source's old name)
   muted            muted by the moderation plugin or by Headcount's own mute
   in-trade         in an open Headcount trade
   headcount        value: points | unique | total | rank | percentile | streak | score | ..., range: ">0"
   all-of / any-of  statuses: [a, b, "!c"]
   not              status: a
   always / never
+
+Where text lives: this file holds text you design (menu titles, item names and lore, and the messages inside
+action lists). Everything Headcount itself says (command replies, errors, confirmations, help, effect
+descriptions) is in lang/en_US.yml.
 ```
 
 Every status source is in [statuses.md](statuses.md).
@@ -567,6 +704,10 @@ Each rule has:
 
 Variables in outcome actions: <player> <score> <unique> <total> <own> <rank> <percentile> <streak>
 <points_earned> <points> <rolled_over> <cycle> <tier> <playtime> <kills> <deaths> <trades> <outcome>
+
+Where text lives: this file holds text you design (menu titles, item names and lore, and the messages inside
+action lists). Everything Headcount itself says (command replies, errors, confirmations, help, effect
+descriptions) is in lang/en_US.yml.
 ```
 
 Writing rules is explained in [outcomes.md](outcomes.md).
@@ -621,7 +762,7 @@ Messages and effects
   particle      (particle, count, offset, speed, height)
   bossbar       (text, color, overlay, progress, countdown-to: cycle-end | 60s | 2026-12-01T00:00, seconds)
                 variables <countdown> <countdown_clock> <seconds>; in global hooks it shows to everyone
-  discord       (text, channel) through DiscordSRV
+  discord       (text, channel) through DiscordSRV (integrations.yml discord)
   broadcast-location (text with <player> <x> <y> <z> <world>, audience: all) - add repeat for repeated reports
 Commands
   console       (command or commands, revert-commands, require-online: false) - <player> <uuid> available
@@ -636,8 +777,9 @@ Items
   experience    (amount: +/- points, levels: false)
 Currency
   points        (amount: +/-, when: now | next-cycle, revert: true)
-  money         (amount: +/-, revert: true) through Vault
-Permissions and ranks (LuckPerms or Vault; LuckPerms gets its own expiry for timed changes)
+  money         (amount: +/-, revert: true) through Vault (integrations.yml economy)
+Permissions and ranks (integrations.yml permissions.provider: included does permission nodes only; LuckPerms
+or Vault do all of these, and LuckPerms gets its own expiry for timed changes)
   permission    (permission, mode: add | remove, value: true)
   group         (group, mode: add | remove)
   primary-group (group)
@@ -647,10 +789,11 @@ Titles
   grant-title, revoke-title (title, equip: false)
   strip-title   (which: equipped | all)
   force-title   (title) - equipped and locked for the duration
-Moderation (integrations.yml moderation.provider; vanilla bans and Headcount's own mutes and jails as fallback)
+Moderation (integrations.yml moderation.provider: included uses vanilla bans and Headcount's own mutes and
+jails, or hand any kind to a moderation plugin)
   ban, mute, kick, warn, jail   (reason, jail: <jail name>) - a timed duration makes it temporary
-PvP (integrations.yml pvp.provider)
-  pvp           (state: on | off, lock: true, restore: true)
+PvP (integrations.yml pvp.provider: included or PvPManager)
+  pvp           (state: on | off, lock: true [can't /pvp while active], restore: true [back to before when it ends])
 Buffs and debuffs (kept applied through death and milk while timed)
   potion        (effect, amplifier, seconds [for instant], ambient, particles, icon)
   attribute     (attribute: max_health | movement_speed | attack_damage | scale | jump_strength | gravity |
@@ -677,6 +820,10 @@ duration, such as cycle, 1d or permanent. /hca selftest flags one without.)
 Flow
   run           (list: <name>, or actions: [...])
   random        (choices: [{weight: 3, actions: [...]}, {weight: 1, list: other-list}])
+
+Where text lives: this file holds text you design (menu titles, item names and lore, and the messages inside
+action lists). Everything Headcount itself says (command replies, errors, confirmations, help, effect
+descriptions) is in lang/en_US.yml.
 ```
 
 Every action type is in [actions.md](actions.md).

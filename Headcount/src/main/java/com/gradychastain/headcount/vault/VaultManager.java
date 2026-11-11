@@ -93,6 +93,8 @@ public final class VaultManager {
     private VaultData loadFromDb(UUID owner) {
         Cycle cycle = plugin.cycles().current();
         int fallbackSize = cycle == null ? cfg().getInt("size", 27) : cycle.vaultSize();
+        // Vault rows only ever hold heads of the running cycle run (every start, restart and reset rewrites them).
+        String token = cycle == null ? null : cycle.token();
         record Row(int slot, HeadData head, byte[] item) {}
         List<Row> rows = new ArrayList<>();
         int size = plugin.db().sync(c -> {
@@ -108,7 +110,7 @@ public final class VaultManager {
                 try (ResultSet rs = ps.executeQuery()) {
                     while (rs.next()) {
                         HeadData h = new HeadData(UUID.fromString(rs.getString(2)), UUID.fromString(rs.getString(3)), rs.getString(4),
-                                rs.getInt(7), rs.getLong(5), rs.getString(6));
+                                rs.getInt(7), rs.getLong(5), rs.getString(6), token);
                         rows.add(new Row(rs.getInt(1), h, rs.getBytes(8)));
                     }
                 }
@@ -271,7 +273,7 @@ public final class VaultManager {
         int starting = Math.min(size, Math.max(0, cycle.startingHeads()));
         long now = System.currentTimeMillis();
         List<HeadData> heads = new ArrayList<>();
-        for (int i = 0; i < starting; i++) heads.add(new HeadData(UUID.randomUUID(), uuid, name, cycle.id(), now, "cycle-start"));
+        for (int i = 0; i < starting; i++) heads.add(new HeadData(UUID.randomUUID(), uuid, name, cycle.id(), now, "cycle-start", cycle.token()));
         plugin.db().syncTransaction(c -> {
             try (PreparedStatement ps = c.prepareStatement("DELETE FROM vault_items WHERE uuid=?")) {
                 ps.setString(1, uuid.toString());
@@ -333,82 +335,127 @@ public final class VaultManager {
      * @return number of vaults filled
      */
     public int fillAllForCycle(Cycle cycle) {
+        Fill f = new Fill();
+        plugin.db().syncTransaction(c -> fillRows(c, cycle, false, f));
+        return afterFill(cycle, f);
+    }
+
+    /**
+     * Refills every vault for a cycle restarted by /hca reset cycle, in the caller's transaction. The next-cycle
+     * modifiers and queued heads that were used when this cycle first started are used again; ones waiting for the
+     * next cycle stay waiting. Call {@link #afterFill(Cycle, Fill)} once the transaction has committed.
+     */
+    public Fill refillForRestart(Connection c, Cycle cycle) throws SQLException {
+        Fill f = new Fill();
+        fillRows(c, cycle, true, f);
+        return f;
+    }
+
+    /** What a fill made, applied to memory and handed out after its transaction commits. */
+    public static final class Fill {
+        final Map<UUID, List<HeadData>> overflow = new LinkedHashMap<>();
+        final Map<UUID, List<HeadData>> created = new LinkedHashMap<>();
+        final Map<UUID, Integer> sizes = new HashMap<>();
+        boolean restart;
+    }
+
+    private void fillRows(Connection c, Cycle cycle, boolean restart, Fill f) throws SQLException {
         long now = System.currentTimeMillis();
         int max = maxSize();
+        Map<UUID, List<HeadData>> overflow = f.overflow;
+        Map<UUID, List<HeadData>> created = f.created;
+        Map<UUID, Integer> sizes = f.sizes;
+        f.restart = restart;
+        record P(UUID uuid, String name, String headsMod, String sizeMod) {}
+        List<P> players = new ArrayList<>();
+        // A first start uses the modifiers waiting for this cycle; a restart uses the ones its first start used.
+        String mods = restart ? "cycle_heads_mod, cycle_size_mod" : "next_heads_mod, next_size_mod";
+        try (PreparedStatement ps = c.prepareStatement("SELECT uuid, name, " + mods + " FROM players"); ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) players.add(new P(UUID.fromString(rs.getString(1)), rs.getString(2), rs.getString(3), rs.getString(4)));
+        }
+        Map<UUID, List<HeadData>> pending = new HashMap<>();
+        String which = restart ? "used_cycle=?" : "used_cycle IS NULL AND for_cycle<=?";
+        try (PreparedStatement ps = c.prepareStatement("SELECT uuid, owner, owner_name, amount, source FROM pending_heads WHERE " + which)) {
+            ps.setInt(1, cycle.id());
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    UUID to = UUID.fromString(rs.getString(1));
+                    UUID owner = UUID.fromString(rs.getString(2));
+                    for (int i = 0; i < Math.max(0, rs.getInt(4)); i++) {
+                        pending.computeIfAbsent(to, k -> new ArrayList<>()).add(new HeadData(UUID.randomUUID(), owner, rs.getString(3),
+                                cycle.id(), now, rs.getString(5) == null ? "action" : rs.getString(5), cycle.token()));
+                    }
+                }
+            }
+        }
+        try (PreparedStatement ps = c.prepareStatement("DELETE FROM vault_items")) {
+            ps.executeUpdate();
+        }
+        String set = restart ? "UPDATE players SET setup_cycle=?, vault_size=? WHERE uuid=?"
+                : "UPDATE players SET setup_cycle=?, vault_size=?, cycle_heads_mod=next_heads_mod, cycle_size_mod=next_size_mod, next_heads_mod=NULL, next_size_mod=NULL WHERE uuid=?";
+        try (PreparedStatement upd = c.prepareStatement(set)) {
+            for (P p : players) {
+                int size = Math.max(1, Math.min(max, applyMod(cycle.vaultSize(), p.sizeMod())));
+                int wanted = Math.max(0, applyMod(cycle.startingHeads(), p.headsMod()));
+                int starting = Math.min(size, wanted);
+                // Extra starting heads from a next-cycle action (e.g. a shop purchase) that don't fit are
+                // delivered as items rather than lost; a configured starting-heads above the size is still capped.
+                int extraOut = Math.max(0, wanted - Math.max(size, cycle.startingHeads()));
+                List<HeadData> heads = new ArrayList<>();
+                for (int i = 0; i < starting; i++) heads.add(new HeadData(UUID.randomUUID(), p.uuid(), p.name(), cycle.id(), now, "cycle-start", cycle.token()));
+                for (int i = 0; i < extraOut; i++) {
+                    overflow.computeIfAbsent(p.uuid(), k -> new ArrayList<>()).add(new HeadData(UUID.randomUUID(), p.uuid(), p.name(), cycle.id(), now, "cycle-start", cycle.token()));
+                }
+                for (HeadData extra : pending.getOrDefault(p.uuid(), List.of())) {
+                    if (heads.size() < size) heads.add(extra);
+                    else overflow.computeIfAbsent(p.uuid(), k -> new ArrayList<>()).add(extra);
+                }
+                insertHeads(c, p.uuid(), heads, 0);
+                created.put(p.uuid(), heads);
+                sizes.put(p.uuid(), size);
+                upd.setInt(1, cycle.id());
+                upd.setInt(2, size);
+                upd.setString(3, p.uuid().toString());
+                upd.addBatch();
+            }
+            upd.executeBatch();
+        }
+        // Overflow heads still need registry rows.
+        try (PreparedStatement hr = c.prepareStatement("INSERT OR IGNORE INTO heads(head_id, owner, cycle, source, created_ms, recipient) VALUES (?,?,?,?,?,?)")) {
+            for (Map.Entry<UUID, List<HeadData>> e : overflow.entrySet()) {
+                for (HeadData h : e.getValue()) {
+                    hr.setString(1, h.id().toString());
+                    hr.setString(2, h.owner().toString());
+                    hr.setInt(3, h.cycle());
+                    hr.setString(4, h.source());
+                    hr.setLong(5, h.created());
+                    hr.setString(6, e.getKey().toString());
+                    hr.addBatch();
+                }
+            }
+            hr.executeBatch();
+        }
+        if (!restart) {
+            // Kept (marked with this cycle) so a restart of this cycle can use them again; older ones are done.
+            try (PreparedStatement ps = c.prepareStatement("UPDATE pending_heads SET used_cycle=? WHERE used_cycle IS NULL AND for_cycle<=?")) {
+                ps.setInt(1, cycle.id());
+                ps.setInt(2, cycle.id());
+                ps.executeUpdate();
+            }
+            try (PreparedStatement ps = c.prepareStatement("DELETE FROM pending_heads WHERE used_cycle<?")) {
+                ps.setInt(1, cycle.id());
+                ps.executeUpdate();
+            }
+        }
+    }
+
+    /** Applies a committed fill to memory, logs it and hands out heads that did not fit. @return vaults filled */
+    public int afterFill(Cycle cycle, Fill f) {
         boolean logEach = plugin.configs().main().getBool("audit.log-each-cycle-start-head", true);
-        Map<UUID, List<HeadData>> overflow = new LinkedHashMap<>();
-        Map<UUID, List<HeadData>> created = new LinkedHashMap<>();
-        Map<UUID, Integer> sizes = new HashMap<>();
-        plugin.db().syncTransaction(c -> {
-            record P(UUID uuid, String name, String headsMod, String sizeMod) {}
-            List<P> players = new ArrayList<>();
-            try (PreparedStatement ps = c.prepareStatement("SELECT uuid, name, next_heads_mod, next_size_mod FROM players"); ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) players.add(new P(UUID.fromString(rs.getString(1)), rs.getString(2), rs.getString(3), rs.getString(4)));
-            }
-            Map<UUID, List<HeadData>> pending = new HashMap<>();
-            try (PreparedStatement ps = c.prepareStatement("SELECT uuid, owner, owner_name, amount, source FROM pending_heads WHERE for_cycle<=?")) {
-                ps.setInt(1, cycle.id());
-                try (ResultSet rs = ps.executeQuery()) {
-                    while (rs.next()) {
-                        UUID to = UUID.fromString(rs.getString(1));
-                        UUID owner = UUID.fromString(rs.getString(2));
-                        for (int i = 0; i < Math.max(0, rs.getInt(4)); i++) {
-                            pending.computeIfAbsent(to, k -> new ArrayList<>()).add(new HeadData(UUID.randomUUID(), owner, rs.getString(3),
-                                    cycle.id(), now, rs.getString(5) == null ? "action" : rs.getString(5)));
-                        }
-                    }
-                }
-            }
-            try (PreparedStatement ps = c.prepareStatement("DELETE FROM vault_items")) {
-                ps.executeUpdate();
-            }
-            try (PreparedStatement upd = c.prepareStatement("UPDATE players SET setup_cycle=?, vault_size=?, next_heads_mod=NULL, next_size_mod=NULL WHERE uuid=?")) {
-                for (P p : players) {
-                    int size = Math.max(1, Math.min(max, applyMod(cycle.vaultSize(), p.sizeMod())));
-                    int wanted = Math.max(0, applyMod(cycle.startingHeads(), p.headsMod()));
-                    int starting = Math.min(size, wanted);
-                    // Extra starting heads from a next-cycle action (e.g. a shop purchase) that don't fit are
-                    // delivered as items rather than lost; a configured starting-heads above the size is still capped.
-                    int extraOut = Math.max(0, wanted - Math.max(size, cycle.startingHeads()));
-                    List<HeadData> heads = new ArrayList<>();
-                    for (int i = 0; i < starting; i++) heads.add(new HeadData(UUID.randomUUID(), p.uuid(), p.name(), cycle.id(), now, "cycle-start"));
-                    for (int i = 0; i < extraOut; i++) {
-                        overflow.computeIfAbsent(p.uuid(), k -> new ArrayList<>()).add(new HeadData(UUID.randomUUID(), p.uuid(), p.name(), cycle.id(), now, "cycle-start"));
-                    }
-                    for (HeadData extra : pending.getOrDefault(p.uuid(), List.of())) {
-                        if (heads.size() < size) heads.add(extra);
-                        else overflow.computeIfAbsent(p.uuid(), k -> new ArrayList<>()).add(extra);
-                    }
-                    insertHeads(c, p.uuid(), heads, 0);
-                    created.put(p.uuid(), heads);
-                    sizes.put(p.uuid(), size);
-                    upd.setInt(1, cycle.id());
-                    upd.setInt(2, size);
-                    upd.setString(3, p.uuid().toString());
-                    upd.addBatch();
-                }
-                upd.executeBatch();
-            }
-            // Overflow heads still need registry rows.
-            try (PreparedStatement hr = c.prepareStatement("INSERT OR IGNORE INTO heads(head_id, owner, cycle, source, created_ms, recipient) VALUES (?,?,?,?,?,?)")) {
-                for (Map.Entry<UUID, List<HeadData>> e : overflow.entrySet()) {
-                    for (HeadData h : e.getValue()) {
-                        hr.setString(1, h.id().toString());
-                        hr.setString(2, h.owner().toString());
-                        hr.setInt(3, h.cycle());
-                        hr.setString(4, h.source());
-                        hr.setLong(5, h.created());
-                        hr.setString(6, e.getKey().toString());
-                        hr.addBatch();
-                    }
-                }
-                hr.executeBatch();
-            }
-            try (PreparedStatement ps = c.prepareStatement("DELETE FROM pending_heads WHERE for_cycle<=?")) {
-                ps.setInt(1, cycle.id());
-                ps.executeUpdate();
-            }
-        });
+        Map<UUID, List<HeadData>> overflow = f.overflow;
+        Map<UUID, List<HeadData>> created = f.created;
+        Map<UUID, Integer> sizes = f.sizes;
+        closeAllViews();
         loaded.clear();
         headIndex.clear();
         for (Map.Entry<UUID, List<HeadData>> e : created.entrySet()) {
@@ -435,8 +482,10 @@ public final class VaultManager {
             d.setupCycle = cycle.id();
             Integer s = sizes.get(d.uuid);
             if (s != null) d.vaultSize = s;
-            d.nextHeadsMod = null;
-            d.nextSizeMod = null;
+            if (!f.restart) {
+                d.nextHeadsMod = null;
+                d.nextSizeMod = null;
+            }
         }
         return created.size();
     }
@@ -516,6 +565,11 @@ public final class VaultManager {
 
     void refreshViews(UUID owner) {
         for (VaultGui v : new ArrayList<>(views.values())) if (v.data().owner.equals(owner)) v.render();
+    }
+
+    /** Keeps the titles of open vaults current (called every second). */
+    public void refreshTitles() {
+        for (VaultGui v : new ArrayList<>(views.values())) v.refreshTitle();
     }
 
     /** Syncs every open vault view into the data (before a tally). */

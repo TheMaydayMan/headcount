@@ -19,9 +19,42 @@
 #    %other_placeholder%  any PlaceholderAPI placeholder, when PlaceholderAPI is installed
 #
 #  Durations accept 30s, 10m, 2h, 3d, 1w, combinations like 1h30m, or a plain number of seconds.
-#  Changes apply after /hca reload, except where noted.
+#  Changes apply after /hca reload, except where noted. /hca selftest then checks every item, menu, message and list.
+#
+#  Quick start: the settings most servers change first
+#    cycle.length-days, cycle.start-date, cycle.end-time, cycle.time-zone     when cycles run
+#    vault.size, vault.starting-heads                                          how big the game is
+#    activity.min-playtime                                                     who counts as active
+#    scoring.yml formula                                                       what a score is worth
+#    outcomes.yml, shop.yml                                                    rewards, punishments, the shop
+#    integrations.yml                                                          PvP, permissions, moderation...
+#
+#  Sections in this file: general, storage, cycle, activity, vault, heads, duplicates, kills, points,
+#  gates / gui / placeholders / top (small display settings), history, sidebar, audit, reset, hooks.
+#
+#  Item definitions (any 'material:' item here and in the other files: menu buttons, shop displays, give-item...):
+#    material      a Minecraft material, e.g. DIAMOND_SWORD (or custom: below instead)
+#    name, lore    MiniMessage text (lore is a list)
+#    amount        stack size;  max-stack-size  1-99
+#    glint         true/false enchantment shine;  enchants  {sharpness: 3, unbreaking: 2}
+#    unbreakable   true;  flags  [HIDE_ENCHANTS, HIDE_ATTRIBUTES, ...]
+#    item-model    namespace:key (resource packs);  custom-model-data  a number
+#    head          viewer | <player name> | <uuid> for PLAYER_HEAD items
+#    custom        itemsadder:ns:id | oraxen:id | nexo:id (integrations.yml items)
+#    pdc           {namespace:key: value} persistent data, for other plugins to recognize the item
+#
+#  Menus (vault.gui, history.gui, and the menus in trade.yml, shop.yml and titles.yml):
+#    title         the window title;  rows  1-6
+#    filler        an item definition for empty slots
+#    filler-slots  a list like [0-8, 45-53], or: empty (every free slot) | border (the outer ring) | none
+#    buttons.<id>  an item definition plus slot: N (or slots: [..]); enabled: false hides that button
+#    Slot numbers start at 0 in the top-left and go left to right, 9 per row.
+#
+#  Where text lives: this file holds text you design (menu titles, item names and lore, and the messages inside
+#  action lists). Everything Headcount itself says (command replies, errors, confirmations, help, effect
+#  descriptions) is in lang/en_US.yml.
 # ============================================================================================
-config-version: 1
+config-version: 2
 
 general:
   # Language file in plugins/Headcount/lang/ (without .yml).
@@ -40,16 +73,20 @@ storage:
 #  Cycle
 # --------------------------------------------------------------------------------------------
 cycle:
-  # Length of a cycle in days. A change applies starting with the next cycle (the running cycle keeps its end).
+  # Length of a cycle in days. A change applies from the next cycle, or a /hca reset cycle (the running cycle keeps
+  # its end).
   length-days: 30
   # The day the first cycle starts, as YYYY-MM-DD, or "auto" to start immediately (aligned to end-time today).
   # Before a configured future date, Headcount waits and no cycle runs.
   start-date: auto
   # Exact time of day (24h HH:MM) cycles roll over.
   end-time: "00:00"
-  # Time zone for start-date and end-time, e.g. UTC, America/Denver, Europe/London, or "system".
+  # Time zone for start-date and end-time. Any of: a region (America/Denver, Europe/London; follows daylight saving),
+  # an abbreviation (MST, EST, CET, ...; a fixed offset all year: MST is always UTC-7), an offset (GMT-7, UTC+5:30),
+  # or "system".
   # (If the server was offline at a rollover, the next start ends the stored cycle and starts whichever cycle should
-  # be running now. Cycle IDs always go up by exactly one.)
+  # be running now. Cycle numbers go up by exactly one at each end; /hca reset cycle keeps the number and
+  # /hca reset hard starts again at 1. Each run of a cycle also has an internal run ID, shown in /hca cycle info.)
   time-zone: UTC
 
 activity:
@@ -64,7 +101,7 @@ activity:
 # --------------------------------------------------------------------------------------------
 vault:
   # Slots in each vault. Up to 54 fits one screen; more than 54 is split into pages of 45.
-  # Size and starting heads only change at the start of the next cycle.
+  # Size and starting heads only change at the start of the next cycle (or at a /hca reset cycle).
   size: 27
   # Heads of their own every player starts each cycle with (capped at the vault size). Extra starting heads from
   # next-cycle actions (a shop purchase, the streak bonus) that don't fit are given as items instead.
@@ -90,8 +127,15 @@ vault:
   # Save the player's own inventory to disk shortly after a vault change, so a crash cannot roll back only one side.
   save-player-data-after-change: true
   gui:
-    # <owner> <unique> <total> <size> <page> <pages>
-    title: "<dark_gray><owner>'s Head Vault <gray>(<unique> unique)"
+    # <owner> <unique> <total> <size> <used> <page> <pages>, and <score>: the owner's score if the cycle ended now
+    # (shown as ? while the owner is offline). <score> uses score-colors below; <score:green:red:gray> picks the
+    # positive, negative and zero colours in place (any MiniMessage colour or tag, e.g. #ff8800 or gold).
+    # The title updates live while the vault is open (it is re-sent when its text changes).
+    title: "<dark_gray><owner>'s Head Vault <gray>(<unique> unique, score <score>)"
+    score-colors:
+      positive: green
+      negative: red
+      zero: gray
     # Slots past the vault size on the last row.
     locked-slot:
       material: BLACK_STAINED_GLASS_PANE
@@ -120,6 +164,7 @@ vault:
         lore:
           - "<gray>Unique heads: <white><unique>"
           - "<gray>Total heads: <white><total> / <size>"
+          - "<gray>Score if the cycle ended now: <score>"
 
 # --------------------------------------------------------------------------------------------
 #  Economy heads
@@ -129,13 +174,18 @@ heads:
     # Variables: <owner> <owner_uuid> <cycle> <current_cycle> <head_id> <head_id_short> <created> <source>
     name: "<yellow><owner>'s Head"
     lore:
-      - "<gray>Cycle <white><cycle></white> economy head"
+      - "<gray>Cycle <gold><cycle></gold> economy head"
       - "<dark_gray>Keep it in your vault: /hc"
       - "<dark_gray>ID <head_id_short>"
     # A head from an older cycle keeps its data and works as a normal head but is worthless.
     expired-name: "<gray><owner>'s Head <dark_gray>(expired)"
     expired-lore:
-      - "<red>Expired</red> <dark_gray>- from cycle <cycle>"
+      - "<red>Expired</red> <dark_gray>- from cycle <gray><cycle></gray>"
+      - "<dark_gray>No longer counts and cannot go in a vault."
+    # A defunct head: made before a /hca reset cycle or /hca reset hard that kept the old heads (keep-heads).
+    defunct-name: "<gray><owner>'s Head <dark_gray>(defunct)"
+    defunct-lore:
+      - "<red>Defunct</red> <dark_gray>- cycle <gray><cycle></gray> was reset"
       - "<dark_gray>No longer counts and cannot go in a vault."
     # 1 keeps every head in its own slot (each head has a unique ID anyway). 1-99.
     max-stack-size: 1
@@ -252,8 +302,12 @@ history:
 # --------------------------------------------------------------------------------------------
 sidebar:
   # Server-wide switch. false removes Headcount's sidebar entirely so another scoreboard plugin can show
-  # Headcount's placeholders instead. Players toggle it with /hc sidebar; it starts off for everyone.
+  # Headcount's placeholders instead. Players toggle their own with /hc sidebar.
   enabled: true
+  # Whether a player's sidebar starts shown the first time they join (they can still hide it with /hc sidebar).
+  # Players who already joined keep their own choice.
+  shown-for-new-players: false
+  # How often the lines are redrawn.
   update-interval: 1s
   title: "<gold><bold>HEADCOUNT"
   # Up to 15 lines. Headcount placeholders and PlaceholderAPI placeholders work here.
@@ -322,10 +376,34 @@ audit:
     gui-item-removed: true
 
 # --------------------------------------------------------------------------------------------
+#  Resets (/hca reset cycle, /hca reset hard)
+# --------------------------------------------------------------------------------------------
+reset:
+  # Every head made before a reset is worthless (it can't go in a vault and never counts). Each reset chooses what
+  # happens to them: add delete-heads or keep-heads to the command, or leave it out to use this default.
+  #   delete (true): deleted wherever Headcount sees them: inventories and ender chests at the reset and on join,
+  #                  containers when opened, items picked up or dropped (a broken placed head), queued deliveries.
+  #   keep (false):  they stay as defunct heads (heads.item.defunct-name and defunct-lore).
+  # The choice is stored with each reset, so changing this later doesn't change what earlier resets did.
+  delete-old-heads: true
+  hard:
+    # /hca reset hard deletes every player's Headcount data and starts again from cycle 1, keeping these config
+    # files. It needs the headcount.admin.reset.hard permission (the console always has it).
+    enabled: true
+    # How many times the admin must type a new random code to confirm (at least 1).
+    confirmations: 3
+    # Time to type each code.
+    confirm-timeout: 60s
+    # Copy the database to plugins/Headcount/backups/hard-reset-<time>/ first.
+    backup-database: true
+    # Move the audit log files there too, so the audit log starts empty.
+    archive-audit-log: true
+
+# --------------------------------------------------------------------------------------------
 #  Hooks: action lists that run at moments in the cycle and in a player's time on the server.
 #  Every list uses the actions system (see actions.yml for every type and the common options).
 #
-#  Cycle hooks (cycle-start, cycle-end, and each warning) have:
+#  Cycle hooks (cycle-start, cycle-end, and each warning) have (cycle-start also runs after /hca reset cycle):
 #    global:      runs once for the server, with cycle-wide variables
 #    per-player:  runs once for each player with their own variables
 #      players:   all | active | inactive | online

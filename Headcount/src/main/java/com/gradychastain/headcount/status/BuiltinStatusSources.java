@@ -275,10 +275,14 @@ final class BuiltinStatusSources {
         }));
         m.registerType(type("op", (c, s) -> p -> p.isOp()));
         m.registerType(type("bedrock", (c, s) -> p -> plugin.integrations().isBedrock(p.getUniqueId())));
-        m.registerType(type("essentials", (c, s) -> {
-            String check = c.getString("check", "afk");
-            return p -> plugin.integrations().essentials() == null ? null : plugin.integrations().essentials().check(p, check);
-        }));
+        // player-state: afk, vanished, god, jailed, muted from the player-state provider (included or EssentialsX).
+        // "essentials" is its name from before 1.1.
+        for (String name : List.of("player-state", "essentials")) {
+            m.registerType(type(name, (c, s) -> {
+                String check = c.getString("check", "afk");
+                return p -> plugin.integrations().playerState() == null ? null : plugin.integrations().playerState().check(p, check);
+            }));
+        }
         m.registerType(type("muted", (c, s) -> p -> {
             ModerationHook hook = plugin.integrations().moderation(ModerationHook.Kind.MUTE);
             if (hook != null && !hook.enforcedByHeadcount(ModerationHook.Kind.MUTE)) {

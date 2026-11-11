@@ -15,7 +15,7 @@ Only the files to build it are in the repository: `setup.sh`, `start.sh`, `serve
 | Plugin | Version | Source |
 |---|---|---|
 | Paper | 26.3 build 246 | papermc.io |
-| PvPManager | 4.0.30 | Modrinth |
+| PvPManager | 4.0.30 | Modrinth (optional since 1.1, see below) |
 | PlaceholderAPI | 2.12.3 | Modrinth |
 | LuckPerms | 5.5.71 | Modrinth |
 | EssentialsX | 2.22.0 | Modrinth |
@@ -26,4 +26,10 @@ Only the files to build it are in the repository: `setup.sh`, `start.sh`, `serve
 | Geyser-Spigot | 2.12.1 build 1298 | geysermc.org |
 | Floodgate | 2.2.5 build 141 | geysermc.org |
 
-The server runs in offline mode (any name can join) on port 25565 with the whitelist off; Bedrock clients connect through Geyser on 19132. `start.sh` uses the first Java 25 or newer it finds: `~/.jdks/jdk-25.0.5+8`, then `JAVA_HOME`, then the `PATH`. Make yourself an operator with `op <name>` in the console. DiscordSRV needs a Discord bot token in `plugins/DiscordSRV/config.yml` before it connects.
+The server runs in offline mode (any name can join) on port 25565 with the whitelist off; Bedrock clients connect through Geyser on 19132. `start.sh` uses the first Java 25 or newer it finds: `~/.jdks/jdk-25.0.5+8`, then `JAVA_HOME`, then the `PATH`. Make yourself an operator with `op <name>` in the console. Type `stop` to stop it; `restart` (or a crash) starts it again in the same terminal, through `restart.sh`, which `start.sh` points `spigot.yml` at.
+
+**RCON** is on (port 25575) with a random password that `setup.sh` writes into `server.properties`, so Headcount Studio can run commands on the server. A server set up before 1.1 gets it from the next `setup.sh`. RCON listens on every network interface, so keep 25575 closed in your firewall.
+
+**PvPManager** is installed, but Headcount 1.1 uses its own included PvP by default (`integrations.yml pvp.provider`). PvPManager still enforces its own rules while installed (PvP on for everyone, its newbie protection), so delete its jar from `plugins/` to test Headcount's PvP cleanly, or set `pvp.provider: pvpmanager` and restart.
+
+DiscordSRV needs a Discord bot token in `plugins/DiscordSRV/config.yml` before it connects.

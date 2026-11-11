@@ -42,7 +42,7 @@
 #    particle      (particle, count, offset, speed, height)
 #    bossbar       (text, color, overlay, progress, countdown-to: cycle-end | 60s | 2026-12-01T00:00, seconds)
 #                  variables <countdown> <countdown_clock> <seconds>; in global hooks it shows to everyone
-#    discord       (text, channel) through DiscordSRV
+#    discord       (text, channel) through DiscordSRV (integrations.yml discord)
 #    broadcast-location (text with <player> <x> <y> <z> <world>, audience: all) - add repeat for repeated reports
 #  Commands
 #    console       (command or commands, revert-commands, require-online: false) - <player> <uuid> available
@@ -57,8 +57,9 @@
 #    experience    (amount: +/- points, levels: false)
 #  Currency
 #    points        (amount: +/-, when: now | next-cycle, revert: true)
-#    money         (amount: +/-, revert: true) through Vault
-#  Permissions and ranks (LuckPerms or Vault; LuckPerms gets its own expiry for timed changes)
+#    money         (amount: +/-, revert: true) through Vault (integrations.yml economy)
+#  Permissions and ranks (integrations.yml permissions.provider: included does permission nodes only; LuckPerms
+#  or Vault do all of these, and LuckPerms gets its own expiry for timed changes)
 #    permission    (permission, mode: add | remove, value: true)
 #    group         (group, mode: add | remove)
 #    primary-group (group)
@@ -68,10 +69,11 @@
 #    grant-title, revoke-title (title, equip: false)
 #    strip-title   (which: equipped | all)
 #    force-title   (title) - equipped and locked for the duration
-#  Moderation (integrations.yml moderation.provider; vanilla bans and Headcount's own mutes and jails as fallback)
+#  Moderation (integrations.yml moderation.provider: included uses vanilla bans and Headcount's own mutes and
+#  jails, or hand any kind to a moderation plugin)
 #    ban, mute, kick, warn, jail   (reason, jail: <jail name>) - a timed duration makes it temporary
-#  PvP (integrations.yml pvp.provider)
-#    pvp           (state: on | off, lock: true, restore: true)
+#  PvP (integrations.yml pvp.provider: included or PvPManager)
+#    pvp           (state: on | off, lock: true [can't /pvp while active], restore: true [back to before when it ends])
 #  Buffs and debuffs (kept applied through death and milk while timed)
 #    potion        (effect, amplifier, seconds [for instant], ambient, particles, icon)
 #    attribute     (attribute: max_health | movement_speed | attack_damage | scale | jump_strength | gravity |
@@ -98,8 +100,12 @@
 #  Flow
 #    run           (list: <name>, or actions: [...])
 #    random        (choices: [{weight: 3, actions: [...]}, {weight: 1, list: other-list}])
+#
+#  Where text lives: this file holds text you design (menu titles, item names and lore, and the messages inside
+#  action lists). Everything Headcount itself says (command replies, errors, confirmations, help, effect
+#  descriptions) is in lang/en_US.yml.
 # ============================================================================================
-config-version: 1
+config-version: 2
 
 lists:
   # ---------------------------------------------------------------- shared effects

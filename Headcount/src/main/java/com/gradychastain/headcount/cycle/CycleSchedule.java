@@ -35,9 +35,9 @@ public final class CycleSchedule {
         ZoneId z;
         String zs = cfg.getString("time-zone", "UTC").trim();
         try {
-            z = zs.equalsIgnoreCase("system") ? ZoneId.systemDefault() : ZoneId.of(zs);
+            z = com.gradychastain.headcount.util.Zones.parse(zs);
         } catch (RuntimeException e) {
-            logger.warning("cycle.time-zone '" + zs + "' is not a valid zone ID (e.g. UTC, America/Denver); using UTC.");
+            logger.warning("cycle.time-zone '" + zs + "' is not a time zone (e.g. America/Denver, MST, GMT-7, UTC); using UTC.");
             z = ZoneId.of("UTC");
         }
         this.zone = z;

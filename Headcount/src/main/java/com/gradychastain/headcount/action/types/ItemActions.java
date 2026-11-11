@@ -101,7 +101,7 @@ final class ItemActions {
 
                 @Override public boolean revertible() { return takeBack; }
                 @Override public boolean requiresOnline() { return false; }
-                @Override public String describe(ActionContext ctx) { return "item " + spec.describe().getFirst(); }
+                @Override public String describe(ActionContext ctx) { return Types.describe("give-item", "item", spec.describe().getFirst()); }
             };
         }));
 
@@ -155,7 +155,7 @@ final class ItemActions {
                 }
 
                 @Override public boolean revertible() { return giveBack; }
-                @Override public String describe(ActionContext ctx) { return "items taken"; }
+                @Override public String describe(ActionContext ctx) { return Types.describe("take-item"); }
             };
         }));
 
@@ -230,7 +230,7 @@ final class ItemActions {
                 @Override public boolean revertible() { return true; }
                 @Override public boolean stateful() { return lock; }
                 @Override public String stackKey() { return slot.name(); }
-                @Override public String describe(ActionContext ctx) { return "equipped " + spec.describe().getFirst() + (lock ? " (locked)" : ""); }
+                @Override public String describe(ActionContext ctx) { return Types.describe(lock ? "equip-locked" : "equip", "item", spec.describe().getFirst()); }
             };
         }));
 

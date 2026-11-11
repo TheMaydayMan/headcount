@@ -700,7 +700,9 @@ public final class TradeManager implements Listener {
             }
             return out;
         });
-        if (items.isEmpty() || sessions.containsKey(p.getUniqueId())) return;
+        if (sessions.containsKey(p.getUniqueId())) return;
+        items.removeIf(i -> plugin.refresher().removeIfVoid(i, "trade-recovery:" + p.getName() + "(" + p.getUniqueId() + ")"));
+        if (items.isEmpty()) return;
         returnItems(p, items);
         plugin.lang().send(p, "trade.recovered", "count", items.size());
         plugin.audit().log(AuditType.TRADE_RETURN, "player", p.getName() + "(" + p.getUniqueId() + ")", "items", describe(items), "reason", "crash-recovery");

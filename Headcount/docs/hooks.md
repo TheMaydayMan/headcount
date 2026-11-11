@@ -4,7 +4,8 @@ Hooks run action lists (see [actions.md](actions.md)) at moments in the cycle an
 
 ## Cycle hooks
 
-`cycle-start`, `cycle-end`, and each entry under `warnings` have two parts:
+`cycle-start`, `cycle-end`, and each entry under `warnings` have two parts. `cycle-start` also runs after `/hca reset cycle`, and `first-join-cycle` runs again for everyone online then.
+
 
 ```yaml
 hooks:
@@ -22,7 +23,7 @@ hooks:
 - **Global** actions run without a player. Messages, titles, sounds and boss bars go to everyone online.
 - **Per-player** actions run once for each player with that player's variables. For offline players they are stored and run on their next join, first in the join order.
 - Actions given by `cycle-end` with `duration: cycle` (or `cycles:N`) count from the cycle that is starting, so they last the whole next cycle.
-- **Warnings** each need `before: <duration>`, how long before the end they fire. A warning that should have fired while the server was offline still fires if it is at most `missed-warning-grace` late; older ones are skipped. Changing the end time with `/hca cycle setend` or `extend` marks warnings that are already past.
+- **Warnings** each need `before: <duration>`, how long before the end they fire. A warning that should have fired while the server was offline still fires if it is at most `missed-warning-grace` late; older ones are skipped. Changing the end time with `/hca cycle setend` or `extend` marks warnings that are already past. `/hca reset cycle` makes every warning fire again.
 
 ### Variables
 
@@ -52,7 +53,7 @@ When several hooks run on one join, the order is: delivered per-player cycle hoo
 | Hook | Default |
 |---|---|
 | Warnings `3d`, `1d`, `1h`, `10m` | A chat message. |
-| Warning `1m` | A title, and a boss bar counting down to the end. |
+| Warning `1m` | A title, and a boss bar counting down to the end (boss bar text can use every hook variable, such as `<cycle>`). |
 | `cycle-end` global | Results broadcast with the top 3, active count, average score, rewarded and punished. |
 | `cycle-end` per player | A report: unique heads, rank, score, points earned and held, streak, tier unlocked, and outcomes (inactive players get a short note). |
 | `cycle-start` global | "Cycle N has begun!" with a sound. |

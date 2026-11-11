@@ -33,6 +33,10 @@ commands:
     description: Trade heads and items with another player.
     usage: /<command> <player>|accept|deny|cancel
     permission: headcount.trade
+  pvp:
+    description: Turn your PvP on or off (Headcount's included PvP; integrations.yml pvp.provider).
+    usage: /<command> [on|off|status] | /<command> <player> [on|off]
+    permission: headcount.pvp
   hcadmin:
     description: Headcount administration.
     aliases: [hca]
@@ -61,6 +65,7 @@ permissions:
       headcount.effects: true
       headcount.help: true
       headcount.trade: true
+      headcount.pvp: true
   headcount.vault:
     description: Open your head vault with /hc.
     default: true
@@ -94,6 +99,9 @@ permissions:
   headcount.trade:
     description: Use /trade.
     default: true
+  headcount.pvp:
+    description: Use /pvp to turn your own PvP on or off (included PvP).
+    default: true
   headcount.admin:
     description: Every admin command.
     default: op
@@ -107,12 +115,14 @@ permissions:
       headcount.admin.history: true
       headcount.admin.effects: true
       headcount.admin.reset: true
+      headcount.admin.reset.cycle: true
       headcount.admin.trade: true
       headcount.admin.audit: true
       headcount.admin.reload: true
       headcount.admin.debug: true
       headcount.admin.run: true
       headcount.admin.notify: true
+      headcount.pvp.others: true
   headcount.admin.cycle:
     description: Cycle info, force end/start, simulate, change end time.
     default: op
@@ -140,6 +150,12 @@ permissions:
   headcount.admin.reset:
     description: Reset a player's Headcount data.
     default: op
+  headcount.admin.reset.cycle:
+    description: Start the current cycle over with /hca reset cycle (also needs headcount.admin.reset).
+    default: op
+  headcount.admin.reset.hard:
+    description: Delete all Headcount data with /hca reset hard (also needs headcount.admin.reset). Not part of headcount.admin; the console always has it.
+    default: op
   headcount.admin.trade:
     description: Cancel any trade.
     default: op
@@ -158,6 +174,25 @@ permissions:
   headcount.admin.notify:
     description: Receive admin alerts (duplicate heads, errors).
     default: op
-  headcount.bypass.*:
-    description: Bypass every status gate and trade restriction.
+  headcount.pvp.others:
+    description: See and set other players' PvP with /pvp <player> [on|off] (included PvP).
+    default: op
+  headcount.pvp.override:
+    description: Attack anyone regardless of PvP toggles and protection (included PvP).
     default: false
+  headcount.bypass.pvp.cooldown:
+    description: Toggle PvP without waiting for the cooldown (included PvP).
+    default: false
+  headcount.bypass.combat-log:
+    description: Leave while in combat without the combat-log punishment (included PvP).
+    default: false
+  headcount.bypass.combat-commands:
+    description: Use blocked commands and teleports while in combat (included PvP).
+    default: false
+  headcount.bypass.*:
+    description: Bypass every status gate, trade restriction and combat restriction.
+    default: false
+    children:
+      headcount.bypass.pvp.cooldown: true
+      headcount.bypass.combat-log: true
+      headcount.bypass.combat-commands: true

@@ -109,7 +109,7 @@ final class BuffActions {
 
                 @Override public boolean revertible() { return true; }
                 @Override public String stackKey() { return type.getKey().getKey(); }
-                @Override public String describe(ActionContext ctx) { return type.getKey().getKey().replace('_', ' ') + " " + (amplifier + 1); }
+                @Override public String describe(ActionContext ctx) { return Types.describe("potion", "effect", type.getKey().getKey().replace('_', ' '), "level", amplifier + 1); }
             };
         }));
 
@@ -169,7 +169,7 @@ final class BuffActions {
 
                 @Override public boolean revertible() { return true; }
                 @Override public String stackKey() { return attr.getKey().getKey(); }
-                @Override public String describe(ActionContext ctx) { return attr.getKey().getKey().replace('_', ' ') + " " + (amount >= 0 ? "+" : "") + amount; }
+                @Override public String describe(ActionContext ctx) { return Types.describe("attribute", "attribute", attr.getKey().getKey().replace('_', ' '), "amount", (amount >= 0 ? "+" : "") + amount); }
             };
         }));
 
@@ -195,7 +195,7 @@ final class BuffActions {
             }
 
             @Override public boolean revertible() { return true; }
-            @Override public String stackKey() { return "glowing"; }
+            @Override public String stackKey() { return Types.describe("glowing"); }
             @Override public String describe(ActionContext ctx) { return "glowing"; }
         }));
 
@@ -224,7 +224,7 @@ final class BuffActions {
 
                 @Override public boolean revertible() { return true; }
                 @Override public void repeat(ActionContext ctx) { apply(ctx); }
-                @Override public String describe(ActionContext ctx) { return "on fire"; }
+                @Override public String describe(ActionContext ctx) { return Types.describe("fire"); }
             };
         }));
 
@@ -266,7 +266,7 @@ final class BuffActions {
                 }
 
                 @Override public boolean revertible() { return true; }
-                @Override public String describe(ActionContext ctx) { return "freezing"; }
+                @Override public String describe(ActionContext ctx) { return Types.describe("freeze"); }
             };
         }));
 
@@ -289,7 +289,7 @@ final class BuffActions {
                     if (p != null && exhaustion > 0 && !p.isDead()) p.setExhaustion(Math.min(40f, p.getExhaustion() + exhaustion));
                 }
 
-                @Override public String describe(ActionContext ctx) { return "hunger drain"; }
+                @Override public String describe(ActionContext ctx) { return Types.describe("hunger"); }
             };
         }));
 
@@ -330,7 +330,7 @@ final class BuffActions {
 
                 @Override public boolean revertible() { return true; }
                 @Override public String stackKey() { return "gamemode"; }
-                @Override public String describe(ActionContext ctx) { return "gamemode " + mode.name().toLowerCase(Locale.ROOT); }
+                @Override public String describe(ActionContext ctx) { return Types.describe("gamemode", "mode", mode.name().toLowerCase(Locale.ROOT)); }
             };
         }));
 
@@ -384,7 +384,7 @@ final class BuffActions {
                 }
 
                 @Override public boolean revertible() { return returnBack; }
-                @Override public String describe(ActionContext ctx) { return "teleported (" + to + ")"; }
+                @Override public String describe(ActionContext ctx) { return Types.describe("teleport", "to", to); }
             };
         }));
 

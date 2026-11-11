@@ -38,7 +38,7 @@ final class CurrencyActions {
 
                 @Override public boolean revertible() { return undo; }
                 @Override public boolean requiresOnline() { return false; }
-                @Override public String describe(ActionContext ctx) { return amountExpr + " points" + (next ? " next cycle" : ""); }
+                @Override public String describe(ActionContext ctx) { return Types.describe(next ? "points-next" : "points", "amount", amountExpr); }
             };
         }));
 

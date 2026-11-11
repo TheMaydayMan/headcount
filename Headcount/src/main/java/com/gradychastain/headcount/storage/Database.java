@@ -28,7 +28,7 @@ public final class Database {
         void run(Connection c) throws SQLException;
     }
 
-    private static final int SCHEMA_VERSION = 1;
+    private static final int SCHEMA_VERSION = 2;
 
     private final Logger logger;
     private final File file;
@@ -162,14 +162,50 @@ public final class Database {
                 "CREATE INDEX IF NOT EXISTS trade_items_owner ON trade_items(owner)",
                 "CREATE TABLE IF NOT EXISTS flags (uuid TEXT NOT NULL, flag TEXT NOT NULL, PRIMARY KEY (uuid, flag))",
                 "CREATE TABLE IF NOT EXISTS cycle_warnings (cycle INTEGER NOT NULL, warning TEXT NOT NULL, PRIMARY KEY (cycle, warning))",
+                // Cycle runs undone by /hca reset cycle or /hca reset hard. Heads made in them are worthless and are
+                // removed wherever Headcount sees them when remove is 1 (else they only go defunct). token '' stands for
+                // cycles made before 1.1, which had none.
+                """
+                CREATE TABLE IF NOT EXISTS included_permissions (
+                  uuid TEXT NOT NULL, node TEXT NOT NULL, value INTEGER NOT NULL, PRIMARY KEY (uuid, node))""",
+                """
+                CREATE TABLE IF NOT EXISTS void_heads (
+                  cycle INTEGER NOT NULL, token TEXT NOT NULL, reset_ms INTEGER NOT NULL, kind TEXT NOT NULL,
+                  PRIMARY KEY (cycle, token))""",
         };
         try (Statement s = c.createStatement()) {
             for (String sql : ddl) s.execute(sql);
         }
-        try (PreparedStatement ps = c.prepareStatement("INSERT OR IGNORE INTO meta(key, value) VALUES ('schema', ?)")) {
+        // 1.1 (schema 2): each cycle run has a token, also written on its heads, so a cycle restarted with the same ID
+        // (or cycle 1 after a hard reset) never accepts heads from before. Heads of the current cycle as they were before
+        // 1.1 have no token and stay valid while that cycle's token is empty.
+        addColumn(c, "cycles", "token", "TEXT");
+        // The next-cycle modifiers and queued heads used when the current cycle started, so /hca reset cycle can refill
+        // vaults the same way.
+        addColumn(c, "players", "cycle_heads_mod", "TEXT");
+        addColumn(c, "players", "cycle_size_mod", "TEXT");
+        addColumn(c, "pending_heads", "used_cycle", "INTEGER");
+        addColumn(c, "void_heads", "remove", "INTEGER NOT NULL DEFAULT 1");
+        // The included PvP system's per-player toggle (NULL = never toggled).
+        addColumn(c, "players", "pvp", "INTEGER");
+        try (PreparedStatement ps = c.prepareStatement("INSERT OR REPLACE INTO meta(key, value) VALUES ('schema', ?)")) {
             ps.setString(1, Integer.toString(SCHEMA_VERSION));
             ps.executeUpdate();
         }
+    }
+
+    private static void addColumn(Connection c, String table, String column, String type) throws SQLException {
+        try (Statement s = c.createStatement(); java.sql.ResultSet rs = s.executeQuery("PRAGMA table_info(" + table + ")")) {
+            while (rs.next()) if (rs.getString("name").equalsIgnoreCase(column)) return;
+        }
+        try (Statement s = c.createStatement()) {
+            s.execute("ALTER TABLE " + table + " ADD COLUMN " + column + " " + type);
+        }
+    }
+
+    /** The database file (for backups). */
+    public File file() {
+        return file;
     }
 
     /** Queues work and returns its result asynchronously. */

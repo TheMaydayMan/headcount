@@ -4,7 +4,7 @@
 
 This repository holds **Headcount**, a Paper plugin where player heads are the currency, and the files to set up the local test server it was developed and tested on. This README is the map: what is here, where each thing is, how to build and test, what has been verified, and what still needs a person.
 
-**Status (2026-11-10):** built from scratch with no compiler warnings; the test server boots with every free integration and no Headcount errors or warnings; `/hca selftest` passes all 781 checks on the default configs. About 355 checks played by bot clients pass, including two crash tests, plus a 7-check Bedrock test. 93 of the 94 items in the build checklist are verified. The one left needs things this machine doesn't have: a Discord bot token, and the paid item plugins (see [What isn't verified](#what-isnt-verified)).
+**Status (2026-11-10):** version **1.1.0** is in progress on `main` (see [CHANGELOG.md](Headcount/CHANGELOG.md)) and is being tested by hand with [test-plan.md](test-plan.md); it is not released yet. The rest of this section is about 1.0.0: built from scratch with no compiler warnings; the test server boots with every free integration and no Headcount errors or warnings; `/hca selftest` passes all 781 checks on the default configs. About 355 checks played by bot clients pass, including two crash tests, plus a 7-check Bedrock test. 93 of the 94 items in the build checklist are verified. The one left needs things this machine doesn't have: a Discord bot token, and the paid item plugins (see [What isn't verified](#what-isnt-verified)).
 
 ## Headcount in one paragraph
 
@@ -16,16 +16,23 @@ Every player starts each cycle (30 days by default) with a vault full of copies 
 .
 ├── README.md                    this map
 ├── LICENSE                      MIT, © 2026 Grady Chastain
+├── Headcount Studio/             double-click a launcher here to open Headcount Studio:
+│                                .desktop (Linux), .command (macOS), .bat (Windows)
+├── test-plan.md                 the itinerary for a 2-10 player test night of 1.1
+├── 1.1 Notes.md                 the 1.1 work list, with what was done under each item
+├── app-plan.md                  the design plan Headcount Studio was built from
 ├── .gitignore
 ├── Headcount/                   the plugin (Gradle project, Java 25, Paper 26.3)
 │   ├── README.md                features, quick start, documentation index
+│   ├── CHANGELOG.md             what changed in each version
 │   ├── LICENSE                  MIT, © 2026 Grady Chastain
 │   ├── docs/                    16 pages for server owners and developers
-│   ├── src/main/java/           the source: 144 files in com.gradychastain.headcount
+│   ├── src/main/java/           the source, in com.gradychastain.headcount
 │   ├── src/main/resources/      plugin.yml, the 9 commented config files, lang/en_US.yml
 │   ├── src/test/java/           17 unit tests, and the API examples from the docs (compiled with every build)
 │   ├── tools/
 │   │   ├── gen-config-docs.py   regenerates docs/config-reference.md from the bundled configs
+│   │   ├── studio/              Headcount Studio: the app to set up, run and learn Headcount
 │   │   └── bot-tests/           player tests played by bots, crash tests, the Bedrock test
 │   ├── DECISIONS.md             every choice the specification left open, and why
 │   ├── TESTING.md               what is tested automatically, and the manual checklist
@@ -34,7 +41,7 @@ Every player starts each cycle (30 days by default) with a vault full of copies 
 └── TestServer/                  a local Paper 26.3 server with the free integrations
     ├── README.md                what it runs, and how
     ├── setup.sh                 downloads Paper and the plugins (pinned, sha256-checked), writes server.properties
-    ├── start.sh                 starts it with Java 25
+    ├── start.sh                 starts it with Java 25; restarts in the same terminal after `restart`
     └── server.properties.template
                                  everything else in TestServer/ is downloaded or made by the server, and git-ignored
 ```
@@ -53,7 +60,14 @@ TestServer/setup.sh                    # downloads the server and plugins, asks 
 
 Join with any name, type `op <name>` in the server console, then `/hc` in game. `/hc help` and `/hca help` list the commands. Headcount's settings are in `TestServer/plugins/Headcount/*.yml`: edit them, then run `/hca reload` and `/hca selftest`.
 
-**On your own server:** download `Headcount-1.0.0.jar` from the [latest release](https://github.com/TheMaydayMan/headcount/releases/latest) (or build it as above; the jar lands in `Headcount/build/libs/`), put it in the server's `plugins/` folder, and start it. [docs/installation.md](Headcount/docs/installation.md) has the requirements and the optional plugins.
+**Headcount Studio:** open the `Headcount Studio` folder and double-click the launcher (`.desktop` on Linux, `.command` on macOS, `.bat` on Windows; it needs Python 3). It opens in your browser and does everything without touching YAML:
+- set up every config with visual editors
+- watch the running server and run commands over RCON
+- learn how Headcount works, and look up any command, option or placeholder
+
+See [tools/studio/README.md](Headcount/tools/studio/README.md).
+
+**On your own server:** download the jar from the [latest release](https://github.com/TheMaydayMan/headcount/releases/latest) (1.0.0; for 1.1, build it as above: the jar lands in `Headcount/build/libs/`), put it in the server's `plugins/` folder, and start it. [docs/installation.md](Headcount/docs/installation.md) has the requirements and the optional plugins.
 
 **After pulling changes:** rebuild (`./gradlew build`), and run `TestServer/setup.sh` again if it changed. Your server's configs and data are never touched by either.
 
@@ -63,14 +77,16 @@ Join with any name, type `op <name>` in the server console, then `/hc` in game. 
 |---|---|
 | Understand what the plugin does | [Headcount/README.md](Headcount/README.md) |
 | Install it on a server, update it | [docs/installation.md](Headcount/docs/installation.md) |
-| Look up any setting | [docs/config-reference.md](Headcount/docs/config-reference.md) (all 399 options), or the comments in the config files themselves |
+| Look up any setting | [docs/config-reference.md](Headcount/docs/config-reference.md) (all 472 options), Headcount Studio's editors and its Reference pages, or the comments in the config files themselves |
 | Learn how heads, the vault, kills and trades work | [docs/heads.md](Headcount/docs/heads.md) |
 | Write statuses, actions, the score formula | [docs/statuses.md](Headcount/docs/statuses.md), [docs/actions.md](Headcount/docs/actions.md), [docs/formula.md](Headcount/docs/formula.md) |
 | Set up rewards and punishments, the shop, titles, hooks | [docs/outcomes.md](Headcount/docs/outcomes.md), [docs/shop.md](Headcount/docs/shop.md), [docs/titles.md](Headcount/docs/titles.md), [docs/hooks.md](Headcount/docs/hooks.md) |
 | Use placeholders, format messages | [docs/placeholders.md](Headcount/docs/placeholders.md), [docs/text.md](Headcount/docs/text.md) |
 | See which plugin handles what (PvP, money, ranks, bans, Bedrock...) | [docs/integrations.md](Headcount/docs/integrations.md) |
 | Find a command or permission | [docs/commands.md](Headcount/docs/commands.md) |
-| Copy a ready-made variation | [docs/examples.md](Headcount/docs/examples.md) |
+| Copy a ready-made variation | [docs/examples.md](Headcount/docs/examples.md), or Studio's one-click recipes |
+| See what changed in 1.1 | [CHANGELOG.md](Headcount/CHANGELOG.md), [1.1 Notes.md](1.1%20Notes.md) |
+| Run a test night with friends | [test-plan.md](test-plan.md) |
 | Write an addon (API, events, custom status sources and action types) | [docs/developers.md](Headcount/docs/developers.md) |
 | Know why something works the way it does | [DECISIONS.md](Headcount/DECISIONS.md) |
 | Know what was verified, and how | [TASKS.md](Headcount/TASKS.md) (each line says how), [PROGRESS_BAR.md](Headcount/PROGRESS_BAR.md) (when) |
@@ -84,7 +100,7 @@ cd Headcount
 ./gradlew build
 ```
 
-The build needs JDK 25. Gradle uses one that is installed (it looks in the usual places, including `~/.jdks`) or downloads one; Gradle itself runs on any JDK 17 or newer. The build compiles against every integration's API (paid plugins included, as compile-only dependencies), runs the unit tests, and puts `Headcount-1.0.0.jar` in `build/libs/`. It also copies the jar into `TestServer/plugins/` when that folder exists.
+The build needs JDK 25. Gradle uses one that is installed (it looks in the usual places, including `~/.jdks`) or downloads one; Gradle itself runs on any JDK 17 or newer. The build compiles against every integration's API (paid plugins included, as compile-only dependencies), runs the unit tests, and puts `Headcount-<version>.jar` in `build/libs/`. It also copies the jar into `TestServer/plugins/` when that folder exists, and regenerates Headcount Studio's reference catalog (`tools/studio/catalog.json`, with Python 3).
 
 After changing a comment in a bundled config file, run `python3 tools/gen-config-docs.py` to regenerate the config reference.
 
@@ -96,23 +112,24 @@ cd TestServer
 ./start.sh
 ```
 
-Only the files that build the server are in the repository ([TestServer/README.md](TestServer/README.md)). `setup.sh` downloads Paper and the plugins at the exact versions Headcount was tested with, checks each against its sha256, and writes `server.properties` from the template. The server makes the rest: world, logs, plugin data and configs. `start.sh` uses the first Java 25 or newer it finds: `~/.jdks/jdk-25.0.5+8`, then `JAVA_HOME`, then the `PATH`. Type console commands into that terminal, and `stop` to stop.
+Only the files that build the server are in the repository ([TestServer/README.md](TestServer/README.md)). `setup.sh` downloads Paper and the plugins at the exact versions Headcount was tested with, checks each against its sha256, and writes `server.properties` from the template. The server makes the rest: world, logs, plugin data and configs. `start.sh` uses the first Java 25 or newer it finds: `~/.jdks/jdk-25.0.5+8`, then `JAVA_HOME`, then the `PATH`. Type console commands into that terminal: `stop` stops it, and `restart` starts it again in the same terminal.
 
 - **Paper 26.3** build 246, offline mode (any name can join), port **25565**, whitelist off, a normal world on easy.
 - **Bedrock** clients connect through Geyser on port **19132**. Geyser's config is at its defaults.
 - **Make yourself an operator** with `op <name>` in the console. Admin commands are `/hca help`.
 - **Headcount's data** (`plugins/Headcount/`: configs, database, audit log) is made on the first start. Delete the folder to start over with default configs and a new cycle 1.
+- **RCON** is on (port 25575) with a random password that `setup.sh` writes to `server.properties`, so Headcount Studio can run commands. RCON listens on every network interface: keep port 25575 closed in your firewall.
 - **DiscordSRV** is installed but not connected: it needs a Discord bot token in `plugins/DiscordSRV/config.yml`.
 
 | Plugin | Version | Used for |
 |---|---|---|
-| Headcount | 1.0.0 | this project |
-| PvPManager | 4.0.30 | PvP toggle and combat tag (the `in-pvp` and `combat-tagged` statuses) |
+| Headcount | 1.1.0 | this project |
+| PvPManager | 4.0.30 | only with `integrations.yml pvp.provider: pvpmanager`. Headcount's included PvP is the 1.1 default; while PvPManager is installed it still enforces its own rules, so remove its jar to test the included PvP cleanly. |
 | PlaceholderAPI | 2.12.3 | other plugins' placeholders in Headcount, and `%headcount_*%` for other plugins |
 | VaultUnlocked | 2.20.3 | the Vault API, for money (with EssentialsX's economy) |
-| LuckPerms | 5.5.71 | permissions, groups, tracks, title prefixes |
-| EssentialsX | 2.22.0 | economy, jails, AFK, vanish, god mode |
-| LibertyBans | 1.2.0-M1 | bans, mutes, kicks, warnings (chosen first among the moderation plugins) |
+| LuckPerms | 5.5.71 | groups, tracks, title prefixes (with `permissions.provider: luckperms`; the default `included` gives permission nodes itself) |
+| EssentialsX | 2.22.0 | economy; jails, AFK, vanish and god mode when chosen in `integrations.yml` (the defaults are Headcount's own) |
+| LibertyBans | 1.2.0-M1 | bans, mutes, kicks, warnings, when chosen in `integrations.yml moderation` (the default is `included`) |
 | AdvancedBan | 2.3.0 | moderation, if chosen in `integrations.yml` |
 | DiscordSRV | 1.30.5 | the `discord` action (once it has a token) |
 | Geyser-Spigot | 2.12.1 (build 1298) | Bedrock clients |

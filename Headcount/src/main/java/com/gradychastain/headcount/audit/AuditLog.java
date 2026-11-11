@@ -247,6 +247,35 @@ public final class AuditLog {
         return new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8));
     }
 
+    /**
+     * Moves every audit file into {@code dest} (a hard reset's backup folder); new lines start a fresh file. Waits
+     * until it is done. @return how many files were moved
+     */
+    public int archive(File dest) {
+        CompletableFuture<Integer> f = new CompletableFuture<>();
+        writer.execute(() -> {
+            int moved = 0;
+            try {
+                if (out != null) out.close();
+                out = null;
+                currentDay = null;
+                currentFile = null;
+                File[] files = folder.listFiles((d, n) -> n.startsWith("audit-"));
+                if (files != null && files.length > 0) {
+                    if (!dest.exists() && !dest.mkdirs()) throw new IOException("Cannot create " + dest);
+                    for (File file : files) {
+                        Files.move(file.toPath(), new File(dest, file.getName()).toPath());
+                        moved++;
+                    }
+                }
+            } catch (IOException e) {
+                logger.warning("Could not move the audit log to " + dest + ": " + e.getMessage());
+            }
+            f.complete(moved);
+        });
+        return f.join();
+    }
+
     public void close() {
         writer.execute(() -> {
             try {

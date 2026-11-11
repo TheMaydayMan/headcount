@@ -109,3 +109,66 @@ settings:
       duration: 1d
       start-message: "<red>Your PvP is forced on for a day."
 ```
+
+## PvP always on in the Nether, and logging out of a fight costs points
+
+```yaml
+# integrations.yml
+pvp:
+  included:
+    toggle:
+      force-on-worlds: [world_nether]
+    combat-log:
+      actions:
+        - type: points
+          amount: -5
+        - message: "<red>You logged out during a fight and lost 5 points."
+```
+
+## Everyone fights by default, with a longer combat tag
+
+```yaml
+# integrations.yml
+pvp:
+  included:
+    toggle:
+      default: "on"
+    combat-tag:
+      duration: 30s
+      block-elytra: true
+      block-ender-pearls: true
+    messages:
+      countdown: bossbar
+```
+
+With PvP on by default, the default vault and trade rules (blocked while `in-pvp`) apply to everyone until they turn it off. Remove `in-pvp` from `vault.block-movement.statuses` and the trade statuses if you don't want that.
+
+## Keep using PvPManager
+
+```yaml
+# integrations.yml
+pvp:
+  provider: pvpmanager
+```
+
+Restart the server after switching.
+
+## Bans by LibertyBans, jail by EssentialsX
+
+```yaml
+# integrations.yml
+moderation:
+  provider: libertybans
+  kinds:
+    jail: essentials
+```
+
+## Time zone as an abbreviation or offset
+
+```yaml
+# config.yml
+cycle:
+  time-zone: MST        # or GMT-7, UTC+5:30, America/Denver, system
+```
+
+Abbreviations and offsets are fixed: `MST` is UTC-7 all year. A region such as `America/Denver` follows daylight saving.

@@ -35,6 +35,7 @@ public final class Text {
     private BiFunction<OfflinePlayer, String, PlaceholderValue> internal = (p, s) -> null;
     private BiFunction<OfflinePlayer, String, String> external = null;
     private String prefix = "";
+    private volatile boolean placeholdersOn = true;
 
     public Text(Logger logger) {
         this.logger = logger;
@@ -42,6 +43,11 @@ public final class Text {
 
     public void setInternal(BiFunction<OfflinePlayer, String, PlaceholderValue> internal) {
         this.internal = internal;
+    }
+
+    /** False (integrations.yml placeholders.provider: none) turns every %...% placeholder off, Headcount's own too. */
+    public void setPlaceholdersEnabled(boolean on) {
+        placeholdersOn = on;
     }
 
     /** Sets the PlaceholderAPI bridge, or null when PlaceholderAPI is not used. */
@@ -128,7 +134,7 @@ public final class Text {
      * (plain values escaped, legacy colors from other plugins converted).
      */
     public String resolvePercent(String s, OfflinePlayer subject, boolean forMini) {
-        if (s.indexOf('%') < 0) return s;
+        if (!placeholdersOn || s.indexOf('%') < 0) return s;
         Matcher m = PERCENT.matcher(s);
         StringBuilder sb = new StringBuilder();
         while (m.find()) {

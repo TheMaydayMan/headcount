@@ -11,7 +11,7 @@ import java.util.UUID;
 import java.util.function.BiFunction;
 
 /**
- * Built-in fallback: vanilla profile bans, kicks and warnings (a message), plus Headcount's own mutes and jails,
+ * The included moderation (integrations.yml moderation.provider: included): vanilla profile bans, kicks and warnings (a message), plus Headcount's own mutes and jails,
  * which are enforced while the matching action is active.
  */
 public final class VanillaModerationHook implements ModerationHook {
@@ -24,7 +24,7 @@ public final class VanillaModerationHook implements ModerationHook {
         this.messages = messages;
     }
 
-    @Override public String name() { return "vanilla"; }
+    @Override public String name() { return "included"; }
 
     @Override
     public boolean supports(Kind kind) {

@@ -11,7 +11,8 @@
 #  In any list of statuses, "!name" means "not name".
 #
 #  Sources (full reference in docs/statuses.md):
-#    pvp              PvP plugin hook. check: pvp-enabled | pvp-disabled | combat-tagged | newbie | respawn-protected | override
+#    pvp              the PvP provider (integrations.yml pvp: included or PvPManager). check: pvp-enabled |
+#                     pvp-disabled | combat-tagged | newbie | respawn-protected | override
 #    placeholder      placeholder: "%..%", operator: equals | not-equals | greater-than | less-than |
 #                     greater-or-equal | less-or-equal | contains | not-contains | starts-with | ends-with | regex,
 #                     value: "...", ignore-case: true. Works with any plugin's PlaceholderAPI placeholders.
@@ -38,15 +39,20 @@
 #    biome            biomes: [desert, minecraft:badlands]
 #    holding          materials: [DIAMOND_SWORD], hand: main | off | any
 #    world-time       from: 13000, to: 23000 (ticks; wraps past midnight)
-#    essentials       check: afk | vanished | god | jailed | muted (EssentialsX)
+#    player-state     the player-state provider (integrations.yml: included or EssentialsX).
+#                     check: afk | vanished | god | jailed | muted   ("essentials" is the same source's old name)
 #    muted            muted by the moderation plugin or by Headcount's own mute
 #    in-trade         in an open Headcount trade
 #    headcount        value: points | unique | total | rank | percentile | streak | score | ..., range: ">0"
 #    all-of / any-of  statuses: [a, b, "!c"]
 #    not              status: a
 #    always / never
+#
+#  Where text lives: this file holds text you design (menu titles, item names and lore, and the messages inside
+#  action lists). Everything Headcount itself says (command replies, errors, confirmations, help, effect
+#  descriptions) is in lang/en_US.yml.
 # ============================================================================================
-config-version: 1
+config-version: 2
 
 settings:
   # How %headcount_status_<name>% reads.
@@ -54,14 +60,14 @@ settings:
   placeholder-false: "false"
 
 statuses:
-  # PvPManager's PvP toggle is on for this player. (PvPManager turns PvP on by default for everyone; players
-  # turn it off with /pvp. While it is on, the default vault and trade rules block them.)
+  # This player's PvP is on (the /pvp toggle of the PvP provider in integrations.yml). While it is on, the
+  # default vault and trade rules block them. With provider none it reads false.
   in-pvp:
     source: pvp
     check: pvp-enabled
     unavailable: false
 
-  # PvPManager's combat tag; without a PvP plugin, falls back to Headcount's own damage check.
+  # In combat (the PvP provider's combat tag). With pvp provider none, falls back to recent-pvp-damage.
   combat-tagged:
     source: pvp
     check: combat-tagged
@@ -91,7 +97,8 @@ statuses:
   dead:
     source: dead
 
-  # Vanished through any vanish plugin that sets the "vanished" metadata, or EssentialsX's /vanish.
+  # Vanished through any vanish plugin that sets the "vanished" metadata, or EssentialsX's /vanish when the
+  # player-state provider is essentials.
   vanished:
     source: any-of
     statuses: [vanished-metadata, vanished-essentials]
@@ -101,12 +108,13 @@ statuses:
     key: vanished
 
   vanished-essentials:
-    source: essentials
+    source: player-state
     check: vanished
     unavailable: false
 
+  # AFK, from the player-state provider (integrations.yml): Headcount's own idle timer, or EssentialsX's /afk.
   afk:
-    source: essentials
+    source: player-state
     check: afk
     unavailable: false
 

@@ -2,6 +2,10 @@
 #  Headcount - scoring.yml
 #  How each active player's end-of-cycle score is calculated. A positive score gives that many points
 #  (config.yml points.earn-multiplier); a negative score triggers punishments (outcomes.yml).
+#
+#  Where text lives: this file holds text you design (menu titles, item names and lore, and the messages inside
+#  action lists). Everything Headcount itself says (command replies, errors, confirmations, help, effect
+#  descriptions) is in lang/en_US.yml.
 # ============================================================================================
 config-version: 1
 

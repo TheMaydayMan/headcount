@@ -95,3 +95,16 @@ Choices made where the specification didn't say. Each picks the safest reasonabl
 
 - **`ScoreCalculatedEvent` also fires for previews** (`/hc score`, `%headcount_score%`, the sidebar, `/hca cycle simulate`) with `isPreview()` true, so an addon that changes scores is reflected everywhere a score is shown. Previews can fire every second per player, so listeners should be cheap and skip side effects when it is a preview.
 - **`runActionList`** fills in `<player>` and `<uuid>` like `/hca run`, so the same named lists work from the API.
+
+## 1.1
+
+- **Resets don't change the cycle number.** Each run of a cycle has a hidden run ID stamped on its heads, and `/hca reset cycle` gives the cycle a new one. That kills off every older head without inventing a "cycle 4" that never ended. The run ID is internal; players and admins see the number, and `/hca cycle info` and `/hca inspect` show the run.
+- **What a reset does to old heads is chosen per reset and stored with it** (`delete-heads`/`keep-heads`, default from config). Changing the config later never changes an earlier reset. Deleted heads are removed wherever Headcount can see them, which is lazy for offline players and closed containers, because scanning every chunk and player file would be slow and unsafe.
+- **`/hca reset cycle` keeps points, titles, streaks, history and effects** and doesn't refund shop spending: it restarts the race for heads, not the economy. Shop bonuses that were used at the cycle's real start are applied again so nobody loses a paid "+N starting heads".
+- **`/hca reset hard` is deliberately awkward:** a new random code per confirmation, a timeout, its own permission that `headcount.admin` doesn't include, and a backup of the database and audit log before anything is deleted.
+- **Integrations have no `auto`.** Auto-detection made the active behavior depend on which jars happened to be installed. Each job is now `included`, a named plugin, or `none`, and a missing plugin falls back loudly. `none` really turns the feature off, Headcount's own version included.
+- **Included versions only where they make sense:** PvP, permission nodes, moderation and player states are things Headcount can do well on its own. Money, Discord, custom items and Bedrock need the other plugin by nature.
+- **Included PvP defaults to off.** Headcount's default rules lock the vault and trading while PvP is on, so starting players with PvP off keeps a new server working, and fighting is opt-in.
+- **Combat log kills the player** (items drop, the last attacker gets the kill and its head) rather than banning or taking points, because it matches what would have happened in the fight. Extra actions can be added.
+- **Text split:** the language file holds everything Headcount itself says; the other config files hold what the owner designs (menus, items, messages inside action lists), next to the thing they describe. Console logs, self-test details and permission descriptions stay English in the code.
+- **Headcount Studio is a local app, not a plugin web panel.** It runs on the owner's computer (Python standard library and PyYAML, no build step), edits the files in place keeping comments and layout, reads the database read-only, and changes live data only through `/hca` commands over RCON. Nothing is exposed to the network beyond 127.0.0.1.

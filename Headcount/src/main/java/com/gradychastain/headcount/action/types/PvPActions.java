@@ -23,7 +23,7 @@ final class PvPActions {
                     PvPHook hook = plugin.integrations().pvp();
                     Player p = ctx.player();
                     if (hook == null) {
-                        plugin.getLogger().warning("pvp action skipped: no PvP plugin is hooked (integrations.yml pvp.provider).");
+                        plugin.getLogger().warning("pvp action skipped: PvP handling is off (integrations.yml pvp.provider: none).");
                         return false;
                     }
                     if (p == null) return false;
@@ -55,7 +55,7 @@ final class PvPActions {
 
                 @Override public boolean revertible() { return true; }
                 @Override public String stackKey() { return "pvp"; }
-                @Override public String describe(ActionContext ctx) { return "PvP forced " + (state ? "on" : "off") + (lock ? " (locked)" : ""); }
+                @Override public String describe(ActionContext ctx) { return Types.describe("pvp-" + (state ? "on" : "off") + (lock ? "-locked" : "")); }
             };
         }));
     }

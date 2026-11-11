@@ -10,27 +10,31 @@ Nearly everything is configurable: values, limits, messages, menus, statuses, th
 
 ## How a cycle works
 
-1. **Start.** Every player who has ever joined gets their vault filled with `starting-heads` copies of their own head (default 27), tagged with this cycle's ID. Players who join later get the same setup.
+1. **Start.** Every player who has ever joined gets their vault filled with `starting-heads` copies of their own head (default 27), tagged with this cycle's number and its hidden run ID. Players who join later get the same setup.
 2. **Collect.** `/hc` opens your vault. Heads of other players come from **trades** (`/trade <player>`) and **kills** (killing a player drops a fresh head of theirs, once per killer and victim per cycle). Heads can be stored anywhere, but only heads in your vault count, and only economy heads of the current cycle can go in.
 3. **End.** The unique heads in each active player's vault are tallied. Each player's score comes from a formula (default `unique - ceil(active / 4)`). Positive scores become points to spend in `/hc shop` during the next cycle; negative scores trigger outcomes such as debuffs, dunce caps or bounties (bans are included but disabled). Results are stored in `/hc history`.
 4. **Reset.** Every vault is emptied and the next cycle begins. Heads left outside vaults expire: they keep working as normal heads but are worthless.
+
+Admins can also start the current cycle over (`/hca reset cycle`) or wipe everything back to cycle 1 (`/hca reset hard`, with typed confirmation codes). Each reset either deletes the old heads wherever they turn up or leaves them as defunct heads.
 
 ## Features
 
 - **Economy heads.** Tracked by owner, cycle and a unique ID in the item's data, so vanilla, `/give` and other plugins' heads never count. Placed heads keep their data through every way a block can drop. Creative copies are blocked from vaults and flagged as duplicates.
 - **A safe vault and trading.** Every click and drag type is handled. The trade menu is a double chest with confirmations, a locked countdown and crash-safe offers. Statuses can block vault movement or trading, each with its own message and bypass permission.
-- **Statuses.** Named player states from PvPManager, any PlaceholderAPI placeholder, scoreboard tags, permissions, metadata, flags, or 30 built-in checks (recent PvP damage, nearby hostile mobs, low health, falling, gamemode, world...), combinable with all-of, any-of and not.
+- **Statuses.** Named player states from the PvP and player-state providers, any PlaceholderAPI placeholder, scoreboard tags, permissions, metadata, flags, or 30 built-in checks (recent PvP damage, nearby hostile mobs, low health, falling, gamemode, world...), combinable with all-of, any-of and not.
 - **A full actions system.** Shared by rewards, punishments, the shop and hooks: 60 action types (messages, boss bars, commands, items, points, money, LuckPerms ranks, titles, moderation, PvP locks, potions, attributes, teleports, deny lists, bounties, shields...). Every action supports durations, stacking, chance, delay, repeat and conditions. Timed actions revert themselves, even across restarts and for offline players.
 - **Hooks** for cycle start and end, warnings before the end (with a countdown boss bar), first join, first join of a cycle, becoming active, and every join.
 - **A shop** with tiers unlocked by last cycle's score, pages, per-state displays, stock, limits, cooldowns, prerequisites and confirmation. Plus **titles**, a Bedrock-safe **sidebar**, **history**, a **leaderboard**, and an **audit log** that traces every head by ID.
-- **Integrations**, all optional: PvPManager, PlaceholderAPI (both directions), Vault, LuckPerms, LiteBans, LibertyBans, AdvancedBan, EssentialsX, DiscordSRV, ItemsAdder, Oraxen, Nexo, Geyser and Floodgate.
+- **Included PvP.** `/pvp` toggle (off by default), new-player and respawn protection, a combat tag that can block commands, teleports, flight, elytra and pearls, and combat-log kills. Each message has its own channel (chat, action bar, title) and sound.
+- **Integrations**, every one `included` / a plugin / `none`. Included versions for PvP, permission nodes, moderation (bans, kicks, warnings, mute, jail) and AFK. Optional plugins: PvPManager, PlaceholderAPI (both directions), Vault, LuckPerms, LiteBans, LibertyBans, AdvancedBan, EssentialsX, DiscordSRV, ItemsAdder, Oraxen, Nexo, Geyser and Floodgate.
+- **Headcount Studio**, a local app that opens in the browser: visual editors for every config, a live view of the server with an RCON console, guides, recipes and a full reference ([tools/studio](tools/studio/README.md)).
 - **An API** with 13 events, and hooks for other plugins to add status sources and action types.
 
 ## Quick start
 
 1. Download the jar from the [latest release](https://github.com/TheMaydayMan/headcount/releases/latest), drop it in `plugins/` on a Paper 26.3 server running Java 25, and start it.
 2. The first cycle starts immediately. Players type `/hc` to see their vault and `/hc help` for everything else.
-3. Tune `plugins/Headcount/*.yml` (every option is commented), then run `/hca reload` and `/hca selftest`.
+3. Tune `plugins/Headcount/*.yml` (every option is commented), then run `/hca reload` and `/hca selftest`. Or double-click the launcher in the repository's `Headcount Studio` folder to do it without editing YAML.
 
 ## Documentation
 
@@ -52,7 +56,7 @@ Nearly everything is configurable: values, limits, messages, menus, statuses, th
 |---|---|
 | [Developer guide](docs/developers.md) | The API, events, and adding status sources and action types |
 
-Also: [DECISIONS.md](DECISIONS.md) (design choices the spec left open), [TESTING.md](TESTING.md) (what is tested automatically, and the manual checklist), [tools/bot-tests](tools/bot-tests/README.md) (player tests played by bots), and [TASKS.md](TASKS.md) with [PROGRESS_BAR.md](PROGRESS_BAR.md) (the build checklist, how each item was verified, and when).
+Also: [CHANGELOG.md](CHANGELOG.md) (what changed in each version), [tools/studio](tools/studio/README.md) (Headcount Studio), [DECISIONS.md](DECISIONS.md) (design choices the spec left open), [TESTING.md](TESTING.md) (what is tested automatically, and the manual checklist), [tools/bot-tests](tools/bot-tests/README.md) (player tests played by bots), and [TASKS.md](TASKS.md) with [PROGRESS_BAR.md](PROGRESS_BAR.md) (the build checklist, how each item was verified, and when).
 
 ## Building
 
@@ -60,7 +64,7 @@ Also: [DECISIONS.md](DECISIONS.md) (design choices the spec left open), [TESTING
 ./gradlew build
 ```
 
-The build needs JDK 25 (Gradle finds an installed one, or downloads it). It runs the unit tests and puts the jar in `build/libs/`; it also copies the jar into `../TestServer/plugins` when that folder exists. [TestServer/setup.sh](../TestServer/README.md) sets up that test server.
+The build needs JDK 25 (Gradle finds an installed one, or downloads it). It runs the unit tests and puts the jar in `build/libs/`; it also copies the jar into `../TestServer/plugins` when that folder exists, and regenerates Headcount Studio's catalog. [TestServer/setup.sh](../TestServer/README.md) sets up that test server.
 
 ## License
 

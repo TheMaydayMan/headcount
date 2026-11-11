@@ -17,7 +17,7 @@ import java.util.UUID;
 public final class PlayerStore {
     private static final Set<String> PLAYER_COLUMNS = Set.of("name", "last_join", "last_quit", "points", "points_next", "streak",
             "last_score", "last_unique", "sidebar", "equipped_title", "setup_cycle", "vault_size", "next_heads_mod", "next_size_mod",
-            "rollover_override", "score_bonus", "bedrock");
+            "rollover_override", "score_bonus", "bedrock", "pvp");
     private static final Set<String> STAT_COLUMNS = Set.of("playtime_ms", "kills", "deaths", "trades", "heads_in", "heads_out",
             "points_spent", "purchases", "active");
 
@@ -59,6 +59,8 @@ public final class PlayerStore {
                     d.rolloverOverride = rs.wasNull() ? null : ro;
                     d.scoreBonus = rs.getInt("score_bonus");
                     d.bedrock = rs.getInt("bedrock") != 0;
+                    int pvp = rs.getInt("pvp");
+                    d.pvp = rs.wasNull() ? null : pvp != 0;
                 }
             }
         }
