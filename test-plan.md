@@ -73,7 +73,7 @@ The default score is `unique - ceil(active / 4)`. Your own head counts as 1 uniq
   - [ ] It opens in the browser on **Overview**, which describes the setup in plain words and shows no problems.
   - [ ] The **live** and **RCON** lights in the top bar are on.
 - [ ] **Studio → Console:** `list` shows the server's answer, and `hca selftest` matches the terminal.
-- [ ] **Studio → Dashboard:** the cycle countdown matches `/hca cycle info`.
+- [ ] **Studio → This cycle:** the cycle countdown matches `/hca cycle info`.
 - [ ] Join as yourself. *console* `op <you>` if needed.
 - [ ] A couple of quick Studio checks:
   - [ ] **Ctrl+K**, type `score-colors`: it jumps to that option.
@@ -85,8 +85,8 @@ The default score is `unique - ceil(active / 4)`. Your own head counts as 1 uniq
 - [ ] **Hard reset permission:** `/lp user <you> permission set headcount.admin.reset.hard false`, then `/hca reset hard`: "no permission". Unset it with `/lp user <you> permission unset headcount.admin.reset.hard`, and as op you have it again.
 - [ ] **Wrong code:** `/hca reset hard`, then type a different 4-digit number: "Wrong code ... cancelled".
 - [ ] **Expired code:**
-  1. **Studio → Resets & safety:** set the confirm timeout to `5s`.
-  2. **Review & save:** the diff is exactly one changed line. Save, and let Studio run `/hca reload` when it asks.
+  1. **Studio → General:** set the confirm timeout to `5s`.
+  2. **Review and save:** the diff is exactly one changed line. Save, then press **Reload the server** in the message that appears.
   3. Run `/hca reset hard`, wait 6 seconds, then type the code: "expired".
   4. In Studio, Ctrl+Z undoes the timeout change. Save and reload again.
 - [ ] **Confirmation count:** set confirmations to `2` in Studio, save and reload. The flow now asks twice, and the second time says "Last confirmation". Set it back to 3.
@@ -106,9 +106,9 @@ The default score is `unique - ceil(active / 4)`. Your own head counts as 1 uniq
 
 ### 0.3 Config for a short night (Studio)
 
-Make these changes in Studio's **Set up** pages. Save them all at once with **Review & save** (check the diff), and let Studio run `/hca reload` and `/hca selftest`.
+Make these changes in Studio's **Set up** pages. Save them all at once with **Review and save** (check the diff), then press **Reload the server** in the message that appears and run `/hca selftest`.
 
-- [ ] **Cycle & schedule → time zone:** try each of these. After each one, save and reload, then compare the zone and end time in `/hca cycle info` with Studio's timeline.
+- [ ] **Cycle → time zone:** try each of these. After each one, save and reload, then compare the zone and end time in `/hca cycle info` with Studio's timeline.
   - [ ] `MST` (shows UTC-07:00)
   - [ ] `gmt-7`
   - [ ] `UTC+5:30`
@@ -116,7 +116,7 @@ Make these changes in Studio's **Set up** pages. Save them all at once with **Re
   - [ ] `nonsense`: Studio's Problems page flags it, and the console warns and falls back to UTC
 
   Finish on `America/Denver`. Studio's "End in 10m" buttons assume the server's zone matches your computer's, so don't use them while it's set to anything else.
-- [ ] **Cycle & schedule:** `activity.min-playtime: 5m`, so "active" means something tonight.
+- [ ] **Cycle:** `activity.min-playtime: 5m`, so "active" means something tonight.
 - [ ] **Vault & heads:**
   - [ ] **Title:** make sure it contains `<score>`, for example `"<dark_gray><owner>'s Head Vault <gray>(<unique> unique, score <score>)"`. Studio's preview shows a sample score in color. Try `<score:aqua:dark_red:yellow>` and keep whichever you like.
   - [ ] **Head lore:** the cycle number should be gold on current heads and gray on expired and defunct ones (the 1.1 defaults). The tooltip preview shows all three.
@@ -125,15 +125,15 @@ Make these changes in Studio's **Set up** pages. Save them all at once with **Re
   - [ ] `player-state.included.afk.after: 1m`, so AFK is quick to test.
   - [ ] `moderation.included-jail.location`: pick a spot for a small jail, read its coordinates from F3, and enter `world,<x>,<y>,<z>`.
   - [ ] Look over the **PvP message previews**, which show how each PvP message will look in chat, the action bar or a title.
-- [ ] **Hooks & actions → action lists:** add these two lists as cards in the action builder, not as YAML, so the builder gets tested.
+- [ ] **Hooks → action lists:** add these two lists as cards in the action builder, not as YAML, so the builder gets tested.
   - [ ] `test-minus-10`:
     - a `score-bonus` of `-10`, duration `cycle`
     - a `message`: `<red>Test: -10 score this cycle`
   - [ ] `test-mod`:
     - a `mute`, reason `Test mute`, duration `1m`
   - [ ] Open **Raw files → actions.yml**: the lists are there, and the comments around them are untouched.
-- [ ] **Review & save** shows every change above, across all the files. Save, reload, and run `/hca selftest`: all pass.
-- [ ] Start the first cycle fresh with `/hca reset cycle delete-heads confirm`. Then **Studio → Cycle tools → End in 1h** (or `/hca cycle setend <today>T<now + 50 min>`), and check it with `/hca cycle info`.
+- [ ] **Review and save** shows every change above, across all the files. Save, reload, and run `/hca selftest`: all pass.
+- [ ] Start the first cycle fresh with `/hca reset cycle delete-heads confirm`. Then **Studio → This cycle → In an hour** (or `/hca cycle setend <today>T<now + 50 min>`), and check it with `/hca cycle info`.
 
 **Notes:**
 
@@ -141,7 +141,7 @@ Make these changes in Studio's **Set up** pages. Save them all at once with **Re
 
 ## Part 1: Arrivals (about 15 min)
 
-**Everyone:** join one at a time, Bedrock players last. Each one shows up in the online list on **Studio → Dashboard**.
+**Everyone:** join one at a time, Bedrock players last. Each one shows up in the online list on **Studio → This cycle**.
 
 - [ ] About a second after joining, each new player gets two lines, in this order:
   1. the **first-join** welcome
@@ -279,8 +279,8 @@ Check `/hca status <player>` while players are:
 About 15 minutes before the end, remind the hoarder not to trade or kill.
 
 - [ ] Check the activity rule: anyone with under 5 minutes of playtime is inactive (`/hc score` says not active yet). Make sure everyone has played longer than that.
-- [ ] **Host:** `/hca cycle simulate` lists every score and the outcome each would get. Compare it with the N table. **Studio → Leaderboard** should show the same scores and outcomes.
-- [ ] **Studio → Cycle tools:** set the end 12 minutes from now (or use `/hca cycle setend`). The dashboard countdown follows.
+- [ ] **Host:** `/hca cycle simulate` lists every score and the outcome each would get. Compare it with the N table. **Studio → Players** should show the same scores and outcomes.
+- [ ] **Studio → This cycle:** set the end 12 minutes from now (or use `/hca cycle setend`). The countdown follows.
 - [ ] The **10-minute** warning arrives in chat.
 - [ ] At **1 minute**, a title shows, plus a **boss bar** reading "Cycle 1 ends in 0:59" with the real number (no raw `<cycle>`).
 - [ ] A player who rejoins in the last minute also gets the boss bar.
@@ -401,7 +401,7 @@ Back to PvP for a round. Everyone `/pvp on`.
 
 ### 3.7 End of cycle 2, the punishment test
 
-- [ ] **Host:** `/hca run <hoarder> test-minus-10`, so their score is -10 or lower. `/hca cycle simulate` and Studio's Leaderboard both show it.
+- [ ] **Host:** `/hca run <hoarder> test-minus-10`, so their score is -10 or lower. `/hca cycle simulate` and Studio's Players table both show it.
 - [ ] One player who bought a **shield** should also be negative. Check the simulate output.
 - [ ] `/hca cycle end confirm` (or Studio's **End now**, which asks first):
   - [ ] The -10 player gets "Severe penalty": the dunce cap, glowing, and location broadcasts.
@@ -417,7 +417,7 @@ Back to PvP for a round. Everyone `/pvp on`.
 
 ## Part 4: Cycle 3, "Config chaos" (about 45 min)
 
-**Host:** set the end 40 minutes from now. This round, you change the rules **in Studio** while everyone plays. For each change, use **Review & save** and check the diff is only what you meant, let Studio run `/hca reload`, then see whether it shows up in game.
+**Host:** set the end 40 minutes from now. This round, you change the rules **in Studio** while everyone plays. For each change, use **Review and save** and check the diff is only what you meant, press **Reload the server**, then see whether it shows up in game.
 
 - [ ] **Scoring:** in the scoring lab, change the formula to `unique * 2 - ceil(active / 4)`. The lab's chart and sample scores update as you type. After saving, `/hc score` and the vault title's score match the lab. Change it back.
 - [ ] **Vault & heads → score colors:** set positive to `gold`, and the vault title changes color.
@@ -468,7 +468,7 @@ Back to PvP for a round. Everyone `/pvp on`.
 - [ ] Run `/hca reset <player> vault|points|titles|streak|effects|history|all confirm`, each option on one willing player. Each one does exactly what it says.
 - [ ] `/hca flag P1 set test`, then `/hca status P1`. If you defined a flag status, it reads true. Clear the flag.
 - [ ] Optional crash test: someone puts items in a trade offer, then *console* `kill -9` the server process (find it with `pgrep -f paper`). Start it again with `./start.sh`, and the items come back exactly once.
-- [ ] **Studio → Import & export:** export the configs as a .zip to keep tonight's setup.
+- [ ] **Studio → Backups:** export the configs as a .zip to keep tonight's setup.
 - [ ] Final `/hca reset hard keep-heads` (3 codes) to leave a clean server for next time. The backup folder holds tonight's database and audit log.
 - [ ] Put PvPManager back in `plugins/` only if you want it for normal play (and set `pvp.provider: pvpmanager`).
 - [ ] Copy anything odd from the **Notes** into `1.1 Notes.md`.

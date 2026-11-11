@@ -1,83 +1,63 @@
 # Headcount Studio
 
-An all-in-one app for Headcount: set it up without editing YAML, watch and run a live server, learn how it works, and look anything up. It runs on your own computer and opens in your browser.
+Studio is an app for setting up and running Headcount without editing YAML by hand. It runs on your own computer and opens in your browser. It works on a server's `plugins/Headcount` folder: the config files, and the database once the server has run.
 
 ## Opening it
 
-Double-click the launcher for your system in the repository's `Headcount Studio` folder:
+Double-click the launcher for your system in the repository's `Headcount Studio` folder.
 
-| System | File | First time |
+| System | Launcher | The first time |
 |---|---|---|
-| Linux | `Headcount Studio.desktop` | Your file manager may ask: right-click it and choose **Allow Launching** (GNOME), or confirm **Execute** (KDE). |
-| macOS | `Headcount Studio.command` | macOS may block it the first time: right-click → **Open**. |
-| Windows | `Headcount Studio.bat` | Windows may show SmartScreen: **More info** → **Run anyway**. |
+| Linux | `Headcount Studio.desktop` | Your file manager may ask first. Right-click it and choose Allow Launching (GNOME), or confirm Execute (KDE). |
+| macOS | `Headcount Studio.command` | macOS may block it. Right-click it and choose Open. |
+| Windows | `Headcount Studio.bat` | SmartScreen may stop it. Click More info, then Run anyway. |
 
-It needs **Python 3** (with **PyYAML**, `pip install pyyaml`, so saves are checked first). Studio stops by itself a couple of minutes after you close its tab, or use the ⏻ button. From a terminal:
+Studio needs Python 3. With PyYAML installed (`pip install pyyaml`) it also checks every file before saving it. It stops on its own a couple of minutes after you close the tab, or right away with the power button at the bottom of the sidebar.
+
+From a terminal:
 
 ```bash
-python3 Headcount/tools/studio/server.py                        # the test server (TestServer/plugins/Headcount)
+python3 Headcount/tools/studio/server.py                                    # the test server in TestServer/
 python3 Headcount/tools/studio/server.py --dir /path/to/server/plugins/Headcount
 ```
 
-It listens on `127.0.0.1:8765` only, and answers only its own page: requests from other websites are refused. If Studio is already open, a second launch just opens the same page; if the one running is older code (after an update), the launch replaces it; if something else has the port, it uses the next free one (8766, ...).
+The first launch downloads Minecraft's textures and font from Mojang for the in-game previews. Without them, items show as coloured squares.
 
-## What's in it
+## Finding your way
 
-- **Overview:** your setup in plain words, problems, unsaved changes, and a getting-started checklist.
-- **Live server** (when the server folder has a database):
-  - a dashboard with the cycle countdown, online players, the top 10 and recent events
-  - players, and each player's vault as a chest grid, with their effects, history, titles and purchases
-  - cycle tools (simulate, extend, end, reset), the leaderboard with the outcome each would get, and past cycles
-  - the **audit log** search, and a **head tracer** that follows one head from creation to deletion
-  - every running effect, and a **console** (RCON)
+The sidebar has five parts.
 
-  The database is only ever read; changes go through `/hca` commands over RCON, and each asks first.
-- **Set up:** visual editors for everything:
-  - the cycle schedule, with a timeline of the next cycles
-  - the vault and head items, with in-game tooltips
-  - a **scoring lab** (sliders, a live result and a chart)
-  - an **outcomes score line**
-  - a **chest-grid shop builder** (drag items, edit in a drawer)
-  - titles, trading, statuses (with "used by")
-  - integrations: included / plugin / none, with the PvP message previews
-  - hooks on a timeline, and named action lists
-  - a **sidebar mockup**, every **menu** as a chest, all messages with previews, resets and the audit log
-  - the **action builder**, used everywhere actions appear: each action is a card with its own fields, and you can drag to reorder.
-- **Learn:** an animated "how a cycle works" built from your settings, step-by-step guides, recipes you can apply in one click (with a diff first), "why is it blocked?", a glossary, and every docs page.
-- **Reference:** commands (with a builder and a permission tree), placeholders, all 60 action types, status sources, the formula, MiniMessage, and all options (each one jumps to where it's edited).
-- **Tools:** problems (checked as you type), **Review & save** with a diff of every change, backups (compare and restore), import and export as a .zip, and the raw files.
-- Everywhere:
-  - **Ctrl+K** searches pages, options, commands, placeholders, statuses, lists, players and docs
-  - **Ctrl+Z / Ctrl+Shift+Z** undo and redo across files, **Ctrl+S** opens Review & save
-  - light and dark themes
+- Overview sums up your setup in a paragraph, and lists problems and unsaved changes.
+- Set up has a page for each part of the game: the cycle, vaults and heads, scoring, outcomes, the shop, titles, trading, statuses, integrations, hooks, the sidebar, menus, messages and general settings. Each shows what players will see as you change it.
+- Live server appears when the folder has a database. This cycle shows the countdown and lets you move the end, simulate it, end it or start it over. Players ranks everyone and opens each player's vault as a chest, with their effects, titles, purchases and past cycles. Past cycles, Effects, the Audit log (which can follow one head from start to finish) and a Console are there too.
+- Help explains a cycle using your own settings, with a glossary. Recipes are ready-made setups from the docs that you can apply after seeing exactly what they change. Why is it blocked? works out which status stops a player. Reference covers commands, permissions, placeholders, actions, status sources, the formula, text formatting and every setting. Docs has the plugin's documentation.
+- Files has the problems Studio finds as you edit, each file as raw text, and backups, with import and export of your whole setup as a .zip.
 
-## How it keeps your files safe
+Ctrl+K searches settings, pages, commands, placeholders, players and docs. Ctrl+Z and Ctrl+Shift+Z undo and redo across files.
 
-- Edits change only the lines they touch: comments, blank lines, order and quoting stay as they were.
-- Nothing is written until **Review & save**. Each save is checked as YAML, the previous file is kept in `plugins/Headcount/backups/studio/`, and a file changed on disk since it was loaded is never overwritten without asking.
-- After saving, Studio offers to run `/hca reload` and `/hca selftest` on the server (RCON).
+## Saving
 
-## What Studio doesn't do
+Changes stay in Studio until you save them. Ctrl+S, or the button at the top right, shows every changed line first. Studio only rewrites the lines you changed, so comments and layout stay put.
 
-Studio covers Headcount's own files and data. These are still done outside it:
+Before a save, Studio keeps the old file in `plugins/Headcount/backups/studio/`. If something else changed the file since Studio opened it, Studio asks before overwriting. After saving, reload Headcount on the server (`/hca reload`) so it uses the new files. With RCON on, Studio offers to do that for you.
 
-- **The plugin itself:** building or downloading the jar, putting it in `plugins/`, and updating it (`./gradlew build`).
-- **Starting the server:** `TestServer/start.sh` in a terminal. Once it is running, `restart` and `stop` work from Studio's Console.
-- **`server.properties`:** RCON, ports and the rest. `TestServer/setup.sh` does it for the test server.
-- **Other plugins' jars and configs:** for example removing PvPManager, setting a DiscordSRV token, LuckPerms groups and their weights, Essentials jails. Their in-game commands (`lp ...`, `op`, `/essentials:...`) do work from Studio's Console.
-- **Language files other than `lang/en_US.yml`:** a translation in `lang/<code>.yml` is edited by hand.
-- **Changing data directly:** the database is read-only in Studio, and every change goes through a `/hca` command. Restoring a hard-reset backup (`backups/hard-reset-<time>/`) means copying `headcount.db` back with the server stopped.
-- **The firewall:** keep RCON's port closed to the outside.
-- **Playing:** anything that needs a player in game, like opening menus or placing heads.
+## The live pages and RCON
 
-## RCON
+Studio only reads the database. Anything that changes the server, like giving points or ending a cycle, is sent as a `/hca` command over RCON, and Studio asks first. A hard reset still needs its typed codes, so it runs from the Console.
 
-The console, cycle tools and command buttons need RCON. `TestServer/setup.sh` turns it on for the test server with a random password; Studio reads it from `server.properties`. On another server set `enable-rcon=true` and a `rcon.password`, restart it, and reopen Studio. RCON listens on every network interface, so keep its port (25575) closed in your firewall.
+The test server's `TestServer/setup.sh` turns RCON on. On another server, set `enable-rcon=true` and an `rcon.password` in `server.properties`, restart the server, and open Studio again. RCON listens on every network interface, so keep its port (25575) closed in your firewall.
+
+Studio listens on `127.0.0.1:8765` and refuses requests from other websites. A second launch opens the Studio that's already running, and if something else has the port it takes the next one.
+
+## What you still do elsewhere
+
+Building and installing the plugin, starting the server, `server.properties`, other plugins' own configs, and translations other than `lang/en_US.yml`. Restoring the database from a hard-reset backup means copying `headcount.db` back while the server is stopped.
 
 ## Files
 
-| File | What |
+| File | |
 |---|---|
-| `server.py` | The local server: config files, the read-only database, the audit log, RCON, backups, import and export. |
-| `build-catalog.py` | Builds `catalog.json` (commands, permissions, placeholders, action types, status sources, formula, every option, recipes, docs) from the plugin's own files. Runs with every `./gradlew build`. |
-| `web/` | The app: `core.js` (the YAML engine, MiniMessage, the formula), `store.js`, `ui.js`, `actions.js` (the action builder), and the `pages-*.js` modules. |
+| `server.py` | The local web server: config files, backups, import and export, the read-only database, the audit log and RCON. |
+| `mcassets.py` | Downloads and unpacks Minecraft's textures, font, sounds and player skins into `cache/`. |
+| `build-catalog.py` | Builds `catalog.json` (commands, permissions, placeholders, actions, status sources, the formula, every setting, recipes, docs) from the plugin's own files. It runs with every `./gradlew build`. |
+| `web/` | The app. `core.js` reads and edits YAML and renders text, `store.js` holds the files and undo history, `ui.js` and `app.css` are the shared parts, and each `pages-*.js` file is one part of the sidebar. |

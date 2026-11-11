@@ -1,10 +1,9 @@
-// Set up pages, part 2: Shop, Titles, Trading, Statuses, Integrations, Hooks, Sidebar, Menus, Messages, General,
-// and the per-file editor.
+// Set up pages, part 2: Shop, Titles, Trading, Statuses, Integrations, Hooks, Sidebar, Menus, Messages and General.
 import { plain, el, btn, icon, iconBtn, field, group, subhead, allFields, mcText, miniInline, tooltip, chest, seg, select, switchCtl, chips, drawer, closeDrawer, toast,
   promptDialog, confirmDialog, hoverTip, sprite, SAMPLE, ICONS, humanize, toYamlText, fromYamlText, miniCtl, numberCtl, materialCtl, statusPicker, highlight } from "./ui.js";
 import { isObj, clone, expandSlots, compressSlots, renderMini, stripMini, parseDuration, formatDuration, prettyMaterial } from "./core.js";
 import * as S from "./store.js";
-import { actionList, editActions, summarize, listUsages, listNames, conditionsCtl } from "./actions.js";
+import { actionList, editActions, summarize, listUsages, listNames, conditionsCtl, actionSprite, usageText } from "./actions.js";
 import { pageHead, C, layout, preview, mcName } from "./pages-setup.js";
 import { playSound } from "./sprites.js";
 
@@ -231,7 +230,7 @@ function shopPage(root, params) {
     list.append(el("button", { class: "addrow", onclick: () => { const free = [...Array(size).keys()].find((i) => !at[i] && !menuSlots("shop.yml", "gui").buttons[i] && !isFiller(menuSlots("shop.yml", "gui").fill, menuSlots("shop.yml", "gui").rows, i)); addEntry(free ?? 0); } }, icon("plus"), "New item"));
     left.append(el("section", { class: "group", style: { marginTop: "26px" } }, el("header", {}, el("h2", {}, "Items in " + stripMini(T.name || tier))), list));
     const aside = el("div", { style: { display: "grid", gap: "4px" } },
-      group(["Tier", iconBtn("trash", "Delete this tier", async () => { if (await confirmDialog("Delete the tier " + tier + "?", `Its ${entries.length} items go too. Undo brings them back.`, { ok: "Delete", danger: true })) { S.remove("shop.yml", base); tier = tiers()[0]; draw(); } }, "sm")],
+      group(["Tier", iconBtn("trash", "Delete this tier", async () => { if (await confirmDialog("Delete the " + stripMini(T.name || tier) + " tier?", entries.length ? `Its ${entries.length === 1 ? "item goes" : entries.length + " items go"} with it.` : null, { ok: "Delete", danger: true })) { S.remove("shop.yml", base); tier = tiers()[0]; draw(); } }, "sm")],
         field("shop.yml", base + ".name", { label: "Name", onChange: draw }), thresholdRow(base, draw), field("shop.yml", base + ".enabled", { label: "Open", type: "bool" })),
       group("Shop", field("shop.yml", "settings.confirm-at-price"), field("shop.yml", "settings.new-player-score"), field("shop.yml", "settings.stock-reset")),
       statesEditor());
@@ -302,10 +301,10 @@ function entryEditor(tier, id, redraw) {
     group("Place", field("shop.yml", base + ".page", { label: "Page", type: "number", min: 1, step: 1 }), field("shop.yml", base + ".slot", { onChange: redraw })));
   const rest = allFields("shop.yml", base, { skip: ["actions", "display.material", "display.name", "display.lore", "display.glint", "display.head", "requires", "price", "limit-per-cycle", "stock", "cooldown", "confirm", "conditions", "page", "slot", "name", "enabled"].map((k) => base + "." + k) });
   if (rest.children.length) body.append(el("section", { class: "group" }, el("header", {}, el("h2", {}, "Other settings")), rest));
-  drawer(stripMini(e0.display?.name || id), body, { subtitle: "Shop item " + id + " in " + tier, wide: true, onClose: redraw,
+  drawer(stripMini(e0.display?.name || id), body, { subtitle: stripMini(S.get("shop.yml", "tiers." + tier + ".name") || humanize(tier)) + " tier", wide: true, onClose: redraw,
     footer: doneFooter(
       btn("Rename", async () => { const n = await promptDialog("Rename", "New ID:", id, { check: idCheck(() => false) }); if (n && n !== id) { S.rename("shop.yml", base, n); entryEditor(tier, n, redraw); } }, "ghost"),
-      btn([icon("trash"), "Delete"], async () => { if (await confirmDialog("Delete " + id + "?", "Undo brings it back.", { ok: "Delete", danger: true })) { S.remove("shop.yml", base); closeDrawer(); } }, "ghost danger")) });
+      btn([icon("trash"), "Delete"], async () => { if (await confirmDialog("Delete " + stripMini(e0.display?.name || id) + "?", null, { ok: "Delete", danger: true })) { S.remove("shop.yml", base); closeDrawer(); } }, "ghost danger")) });
 }
 
 // ============================================================================================
@@ -333,7 +332,7 @@ function titlesPage(root, params) {
     listBox.innerHTML = "";
     const items = el("div", { class: "items" });
     for (const [id, t] of Object.entries(S.get("titles.yml", "titles") || {})) items.append(el("div", { class: "item" + (t?.enabled === false ? " off" : ""), onclick: () => edit(id) }, sprite(t?.icon || "NAME_TAG", 28),
-      el("div", { class: "main" }, el("div", { class: "t1" }, mcName(t?.display || id)), el("div", { class: "t2" }, [].concat(t?.description || []).map(stripMini).join(" "))), el("div", { class: "end" }, id)));
+      el("div", { class: "main" }, el("div", { class: "t1" }, mcName(t?.display || id)), el("div", { class: "t2" }, [].concat(t?.description || []).map(stripMini).join(" "))), t?.enabled === false ? el("div", { class: "end" }, "Not in use") : null));
     items.append(el("button", { class: "addrow", onclick: add }, icon("plus"), "New title"));
     listBox.append(items);
     drawChat();
@@ -345,7 +344,7 @@ function titlesPage(root, params) {
     drawPrev();
     drawer(stripMini(S.get("titles.yml", base + ".display") || id), el("div", {}, prev, group(null, field("titles.yml", base + ".display", { onChange: () => { drawPrev(); draw(); } }), field("titles.yml", base + ".description", { label: "Description", onChange: drawPrev }),
       field("titles.yml", base + ".icon.material", { label: "Menu item", onChange: drawPrev }), field("titles.yml", base + ".icon.glint", { onChange: drawPrev }), field("titles.yml", base + ".enabled", { label: "In use", type: "bool" }))),
-    { subtitle: "Title " + id, onClose: draw, footer: doneFooter(btn([icon("trash"), "Delete"], async () => { if (await confirmDialog("Delete " + id + "?", "Players who own it keep the ID, but it stops showing.", { ok: "Delete", danger: true })) { S.remove("titles.yml", base); closeDrawer(); } }, "ghost danger")) });
+    { onClose: draw, footer: doneFooter(btn([icon("trash"), "Delete"], async () => { if (await confirmDialog("Delete " + id + "?", "Players who have it keep it in the database, but it stops showing anywhere.", { ok: "Delete", danger: true })) { S.remove("titles.yml", base); closeDrawer(); } }, "ghost danger")) });
   };
   draw();
   root.append(layout([el("section", { class: "group" }, listBox),
@@ -397,7 +396,7 @@ export function statusUses(name) {
   scan("outcomes.yml", S.doc("outcomes.yml")?.data, "Outcomes"); scan("shop.yml", S.doc("shop.yml")?.data, "Shop"); scan("actions.yml", S.doc("actions.yml")?.data, "Action lists"); scan("config.yml", S.get("config.yml", "hooks"), "Hooks");
   return [...new Set(out)];
 }
-const SRC_SPRITE = { pvp: "iron_sword", "player-state": "clock", muted: "white_wool", bedrock: "bedrock", placeholder: "item_frame", "scoreboard-tag": "name_tag", permission: "trial_key", metadata: "paper",
+export const SRC_SPRITE = { pvp: "iron_sword", "player-state": "clock", muted: "white_wool", bedrock: "bedrock", placeholder: "item_frame", "scoreboard-tag": "name_tag", permission: "trial_key", metadata: "paper",
   flag: "redstone", headcount: "player_head", "in-trade": "bundle", "pvp-damage": "iron_sword", "recent-damage": "redstone", "mob-damage": "zombie_head", "nearby-player": "player_head",
   "nearby-hostile": "creeper_head", "targeted-by-mob": "skeleton_skull", health: "glistering_melon_slice", food: "cooked_beef", "on-fire": "blaze_powder", "in-lava": "lava_bucket", "in-water": "water_bucket",
   falling: "feather", gliding: "elytra", flying: "elytra", swimming: "water_bucket", sneaking: "leather_boots", sprinting: "sugar", sleeping: "red_bed", dead: "bone", invisible: "glass",
@@ -413,7 +412,7 @@ function srcSettings(src) {
 const CHECKS = { "pvp-enabled": "PvP is on", "pvp-disabled": "PvP is off", "combat-tagged": "In combat", newbie: "New-player protection", "respawn-protected": "Just respawned", override: "PvP forced by a world",
   afk: "AFK", vanished: "Vanished", god: "In god mode", jailed: "Jailed", muted: "Muted" };
 const list = (a) => { a = [].concat(a || []).map(String); return a.length > 1 ? a.slice(0, -1).join(", ") + " or " + a[a.length - 1] : a[0] || ""; };
-function statusSummary(s) {
+export function statusSummary(s) {
   if (!isObj(s)) return "";
   const src = s.source;
   const d = {
@@ -484,7 +483,7 @@ function statusesPage(root, params) {
         el("p", { class: "muted" }, "Used by: " + (statusUses(name).join(", ") || "nothing yet") + ". Placeholder: ", el("code", {}, "%headcount_status_" + name + "%")));
     };
     drawE();
-    drawer(name, body, { subtitle: "Status", onClose: draw, footer: doneFooter(btn([icon("trash"), "Delete"], async () => { if (await confirmDialog("Delete " + name + "?", "Anything that uses it reports an unknown status.", { ok: "Delete", danger: true })) { S.remove("statuses.yml", base); closeDrawer(); } }, "ghost danger")) });
+    drawer(name, body, { subtitle: statusSummary(S.get("statuses.yml", base)), onClose: draw, footer: doneFooter(btn([icon("trash"), "Delete"], async () => { if (await confirmDialog("Delete " + name + "?", statusUses(name).length ? "It's used by " + statusUses(name).join(", ") + ", which would then name a status that doesn't exist." : null, { ok: "Delete", danger: true })) { S.remove("statuses.yml", base); closeDrawer(); } }, "ghost danger")) });
   };
   draw();
   root.append(el("section", { class: "group" }, listBox), group("Placeholder text", field("statuses.yml", "settings.placeholder-true"), field("statuses.yml", "settings.placeholder-false")));
@@ -600,7 +599,8 @@ function moderationRows(v) {
 // ============================================================================================
 //  Hooks
 // ============================================================================================
-const PLAYER_HOOKS = [["first-join", "First join", "Ever", "oak_door"], ["first-join-cycle", "First join this cycle", "Once a cycle", "clock"], ["became-active", "Becomes active", "Reached the playtime", "experience_bottle"], ["join", "Every join", "Each time", "player_head"]];
+const PLAYER_HOOKS = [["first-join", "First join", "The first time a player joins the server", "oak_door"], ["first-join-cycle", "First join this cycle", "A player's first join in each cycle", "clock"],
+  ["became-active", "Becomes active", "When a player has played enough to count as active", "experience_bottle"], ["join", "Every join", "Each time a player joins", "player_head"]];
 function hooksPage(root, params) {
   root.append(pageHead("Hooks"));
   const warnings = Object.entries(C("hooks.warnings") || {}).sort((a, b) => parseDuration(b[1]?.before) - parseDuration(a[1]?.before));
@@ -610,30 +610,31 @@ function hooksPage(root, params) {
     const id = await promptDialog("New warning", "How long before the end, like 30m, 6h or 2d:", "30m", { check: (v) => isNaN(parseDuration(v)) ? "That isn't a duration." : C("hooks.warnings." + v) ? "There's one already." : null });
     if (!id) return;
     S.set("config.yml", "hooks.warnings." + id, { before: id, global: [{ message: "<gold>Cycle <cycle> ends in <white>" + formatDuration(parseDuration(id)) + "</white>." }] });
-    window.studio.refresh(); cycleHook("hooks.warnings." + id, "Warning " + id);
+    window.studio.refresh(); cycleHook("hooks.warnings." + id, "Warning");
   };
   root.append(el("section", { class: "group" }, el("header", {}, el("h2", {}, "A cycle"), el("div", { class: "side" }, btn([icon("plus"), "Warning"], addWarning, "small ghost"))),
     el("div", { class: "sheet" }, el("div", { class: "track" },
-      stop("Starts", count(C("hooks.cycle-start.global")), "lime_dye", () => cycleHook("hooks.cycle-start", "Cycle start"), true),
-      warnings.map(([id, w]) => stop(formatDuration(parseDuration(w?.before)) + " left", w?.enabled === false ? "Off" : count(w?.global), "bell", () => cycleHook("hooks.warnings." + id, "Warning " + id))),
-      stop("Ends", count(C("hooks.cycle-end.global")) + ", reports", "red_dye", () => cycleHook("hooks.cycle-end", "Cycle end"), true)))));
+      stop("Starts", count(C("hooks.cycle-start.global")), "lime_dye", () => cycleHook("hooks.cycle-start", "When a cycle starts"), true),
+      warnings.map(([id, w]) => stop(formatDuration(parseDuration(w?.before)) + " left", w?.enabled === false ? "Off" : count(w?.global), "bell", () => cycleHook("hooks.warnings." + id, "Warning"))),
+      stop("Ends", count(C("hooks.cycle-end.global")) + ", reports", "red_dye", () => cycleHook("hooks.cycle-end", "When a cycle ends"), true)))));
   root.append(el("section", { class: "group" }, el("header", {}, el("h2", {}, "A player")), el("div", { class: "sheet" }, el("div", { class: "track" },
-    PLAYER_HOOKS.map(([h, label, , spr]) => stop(label, count(C("hooks.player." + h)), spr, () => editActions("config.yml", "hooks.player." + h, { title: label, onClose: () => window.studio.refresh() })))))));
+    PLAYER_HOOKS.map(([h, label, when, spr]) => stop(label, count(C("hooks.player." + h)), spr, () => editActions("config.yml", "hooks.player." + h, { title: label, subtitle: when, onClose: () => window.studio.refresh() })))))));
   root.append(group("Timing", field("config.yml", "hooks.join-delay"), field("config.yml", "hooks.missed-warning-grace"), field("config.yml", "hooks.top-count")));
   const names = listNames();
   const addList = async () => {
     const id = await promptDialog("New action list", "Name:", "my-list", { check: idCheck((v) => names.includes(v)) });
     if (!id) return;
     S.set("actions.yml", "lists." + id, [{ message: "<green>Hello <player>!" }]);
-    editActions("actions.yml", "lists." + id, { title: "Action list " + id, onClose: () => window.studio.refresh() });
+    editActions("actions.yml", "lists." + id, { title: id, subtitle: "Not used yet", onClose: () => window.studio.refresh() });
   };
   const items = el("div", { class: "items" });
   for (const n of names) {
     const v = S.get("actions.yml", "lists." + n);
     const uses = listUsages(n);
-    items.append(el("div", { class: "item", onclick: () => editActions("actions.yml", "lists." + n, { title: "Action list " + n, onClose: () => window.studio.refresh() }) }, sprite("repeater", 28),
+    const first = Array.isArray(v) ? v[0] : v;
+    items.append(el("div", { class: "item", onclick: () => editActions("actions.yml", "lists." + n, { title: n, subtitle: usageText(uses), onClose: () => window.studio.refresh() }) }, sprite(first ? actionSprite(first) : "repeater", 28),
       el("div", { class: "main" }, el("div", { class: "t1" }, n), el("div", { class: "t2" }, (Array.isArray(v) ? v : [v]).slice(0, 3).map(summarize).join(", "))),
-      el("div", { class: "end" }, uses.length ? "Used " + uses.length + (uses.length === 1 ? " time" : " times") : "Not used"),
+      el("div", { class: "end hide-s" }, usageText(uses)),
       iconBtn("edit", "Rename", async (e) => { e.stopPropagation(); const nn = await promptDialog("Rename " + n, "New name. Places that use it keep the old name.", n, { check: idCheck((x) => x !== n && names.includes(x)) }); if (nn && nn !== n) { S.rename("actions.yml", "lists." + n, nn); window.studio.refresh(); } }, "sm"),
       iconBtn("trash", "Delete", async (e) => { e.stopPropagation(); if (await confirmDialog("Delete " + n + "?", uses.length ? `It's used in ${uses.length} place${uses.length === 1 ? "" : "s"}, which would then fail.` : "Nothing uses it.", { ok: "Delete", danger: true })) { S.remove("actions.yml", "lists." + n); window.studio.refresh(); } }, "sm")));
   }
@@ -641,7 +642,7 @@ function hooksPage(root, params) {
   root.append(el("section", { class: "group" }, el("header", {}, el("h2", {}, "Action lists")), items));
   const rest = allFields("actions.yml", "", { skip: ["lists", "config-version"] });
   if (rest.children.length) root.append(el("section", { class: "group" }, el("header", {}, el("h2", {}, "Other")), rest));
-  if (params[0] === "list" && params[1] && names.includes(params[1])) editActions("actions.yml", "lists." + params[1], { title: "Action list " + params[1], onClose: () => window.studio.refresh() });
+  if (params[0] === "list" && params[1] && names.includes(params[1])) editActions("actions.yml", "lists." + params[1], { title: params[1], subtitle: usageText(listUsages(params[1])), onClose: () => window.studio.refresh() });
 }
 function cycleHook(path, title) {
   const warn = path.includes("warnings.");
@@ -661,8 +662,9 @@ function cycleHook(path, title) {
     }
   };
   draw();
-  drawer(title, body, { wide: true, subtitle: path.replace("hooks.", "Hook "), onClose: () => window.studio.refresh(),
-    footer: doneFooter(warn ? btn([icon("trash"), "Delete warning"], async () => { if (await confirmDialog("Delete this warning?", "Undo brings it back.", { ok: "Delete", danger: true })) { S.remove("config.yml", path); closeDrawer(); } }, "ghost danger") : null) });
+  const when = warn ? formatDuration(parseDuration(S.get("config.yml", path + ".before") ?? path.split(".").pop())) + " before a cycle ends" : path.endsWith("cycle-end") ? "After scores and outcomes, before the vaults empty" : null;
+  drawer(title, body, { wide: true, subtitle: when, onClose: () => window.studio.refresh(),
+    footer: doneFooter(warn ? btn([icon("trash"), "Delete warning"], async () => { if (await confirmDialog("Delete this warning?", null, { ok: "Delete", danger: true })) { S.remove("config.yml", path); closeDrawer(); } }, "ghost danger") : null) });
 }
 
 // ============================================================================================
@@ -677,9 +679,9 @@ function sidebarPage(root) {
     const sb = el("div", { class: "scoreboard" }, el("div", { class: "sbt", html: renderMini(C("sidebar.title"), { vars: SAMPLE }) }));
     for (const l of lines) sb.append(el("div", { class: "sbl", html: renderMini(l, { vars: SAMPLE }) || " " }));
     prev.append(preview("In game", el("div", { class: "mcscene", style: { justifyContent: "flex-end", alignItems: "center", minHeight: "340px" } }, sb)),
-      el("div", { class: "small faint", style: { marginTop: "8px" } }, `${lines.length} of 15 lines. Sample values: cycle 3, 7 unique, score 4, 12 points.`));
+      el("div", { class: "small faint", style: { marginTop: "8px" } }, `${lines.length} of 15 lines`));
   };
-  const linesBox = el("div", { style: { display: "grid", gap: "6px", width: "100%" } });
+  const linesBox = el("div", { style: { display: "grid", gap: "6px", width: "100%", gridTemplateColumns: "minmax(0, 1fr)" } });
   const linesRow = el("div", { class: "field stack", "data-key": "config.yml#sidebar.lines" }, el("div", { class: "lab" }, el("span", { class: "name" }, "Lines")), el("div", { class: "ctl", style: { alignItems: "stretch" } }, linesBox));
   const drawLines = () => {
     linesBox.innerHTML = "";
@@ -763,33 +765,6 @@ function generalPage(root) {
     group("Timing and storage", field("config.yml", "gates.message-cooldown"), field("config.yml", "gui.click-cooldown"), field("config.yml", "storage.file")),
   ], []));
 }
-function filesPage(root, params) {
-  const name = params.join("/") || "config.yml";
-  const d = S.doc(name);
-  if (!d) { root.append(el("div", { class: "empty" }, "No file " + name)); return; }
-  let mode = "options";
-  root.append(pageHead(name, null, select(S.store.names, name, (n) => go("#/files/" + n)), seg([["options", "Settings"], ["text", "Text"]], mode, (m) => { mode = m; draw(); })));
-  const body = el("div");
-  root.append(body);
-  const draw = () => {
-    body.innerHTML = "";
-    body.append(el("details", { class: "more", style: { marginBottom: "12px" } }, el("summary", {}, "About this file"), el("pre", { class: "small muted", style: { whiteSpace: "pre-wrap", fontFamily: "var(--sans)" } }, d.parsed.header)));
-    if (mode === "text" || !d.parsed.entries) {
-      const ta = el("textarea", { spellcheck: "false", style: { minHeight: "72vh", fontSize: "13px" } });
-      ta.value = S.doc(name).text;
-      ta.addEventListener("input", () => S.setText(name, ta.value, name + "#raw"));
-      body.append(ta, S.doc(name).error ? el("div", { class: "note bad" }, S.doc(name).error) : null);
-      return;
-    }
-    for (const top of Object.keys({ ...(S.doc(name).defaults || {}), ...(S.doc(name).data || {}) })) {
-      if (top === "config-version") continue;
-      const v = S.get(name, top) ?? S.def(name, top);
-      body.append(el("details", { class: "more", open: Object.keys(S.doc(name).data || {}).length < 6 }, el("summary", {}, top), isObj(v) ? allFields(name, top) : el("div", { class: "sheet" }, field(name, top))));
-    }
-  };
-  draw();
-}
-
 export const setupPages2 = [
   { id: "shop", group: "Set up", title: "Shop", icon: ICONS.shop, render: shopPage, owns: ["shop.yml"] },
   { id: "titles", group: "Set up", title: "Titles", icon: ICONS.title, render: titlesPage, owns: ["titles.yml"] },
@@ -801,5 +776,4 @@ export const setupPages2 = [
   { id: "menus", group: "Set up", title: "Menus", icon: ICONS.menu, render: menusPage, owns: ["config.yml:vault.gui", "config.yml:history", "shop.yml:gui", "shop.yml:confirm-gui", "trade.yml:gui", "titles.yml:gui"] },
   { id: "messages", group: "Set up", title: "Messages", icon: ICONS.lang, render: messagesPage, owns: ["lang/en_US.yml"] },
   { id: "safety", group: "Set up", title: "General", icon: ICONS.reset, render: generalPage, owns: ["config.yml:general", "config.yml:reset", "config.yml:audit", "config.yml:storage", "config.yml:gates", "config.yml:gui", "config.yml:placeholders", "config.yml:top"] },
-  { id: "files", group: "Tools", title: "Raw files", icon: ICONS.raw, render: filesPage },
 ];

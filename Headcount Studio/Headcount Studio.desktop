@@ -1,7 +1,7 @@
 [Desktop Entry]
 Type=Application
 Name=Headcount Studio
-Comment=Set up, run and learn Headcount (opens in your browser)
+Comment=Set up and run Headcount in your browser
 Exec=sh -c 'cd "$(dirname "$1")/.." && exec python3 Headcount/tools/studio/server.py --exit-when-idle' sh %k
 Icon=applications-games
 Terminal=false

@@ -3,7 +3,7 @@
 // (editActions). Also the conditions editor and the score-range control that rules and actions share.
 import { plain, el, btn, icon, iconBtn, drawer, closeDrawer, seg, select, switchCtl, chips, statusPicker, materialCtl, soundCtl, colorCtl, miniCtl, durationCtl,
   numberCtl, toast, promptDialog, toYamlText, fromYamlText, sprite, humanize } from "./ui.js";
-import { isObj, clone, parseDuration, formatDuration, stripMini } from "./core.js";
+import { isObj, clone, parseDuration, formatDuration, stripMini, prettyMaterial } from "./core.js";
 import * as S from "./store.js";
 
 const COMMON = ["duration", "time", "stacking", "key", "chance", "delay", "repeat", "conditions", "start-message", "end-message"];
@@ -103,15 +103,55 @@ export function denormalize(c) {
   return { type: c.type, ...c.data };
 }
 
-/** A one-line summary of an action, for cards and lists. */
+/** A sound event as words: "minecraft:entity.player.levelup" reads "Player levelup". */
+export const prettySound = (k) => { const parts = String(k || "").replace(/^minecraft:/, "").split("."); if (parts.length > 1 && /^(entity|block|item|ui|ambient|music|event|weather|enchant|particle)$/.test(parts[0])) parts.shift(); return humanize(parts.join(" ").replace(/_/g, " ")); };
+const ROMAN = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X"];
+const titleName = (id) => stripMini(S.get("titles.yml", "titles." + id + ".display") || id);
+const count = (n, one, many) => (n === undefined || n === null || n === "" ? many : String(n).startsWith("-") ? String(n).slice(1) + " " + (+String(n).slice(1) === 1 ? one : many) : n + " " + (+n === 1 ? one : many));
+const sign = (n) => (String(n ?? "").trim().startsWith("-") ? "Take" : "Give");
+/** A one-line summary of an action, for cards and lists, in words rather than config values. */
 export function summarize(item) {
   const c = normalize(item);
   if (c.form === "ref") return `Run the list ${c.data.list}`;
-  const T = types()[c.type];
-  const main = T?.main ? c.data[T.main] : undefined;
-  let s = DESC[c.type] || c.type;
-  if (main !== undefined && main !== null && main !== "") s = (DESC[c.type] ? c.type.replace(/-/g, " ").replace(/^\w/, (x) => x.toUpperCase()) : c.type) + ": " + (Array.isArray(main) ? main.map(plain).join(" / ") : plain(typeof main === "object" ? JSON.stringify(main) : main));
+  const d = c.data, T = types()[c.type];
+  const main = T?.main ? d[T.main] : undefined;
+  const text = (v) => (Array.isArray(v) ? v.map(plain).join(" / ") : plain(typeof v === "object" ? "" : v));
+  const item2 = isObj(d.item) ? d.item : {};
+  let s;
+  switch (c.type) {
+    case "message": case "broadcast": case "actionbar": case "bossbar": case "discord": { const t = main ?? d.text ?? d.message; s = (DESC[c.type] || c.type) + (t ? ": " + text(t) : ""); break; }
+    case "particle": s = "Particles: " + humanize(String(main || d.particle || "").replace(/^minecraft:/, "").replace(/_/g, " ")).toLowerCase(); break;
+    case "next-cycle": { const bits = []; if (d["starting-heads"] !== undefined) bits.push(d["starting-heads"] + " starting heads"); if (d["vault-size"] !== undefined) bits.push(d["vault-size"] + " vault slots"); s = "Next cycle: " + (bits.join(", ") || "changes"); break; }
+    case "title": s = "Title: " + text(d.title ?? "") + (d.subtitle ? " / " + text(d.subtitle) : ""); break;
+    case "sound": s = d.sound ? "Sound: " + prettySound(d.sound) : "Play a sound"; break;
+    case "give-item": case "take-item": { const m = d.material || item2.material; const n = d.amount ?? item2.amount; s = (c.type === "give-item" ? "Give " : "Take ") + (n > 1 ? n + " " : "") + (item2.name ? plain(item2.name) : m ? prettyMaterial(m) : "an item"); break; }
+    case "equip": s = "Put on " + (item2.name ? plain(item2.name) : prettyMaterial(d.material || item2.material || "an item")); break;
+    case "potion": s = (d.effect ? humanize(String(d.effect).replace(/^minecraft:/, "").replace(/_/g, " ")) : "Potion effect") + (d.amplifier ? " " + (ROMAN[+d.amplifier] || +d.amplifier + 1) : ""); break;
+    case "points": case "experience": case "money": case "score-bonus": s = (c.type === "score-bonus" ? (String(main ?? "").startsWith("-") ? "Lower the score by " : "Raise the score by ") + String(main ?? "?").replace(/^-/, "") : sign(main) + " " + count(main, c.type === "money" ? "coin" : c.type === "experience" ? "XP" : "point", c.type === "money" ? "coins" : c.type === "experience" ? "XP" : "points")); break;
+    case "give-heads": s = "Give " + count(main ?? 1, "head", "heads") + (d.cycle === "next" ? " for next cycle" : ""); break;
+    case "grant-title": s = "Give the title " + titleName(main); break;
+    case "revoke-title": s = "Take the title " + titleName(main); break;
+    case "force-title": s = "Lock the title " + titleName(main) + " on"; break;
+    case "console": s = "Console: /" + String(main ?? (d.commands || [])[0] ?? "").replace(/^\//, ""); break;
+    case "player-command": s = "They run /" + String(main ?? (d.commands || [])[0] ?? "").replace(/^\//, ""); break;
+    case "pvp": s = "PvP " + (main || "on") + (d.lock ? ", locked" : ""); break;
+    case "bounty": s = "Bounty of " + count(main, "point", "points"); break;
+    case "shield": case "head-protection": s = DESC[c.type] + (main > 1 ? " (" + main + ")" : ""); break;
+    case "run": s = "Run the list " + (main || "?"); break;
+    case "random": s = "Pick one of " + [].concat(main || []).length; break;
+    case "permission": case "group": case "primary-group": case "track": s = DESC[c.type] + (main ? ": " + main : ""); break;
+    default: s = DESC[c.type] ? DESC[c.type] + (main !== undefined && main !== null && main !== "" && typeof main !== "object" ? ": " + text(main) : "") : c.type;
+  }
   return s.length > 90 ? s.slice(0, 87) + "..." : s;
+}
+/** The sprite that stands for an action: the item it gives or puts on, else one per type. */
+export function actionSprite(item) {
+  const c = normalize(item);
+  if (c.form === "ref") return "repeater";
+  const m = c.data.material || (isObj(c.data.item) && c.data.item.material);
+  if (["give-item", "equip", "take-item"].includes(c.type) && m) return m;
+  if (c.type === "potion") return { material: "POTION" };
+  return SPRITE[c.type] || "paper";
 }
 const DUR_WORD = { cycle: "until the cycle ends", death: "until they die", permanent: "for good", manual: "until removed" };
 function meta(c) {
@@ -348,7 +388,7 @@ export function actionEditor(raw, onChange, { vars, nested } = {}) {
       card.addEventListener("dragover", (e) => { if (dragIdx !== null) { e.preventDefault(); card.classList.add("over"); } });
       card.addEventListener("dragleave", () => card.classList.remove("over"));
       card.addEventListener("drop", (e) => { e.preventDefault(); card.classList.remove("over"); if (dragIdx !== null && dragIdx !== idx) { const [m] = cards.splice(dragIdx, 1); cards.splice(idx, 0, m); openSet.clear(); commit(); draw(); } dragIdx = null; });
-      const spr = c.form === "ref" ? "repeater" : (["give-item", "equip", "take-item"].includes(c.type) && c.data.material) ? c.data.material : SPRITE[c.type] || "paper";
+      const spr = actionSprite(denormalize(c));
       const t1 = el("div", { class: "t1" }, summarize(denormalize(c)));
       const t2 = el("div", { class: "t2" }, meta(c));
       const head = el("div", { class: "ah", onclick: (e) => { if (e.target.closest("button,.grip")) return; isOpen ? openSet.delete(idx) : openSet.add(idx); draw(); } },
@@ -405,10 +445,10 @@ export function actionList(file, path, opts = {}) {
   return el("div", { "data-key": file + "#" + path }, actionEditor(S.get(file, path), (v) => S.set(file, path, v, file + "#" + path + "#actions"), opts));
 }
 
-/** Opens the action builder for the list at file/path in a drawer. Changes apply as you make them. */
-export function editActions(file, path, { title, onClose } = {}) {
-  drawer(title || "Actions", actionList(file, path), { wide: true, subtitle: file + "  " + path, onClose,
-    footer: el("div", { class: "row", style: { width: "100%" } }, el("span", { class: "grow faint small" }, "Changes apply as you edit. Ctrl+Z undoes them."), btn("Done", () => closeDrawer(), "primary")) });
+/** Opens the action builder for the list at file/path in a drawer. */
+export function editActions(file, path, { title, subtitle, onClose } = {}) {
+  drawer(title || "Actions", actionList(file, path), { wide: true, subtitle, onClose,
+    footer: el("div", { class: "row", style: { width: "100%" } }, el("span", { class: "grow" }), btn("Done", () => closeDrawer(), "primary")) });
 }
 
 /** Every place an action list name is used (string items, run actions, outcome/shop "actions: name"). */
@@ -421,5 +461,23 @@ export function listUsages(name) {
   };
   for (const f of ["config.yml", "outcomes.yml", "shop.yml", "actions.yml", "integrations.yml"]) scan(f, S.doc(f)?.data, "");
   return out.filter((u) => !(u.file === "actions.yml" && u.path === "lists." + name));
+}
+/** Where a list is used, in words: "Used by the cycle end and the shop item Steak". */
+export function usageText(uses) {
+  const name = ({ file, path }) => {
+    const p = path.split(".");
+    if (file === "outcomes.yml") return "the outcome " + stripMini(S.get(file, "rules." + p[1] + ".display") || p[1]);
+    if (file === "shop.yml" && p[0] === "tiers") return "the shop item " + stripMini(S.get(file, `tiers.${p[1]}.entries.${p[3]}.display.name`) || p[3]);
+    if (file === "actions.yml") return "the list " + p[1];
+    if (file === "integrations.yml") return "combat logging";
+    if (p[1] === "player") return "the " + humanize(p[2]).toLowerCase() + " hook";
+    if (p[1] === "warnings") return "the " + formatDuration(parseDuration(S.get(file, "hooks.warnings." + p[2] + ".before") ?? p[2])) + " warning";
+    if (p[1] === "cycle-start") return "the cycle start";
+    if (p[1] === "cycle-end") return "the cycle end";
+    return file;
+  };
+  const names = [...new Set(uses.map(name))];
+  if (!names.length) return "Not used yet";
+  return "Used by " + (names.length <= 2 ? names.join(" and ") : names.slice(0, 2).join(", ") + " and " + (names.length - 2) + " more");
 }
 export { SPRITE as ACTION_SPRITES, DESC as ACTION_DESC };

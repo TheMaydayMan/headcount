@@ -1,34 +1,18 @@
 // Headcount Studio: the frame (navigation, routing, header, search, review and save, undo and redo, keyboard
 // shortcuts, live polling and the texture download).
-import { el, btn, icon, iconBtn, toast, closeDrawer, closePop, confirmDialog, highlight, drawer, sprite, ICONS } from "./ui.js";
+import { el, btn, icon, iconBtn, toast, closeDrawer, closePop, confirmDialog, highlight, drawer, sprite, face, ICONS } from "./ui.js";
 import * as S from "./store.js";
 import { loadSprites } from "./sprites.js";
 import { setupPages } from "./pages-setup.js";
 import { setupPages2 } from "./pages-setup2.js";
-import { livePages, rcon, rconReady } from "./pages-live.js";
-import { learnPages, runChecks } from "./pages-learn.js";
-import { diffHunks } from "./core.js";
+import { livePages, liveAliases, rcon, rconReady, showReply } from "./pages-live.js";
+import { helpPages, helpAliases, GLOSSARY, REF_TABS, WALK_TITLES, openWalk, openRecipe } from "./pages-help.js";
+import { filesPages, filesAliases, runChecks, diffView } from "./pages-files.js";
 
-/** A diff with each change shown as its removed lines, then its added lines. */
-function diffView(a, b) {
-  const { hunks, added, removed } = diffHunks(a, b, 3);
-  const box = el("div", { class: "diff" }, el("div", { class: "gap" }, `${removed} line${removed === 1 ? "" : "s"} removed, ${added} added`));
-  hunks.forEach((h, i) => {
-    if (i) box.append(el("div", { class: "gap" }, "..."));
-    const out = [];
-    for (let k = 0; k < h.length;) {
-      if (h[k].op === " " || (h[k].op !== "+" && h[k].op !== "-")) { out.push(h[k++]); continue; }
-      const run = [];
-      while (k < h.length && (h[k].op === "+" || h[k].op === "-")) run.push(h[k++]);
-      out.push(...run.filter((d) => d.op === "-"), ...run.filter((d) => d.op === "+"));
-    }
-    for (const d of out) box.append(el("div", { class: "dl " + (d.op === "+" ? "add" : d.op === "-" ? "del" : "") }, el("span", { class: "n" }, d.op === "+" ? "+" : d.op === "-" ? "-" : d.b), el("span", {}, d.text || " ")));
-  });
-  return box;
-}
-
-const PAGES = [...setupPages, ...livePages, ...setupPages2, ...learnPages];
-const GROUPS = ["Home", "Set up", "Live server", "Learn", "Reference", "Tools"];
+const PAGES = [...setupPages, ...setupPages2, ...livePages, ...helpPages, ...filesPages];
+const GROUPS = ["Home", "Set up", "Live server", "Help", "Files"];
+/** Old addresses that still work: bookmarks and links in the docs. */
+const ALIASES = { ...liveAliases, ...helpAliases, ...filesAliases };
 const byId = Object.fromEntries(PAGES.map((p) => [p.id, p]));
 let cleanup = null, pendingKey = null, currentId = null, problemsCache = null;
 
@@ -72,7 +56,6 @@ function drawNav() {
       return el("a", { class: "navitem" + (p.id === currentId ? " active" : ""), href: "#/" + p.id, "aria-current": p.id === currentId ? "page" : null, onclick: () => document.body.classList.remove("navopen") },
         sprite(p.icon, 18), p.title,
         errs ? el("span", { class: "num" + (probs.some((x) => x.level === "error") ? " bad" : "") }, errs) : null,
-        p.id === "review" && S.dirtyNames().length ? el("span", { class: "num" }, S.dirtyNames().length) : null,
         p.group === "Set up" && pageDirty(p) ? el("span", { class: "dot", title: "Unsaved changes" }) : null);
     })));
   }
@@ -130,7 +113,9 @@ export function go(hash, key) {
 async function route() {
   closeDrawer(true);
   closePop();
-  const parts = (location.hash.replace(/^#\/?/, "") || "overview").split("/").map(decodeURIComponent);
+  let parts = (location.hash.replace(/^#\/?/, "") || "overview").split("/").map(decodeURIComponent);
+  if (ALIASES[parts[0]]) parts = [...ALIASES[parts[0]].split("/"), ...parts.slice(1)];
+  if (parts[0] === "review") { history.replaceState(null, "", "#/overview"); parts = ["overview"]; setTimeout(openReview, 60); }
   const page = byId[parts[0]] || byId.overview;
   const same = currentId === page.id;
   currentId = page.id;
@@ -151,7 +136,8 @@ async function route() {
   main.scrollTop = scroll;
   if (pendingKey) {
     const k = pendingKey; pendingKey = null;
-    setTimeout(() => { if (!highlight(k)) { const [file] = k.split("#"); if (page.id !== "files") go("#/files/" + file, k); } }, 80);
+    if (!k.includes("#")) setTimeout(() => { const t = document.getElementById(k); if (t) { t.scrollIntoView({ block: "center" }); t.classList.remove("flash"); void t.offsetWidth; t.classList.add("flash"); } }, 80);
+    else setTimeout(() => { if (!highlight(k)) { const [file] = k.split("#"); if (page.id !== "files") go("#/files/" + file, k); } }, 80);
   }
 }
 window.addEventListener("hashchange", () => { main.scrollTop = 0; currentId = null; route(); });
@@ -173,24 +159,32 @@ export function goToOption(file, path) {
 }
 
 // ---------------------------------------------------------------- search
-const KIND = { page: "Page", action: "Do", option: "Setting", command: "Command", placeholder: "Placeholder", status: "Status", list: "Action list", shop: "Shop item", doc: "Doc", player: "Player", file: "File", title: "Title" };
+const KIND = { page: "Page", action: "Do", option: "Setting", command: "Command", placeholder: "Placeholder", status: "Status", list: "Action list", shop: "Shop item", doc: "Doc", player: "Player", file: "File", title: "Title", word: "Word", recipe: "Recipe", ref: "Reference", outcome: "Outcome" };
+const firstSentence = (t) => String(t || "").replace(/`/g, "").split(/(?<=\.)\s/)[0];
 function paletteItems() {
   const items = [];
-  for (const p of PAGES) if (!p.hidden) items.push({ kind: "page", title: p.title, desc: p.group, icon: p.icon, run: () => go("#/" + p.id) });
+  const cat = S.store.catalog || {};
+  for (const p of PAGES) if (!p.hidden && (p.group !== "Live server" || S.store.info.live)) items.push({ kind: "page", title: p.title, desc: p.group === "Home" ? "" : p.group, icon: p.icon, run: () => go("#/" + p.id) });
+  for (const [k, n] of REF_TABS) items.push({ kind: "ref", title: n, desc: "Reference", icon: ICONS.reference, run: () => go("#/reference/" + k) });
   items.push({ kind: "action", title: "Review and save", desc: "Ctrl+S", run: () => openReview() },
-    { kind: "action", title: "Undo", desc: "Ctrl+Z", run: doUndo }, { kind: "action", title: "Redo", desc: "Ctrl+Shift+Z", run: doRedo },
-    { kind: "action", title: "Reload Headcount on the server", desc: "/hca reload", run: () => rcon("hca reload", { confirm: "Reloads Headcount on the running server." }) },
-    { kind: "action", title: "Run selftest", desc: "/hca selftest", run: () => rcon("hca selftest") });
-  for (const o of S.store.catalog?.options || []) items.push({ kind: "option", title: o.path, desc: o.file + "  " + (o.help || "").split(/(?<=\.)\s/)[0], run: () => goToOption(o.file, o.path) });
-  for (const c of S.store.catalog?.commands || []) items.push({ kind: "command", title: c.syntax[0], desc: c.does, run: () => go("#/ref-commands") });
-  for (const ph of S.store.catalog?.placeholders || []) items.push({ kind: "placeholder", title: "%headcount_" + ph.name + "%", desc: ph.description, run: () => go("#/ref-placeholders") });
-  for (const n of Object.keys(S.get("statuses.yml", "statuses") || {})) items.push({ kind: "status", title: n, desc: "statuses.yml", icon: ICONS.status, run: () => go("#/statuses/" + n) });
-  for (const n of Object.keys(S.get("titles.yml", "titles") || {})) items.push({ kind: "title", title: n, desc: "titles.yml", icon: S.get("titles.yml", "titles." + n + ".icon.material") || "name_tag", run: () => go("#/titles/" + n) });
-  for (const n of Object.keys(S.get("actions.yml", "lists") || {})) items.push({ kind: "list", title: n, desc: "actions.yml", run: () => go("#/hooks/list/" + n) });
-  for (const [t, T] of Object.entries(S.get("shop.yml", "tiers") || {})) for (const [e, E] of Object.entries(T?.entries || {})) items.push({ kind: "shop", title: e, desc: "Tier " + t, icon: E?.display?.material || "paper", run: () => go("#/shop/" + t + "/" + e) });
-  for (const d of S.store.catalog?.docs || []) items.push({ kind: "doc", title: d.title, desc: d.name, run: () => go("#/docs/" + d.name) });
-  for (const p of paletteItems.players || []) items.push({ kind: "player", title: p.name, desc: p.online ? "online" : "", player: p.uuid, run: () => go("#/live-player/" + p.uuid) });
-  for (const n of S.store.names) items.push({ kind: "file", title: n, desc: "Edit the file as text", run: () => go("#/files/" + n) });
+    { kind: "action", title: "Undo", desc: "Ctrl+Z", run: doUndo }, { kind: "action", title: "Redo", desc: "Ctrl+Shift+Z", run: doRedo });
+  if (rconReady()) items.push({ kind: "action", title: "Reload Headcount on the server", desc: "/hca reload", run: () => rcon("hca reload", { confirm: "Headcount reads its files again. Open trades are cancelled and menus close first." }) },
+    { kind: "action", title: "Run selftest", desc: "/hca selftest", run: async () => { const r = await rcon("hca selftest", { quiet: true }); if (r !== null) showReply("Selftest", r); } });
+  for (const o of cat.options || []) if (o.default !== "(section)") items.push({ kind: "option", title: o.path, desc: o.file + "  " + firstSentence(o.help), run: () => goToOption(o.file, o.path) });
+  for (const c of cat.commands || []) items.push({ kind: "command", title: c.syntax[0], desc: firstSentence(c.does), run: () => go("#/reference/commands") });
+  for (const ph of cat.placeholders || []) items.push({ kind: "placeholder", title: "%headcount_" + ph.name + "%", desc: ph.description, run: () => go("#/reference/placeholders") });
+  for (const [t, d] of GLOSSARY) items.push({ kind: "word", title: t, desc: d, icon: ICONS.glossary, run: () => go("#/learn", "term-" + t.toLowerCase().replace(/[^a-z0-9 -]/g, "").replace(/ /g, "-")) });
+  (cat.recipes || []).forEach((r, i) => items.push({ kind: "recipe", title: r.title, desc: "Ready to apply", icon: ICONS.recipe, run: () => go("#/recipes/" + i) }));
+  WALK_TITLES.forEach((t, i) => items.push({ kind: "recipe", title: t, desc: "Step by step", icon: ICONS.guide, run: () => { go("#/recipes"); setTimeout(() => openWalk(i), 150); } }));
+  for (const n of Object.keys(S.get("statuses.yml", "statuses") || {})) items.push({ kind: "status", title: n, desc: "Statuses", icon: ICONS.status, run: () => go("#/statuses/" + n) });
+  const plain = (v) => String(v || "").replace(/<[^>]*>/g, "");
+  for (const n of Object.keys(S.get("titles.yml", "titles") || {})) items.push({ kind: "title", title: n, desc: plain(S.get("titles.yml", "titles." + n + ".display")), icon: S.get("titles.yml", "titles." + n + ".icon.material") || "name_tag", run: () => go("#/titles/" + n) });
+  for (const [n, r] of Object.entries(S.get("outcomes.yml", "rules") || {})) items.push({ kind: "outcome", title: n, desc: plain(r?.display), icon: ICONS.outcome, run: () => go("#/outcomes/" + n) });
+  for (const n of Object.keys(S.get("actions.yml", "lists") || {})) items.push({ kind: "list", title: n, desc: "Hooks", icon: "repeater", run: () => go("#/hooks/list/" + n) });
+  for (const [t, T] of Object.entries(S.get("shop.yml", "tiers") || {})) for (const [e, E] of Object.entries(T?.entries || {})) items.push({ kind: "shop", title: e, desc: plain(E?.display?.name), icon: E?.display?.material || "paper", run: () => go("#/shop/" + t + "/" + e) });
+  for (const d of cat.docs || []) items.push({ kind: "doc", title: d.title, desc: d.name, icon: ICONS.docs, run: () => go("#/docs/" + d.name) });
+  for (const p of paletteItems.players || []) items.push({ kind: "player", title: p.name, desc: p.online ? "Online" : "", player: p.uuid, run: () => go("#/live-player/" + p.uuid) });
+  for (const n of S.store.names) items.push({ kind: "file", title: n, desc: "Raw files", icon: ICONS.raw, run: () => go("#/files/" + n) });
   return items;
 }
 function palette() {
@@ -214,7 +208,7 @@ function palette() {
     sel = Math.min(sel, Math.max(0, shown.length - 1));
     res.innerHTML = "";
     shown.forEach((it, i) => res.append(el("div", { class: "it" + (i === sel ? " on" : ""), role: "option", onmousemove: () => { if (sel !== i) { sel = i; draw(); } }, onclick: () => { close(); it.run(); } },
-      it.icon ? sprite(it.icon, 20) : el("span", { class: "sprite", style: { "--s": "20px" } }), el("span", { class: "tt" }, it.title), el("span", { class: "dd" }, it.desc), el("span", { class: "k" }, KIND[it.kind]))));
+      it.player ? face(it.player, 20) : it.icon ? sprite(it.icon, 20) : el("span", { class: "sprite", style: { "--s": "20px" } }), el("span", { class: "tt" }, it.title), el("span", { class: "dd" }, it.desc), el("span", { class: "k" }, KIND[it.kind]))));
     if (!shown.length) res.append(el("div", { class: "empty" }, "No match. Try a setting's name, like vault size."));
     res.querySelector(".on")?.scrollIntoView({ block: "nearest" });
   };
@@ -237,16 +231,16 @@ function openReview() {
   if (!dirty.length) { toast("Nothing to save."); return; }
   const body = el("div");
   const errs = runChecks().filter((x) => x.level === "error");
-  if (errs.length) body.append(el("div", { class: "note warn", style: { marginBottom: "16px" } }, `${errs.length} problem${errs.length === 1 ? "" : "s"} found. Saving still works. `,
+  if (errs.length) body.append(el("div", { class: "note warn", style: { marginBottom: "16px" } }, errs.length === 1 ? "Studio found a problem. You can still save. " : `Studio found ${errs.length} problems. You can still save. `,
     el("a", { href: "#/problems", onclick: () => closeDrawer() }, "See the problems")));
   for (const n of dirty) {
     const d = S.doc(n);
     body.append(el("section", { class: "filediff" }, el("header", {}, el("h3", { class: "grow" }, n), d.error ? el("span", { class: "badge bad" }, "Not valid YAML") : null,
       btn("Revert", async () => {
-        if (await confirmDialog("Revert " + n + "?", "Your unsaved changes to it are dropped. Undo brings them back.", { ok: "Revert", danger: true })) { S.revert(n); closeDrawer(); route(); if (S.dirtyNames().length) openReview(); }
+        if (await confirmDialog("Revert " + n + "?", "Your unsaved changes to it are dropped.", { ok: "Revert", danger: true })) { S.revert(n); closeDrawer(); route(); if (S.dirtyNames().length) openReview(); }
       }, "small ghost"), btn("Save", () => saveFiles([n]), "small")), diffView(d.saved, d.text)));
   }
-  drawer("Review and save", body, { wide: true, subtitle: "Removed lines are red, added lines green. Each save keeps a backup of the old file.",
+  drawer("Review and save", body, { wide: true,
     footer: el("div", { class: "row", style: { width: "100%" } }, el("span", { class: "grow faint small" }, dirty.length + " file" + (dirty.length === 1 ? "" : "s") + " changed"),
       btn("Keep editing", () => closeDrawer(), "ghost"), btn(dirty.length > 1 ? "Save all " + dirty.length : "Save", () => saveFiles(dirty), "primary")) });
 }

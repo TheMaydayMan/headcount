@@ -48,16 +48,17 @@ function overview(root) {
   const dirty = S.dirtyNames();
   if (dirty.length) mainCol.append(el("section", { class: "group" }, el("header", {}, el("h2", {}, "Not saved yet")),
     el("div", { class: "sheet pad", style: { padding: "14px 18px" } }, el("div", { class: "row" }, el("span", { class: "grow" }, dirty.join(", ")), btn("Review and save", () => window.studio.review(), "primary")))));
-  mainCol.append(el("section", { class: "group" }, el("header", {}, el("h2", {}, "Getting started")), checklist()));
+  const steps = checklist();
+  if (steps) mainCol.append(el("section", { class: "group" }, el("header", {}, el("h2", {}, "First steps")), steps));
   const aside = [];
   if (live?.cycle) {
     const c = live.cycle;
     const pct = Math.max(0, Math.min(100, (Date.now() - c.start_ms) / (c.end_ms - c.start_ms) * 100));
     aside.push(el("section", { class: "sheet", style: { padding: "16px 18px" } },
-      el("div", { class: "row" }, el("h2", { class: "grow", style: { fontSize: "18px" } }, "Cycle " + c.id), link("Live", "#/live")),
+      el("div", { class: "row" }, el("h2", { class: "grow", style: { fontSize: "18px" } }, link("Cycle " + c.id, "#/live", null, "plainlink"))),
       el("div", { class: "livecycle", style: { display: "block" } }, el("div", { class: "prog" }, el("i", { style: { width: pct.toFixed(1) + "%" } })),
         el("div", { class: "row small muted" }, el("span", { class: "grow" }, formatDuration(c.end_ms - Date.now()) + " left"), el("span", {}, "ends " + new Date(c.end_ms).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })))),
-      el("div", { style: { marginTop: "14px" } }, el("div", { class: "small muted", style: { marginBottom: "6px" } }, `${live.activeCount} active of ${live.playerCount} players, ${live.online.length} online`),
+      el("div", { style: { marginTop: "14px" } }, el("div", { class: "small muted", style: { marginBottom: "6px" } }, live.playerCount ? `${live.online.length ? live.online.length + " online, " : "Nobody online, "}${live.activeCount} of ${live.playerCount} active this cycle` : "Nobody has joined yet."),
         el("div", { class: "heads-row" }, live.online.slice(0, 24).map((p) => el("a", { href: "#/live-player/" + p.uuid, title: p.name }, face(p.uuid, 28))))),
       live.top?.[0] ? el("div", { class: "row", style: { marginTop: "14px" } }, face(live.top[0].uuid, 24), el("span", { class: "grow" }, el("b", {}, live.top[0].name), " leads with ", live.top[0].unique, " unique heads")) : null));
   }
@@ -72,13 +73,14 @@ export function countChanged(file) {
 function checklist() {
   const items = [["cycle", "Pick a cycle length and check the time zone", "#/cycle"], ["vault", "Choose the vault size and starting heads", "#/vault"],
     ["scoring", "Try a few numbers on the formula", "#/scoring"], ["shop", "Look through the shop", "#/shop"], ["integrations", "Check who handles PvP and permissions", "#/integrations"],
-    ["learn", "Read how a cycle works", "#/learn"], ["review", "Save your changes", "#/review"], ["reload", "Reload the server and run selftest", "#/console"]];
+    ["learn", "Read how a cycle works", "#/learn"], ["review", "Save your changes", "#/review"], ["reload", "Reload the server and run selftest", S.store.info.live ? "#/live" : "#/problems"]];
   let done = {};
   try { done = JSON.parse(localStorage.getItem("hc-checklist") || "{}"); } catch (e) { /* private window */ }
+  if (items.every(([id]) => done[id])) return null;
   const box = el("div", { class: "sheet" });
   for (const [id, text, hash] of items) {
-    const cb = el("input", { type: "checkbox", "aria-label": text }); cb.checked = !!done[id];
-    const row = el("div", { class: "check" + (cb.checked ? " done" : "") }, cb, el("span", { class: "grow" }, text), link("Open", hash));
+    const cb = el("input", { type: "checkbox", "aria-label": "Done: " + text }); cb.checked = !!done[id];
+    const row = el("div", { class: "check" + (cb.checked ? " done" : "") }, cb, el("span", { class: "grow" }, link(text, hash)));
     cb.addEventListener("change", () => { done[id] = cb.checked; row.classList.toggle("done", cb.checked); try { localStorage.setItem("hc-checklist", JSON.stringify(done)); } catch (e) { /* ignore */ } });
     box.append(row);
   }
@@ -168,7 +170,7 @@ function drawSchedule(box) {
       el("div", { class: "t2" }, fmt(start) + " to " + fmt(end)))));
     start = end;
   }
-  box.append(preview("Next cycles", rows, el("div", { class: "small faint", style: { marginTop: "6px" } }, "Times in " + zone + (live ? ". New lengths start after the running cycle." : "."))));
+  box.append(preview("Next cycles", rows, el("div", { class: "small faint", style: { marginTop: "6px" } }, "Times in " + zone + ".")));
   const tl = el("div", { class: "timeline" }, el("div", { class: "bar" }));
   const total = days * 86400000;
   let lastX = -100;
@@ -368,8 +370,7 @@ function outcomesPage(root, params) {
       res.append(el("span", { class: "muted" }, `A score of ${score} gets`), ...(outs.length ? outs.map(([id, r]) => el("a", { href: "#/outcomes/" + id, style: { textDecoration: "none" } }, mcName(r.display || id))) : [el("span", { class: "muted" }, "nothing")]));
     };
     slider.addEventListener("input", () => { score = +slider.value; marker.dataset.v = score; marker.style.left = pos(score) + "%"; result(); });
-    lineBox.append(el("div", { class: "scoreline" }, axis, el("div", { style: { position: "relative" } }, bands, el("div", { style: { position: "absolute", inset: "0 12px", pointerEvents: "none" } }, marker))), slider, res,
-      el("div", { class: "small faint" }, "Rules with conditions also need those to match."));
+    lineBox.append(el("div", { class: "scoreline" }, axis, el("div", { style: { position: "relative" } }, bands, el("div", { style: { position: "absolute", inset: "0 12px", pointerEvents: "none" } }, marker))), slider, res);
     result();
     listBox.innerHTML = "";
     const items = el("div", { class: "items" });
@@ -407,10 +408,10 @@ function outcomesPage(root, params) {
         groupRow, priRow),
       el("section", { class: "group" }, el("header", {}, el("h2", {}, "Only when")), el("div", { class: "sheet pad", style: { padding: "12px 18px" } }, conditionsCtl("outcomes.yml", base + ".conditions"))),
       el("section", { class: "group" }, el("header", {}, el("h2", {}, "What happens")), actionList("outcomes.yml", base + ".actions", { vars: "outcome" })));
-    drawer(mcName(r.display || id), body, { subtitle: "Rule " + id, wide: true, onClose: draw,
+    drawer(mcName(r.display || id), body, { subtitle: "For scores of " + describeRange(r.score), wide: true, onClose: draw,
       footer: el("div", { class: "row", style: { width: "100%" } },
         btn("Rename", async () => { const n = await promptDialog("Rename rule", "New ID:", id, { check: (v) => (!/^[a-z0-9][a-z0-9-]*$/i.test(v) ? "Use letters, numbers and dashes." : null) }); if (n && n !== id) { S.rename("outcomes.yml", base, n); closeDrawer(); edit(n); } }, "ghost"),
-        btn([icon("trash"), "Delete"], async () => { if (await confirmDialog("Delete " + id + "?", "The rule and its actions go. Undo brings them back.", { ok: "Delete", danger: true })) { S.remove("outcomes.yml", base); closeDrawer(); } }, "ghost danger"),
+        btn([icon("trash"), "Delete"], async () => { if (await confirmDialog("Delete " + stripMini(r.display || id) + "?", null, { ok: "Delete", danger: true })) { S.remove("outcomes.yml", base); closeDrawer(); } }, "ghost danger"),
         el("span", { class: "grow" }), btn("Done", () => closeDrawer(), "primary")) });
   };
   draw();

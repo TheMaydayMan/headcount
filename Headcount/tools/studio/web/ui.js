@@ -52,6 +52,9 @@ const PATHS = {
   file: "M6 3h8l4 4v14H6zM14 3v4h4",
   link: "M10 14l4-4M8 12l-2 2a3 3 0 0 0 4 4l2-2M16 12l2-2a3 3 0 0 0-4-4l-2 2",
   paint: "M4 20l4-1 11-11-3-3L5 16zM14 6l3 3",
+  terminal: "M4 5h16v14H4zM8 10l3 2-3 2M13 15h3",
+  external: "M14 4h6v6M20 4l-9 9M18 14v6H4V6h6",
+  refresh: "M20 12a8 8 0 1 1-2.3-5.6M20 4v5h-5",
 };
 export function icon(name, cls = "") {
   const s = document.createElementNS("http://www.w3.org/2000/svg", "svg");
@@ -68,7 +71,6 @@ export const iconBtn = (name, title, onclick, cls = "") => el("button", { class:
 
 export const btn = (label, onclick, cls = "") => el("button", { class: "btn " + cls, onclick }, label);
 export const badge = (text, cls = "") => el("span", { class: "badge " + cls }, text);
-export const sectionTitle = (t, ...extra) => el("h2", { class: "section-title" }, t, ...extra);
 /** A titled group of settings: a heading and a sheet of rows. */
 export function group(title, ...rows) {
   const [t, side] = Array.isArray(title) ? title : [title, null];
@@ -102,8 +104,6 @@ export const miniLabel = (src, vars) => el("span", { class: "mlabel", html: rend
 
 /** Text without formatting, with sample values in place of variables. */
 export const plain = (src) => stripMini(String(src ?? "").replace(/<([a-z_]+)>/g, (m, k) => (SAMPLE[k] !== undefined ? stripMini(String(SAMPLE[k])) : m)));
-/** An item tile (kept for older pages): the item's sprite. */
-export function itemTile(spec, opts = {}) { return sprite(spec, opts.size || 32); }
 
 /** The in-game item tooltip: name and lore lines. */
 export function tooltip(name, lore, vars) {
@@ -655,6 +655,15 @@ export function highlight(key) {
   return true;
 }
 
+/** An empty page or section: what it is, why it's empty, and what to do next. */
+export function emptyBox(spr, title, text, ...actions) {
+  return el("div", { class: "emptybox" }, sprite(spr, 40), el("div", { class: "grow" }, el("h3", {}, title), text ? el("p", {}, text) : null, actions.filter(Boolean).length ? el("div", { class: "row" }, actions) : null));
+}
+/** Copies text and says so. */
+export function copyText(text, what) {
+  navigator.clipboard?.writeText(text).then(() => toast("Copied " + (what || text)), () => toast("Couldn't copy. Select it and copy by hand.", "err"));
+}
+
 /** Each page's icon: a Minecraft item. */
 export const ICONS = {
   home: "filled_map", live: "beacon", players: "player_head", cycle: "clock", trophy: "gold_ingot", history: "book", audit: "spyglass", effects: "potion",
@@ -662,6 +671,6 @@ export const ICONS = {
   status: "redstone_torch", plug: "comparator", hook: "tripwire_hook", sidebar: "oak_sign", menu: "chest", lang: "writable_book", reset: "crafting_table",
   learn: "enchanted_book", guide: "map", recipe: "knowledge_book", glossary: "written_book", docs: "bookshelf", why: "iron_door", cmd: "chain_command_block",
   ph: "item_frame", action: "firework_rocket", formula: "brewing_stand", mini: "glow_ink_sac", options: "chiseled_bookshelf", problems: "barrier",
-  review: "feather", backups: "barrel", io: "hopper", raw: "paper",
+  review: "feather", backups: "barrel", io: "hopper", raw: "paper", reference: "lectern",
 };
 export { stripMini };
