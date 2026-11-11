@@ -22,7 +22,7 @@ const X = process.argv[2] || 'Oscar', Y = process.argv[3] || 'Papa';
       amount: -10
   to-roll:
     - type: rollover
-      percent: 50
+      percent: 100
 `);
     fs.writeFileSync(HC + 'actions.yml', acts);
   }
@@ -32,6 +32,7 @@ const X = process.argv[2] || 'Oscar', Y = process.argv[3] || 'Papa';
   await sleep(3000);
   for (const n of [X, Y]) {
     serverConsole(`minecraft:clear ${n}`);
+    serverConsole(`hca effects ${n} remove all`);   // the starter shield from the first join
     serverConsole(`hca points ${n} give 10`);
     serverConsole(`hca run ${n} to-neg`);
   }
@@ -43,28 +44,29 @@ const X = process.argv[2] || 'Oscar', Y = process.argv[3] || 'Papa';
   await consoleOut('hca cycle end confirm', 5000);
   const row = (n) => db(`SELECT score, outcomes, points_before, points_after, rolled_over, points_earned FROM results WHERE cycle=${cycle} AND name='${n}'`)[0];
   const rx = row(X), ry = row(Y);
-  record('outcomes: both players scored -10 (score-bonus)', rx && ry && rx[0] === -10 && ry[0] === -10, JSON.stringify([rx, ry]));
-  record('outcomes: most-extreme picks only penalty-10 for the unshielded player', ry && ry[1] === 'penalty-10', ry && ry[1]);
-  record('outcomes: the punishment\'s actions ran (punish-severe message)', await waitChat(y, /Your score was -10\. You are marked/, my, 2000));
+  // -10 from the score-bonus, minus the par for however many players are active this cycle
+  record('outcomes: both players scored -10 or lower (score-bonus)', rx && ry && rx[0] <= -10 && ry[0] === rx[0], JSON.stringify([rx, ry]));
+  record('outcomes: most-extreme picks only wanted for the unshielded player', ry && ry[1] === 'wanted', ry && ry[1]);
+  record('outcomes: the punishment\'s actions ran (punish-severe message)', await waitChat(y, /Your score was -\d+\. You are wanted/, my, 2000));
   await sleep(1500);
   const helmet = y.inventory.slots[5];
-  record('outcomes: and its dunce cap was put on', !!helmet && helmet.name === 'carved_pumpkin', helmet ? helmet.name : 'nothing');
+  record('outcomes: and its dunce cap was put on', !!helmet && helmet.name === 'jack_o_lantern', helmet ? helmet.name : 'nothing');
   const fx = await consoleOut(`hca effects ${Y}`);
   record('outcomes: and its bounty and glowing are tracked for the cycle', /bounty/.test(fx) && /glowing/.test(fx), fx.split('\n').filter((l) => /^\s*-|\[/.test(l)).join(' | ').slice(0, 160));
-  record('shield: blocks the punishment, recorded as shielded:penalty-10', rx && rx[1] === 'shielded:penalty-10', rx && rx[1]);
-  record('shield: the player is told', await waitChat(x, /Your shield blocked/, mx, 2000) && !x.chatLog.slice(mx).some((m) => /You are marked/.test(m)));
+  record('shield: blocks the punishment, recorded as shielded:wanted', rx && rx[1] === 'shielded:wanted', rx && rx[1]);
+  record('shield: the player is told', await waitChat(x, /Your shield blocked/, mx, 2000) && !x.chatLog.slice(mx).some((m) => /You are wanted/.test(m)));
   const fxx = await consoleOut(`hca effects ${X}`);
   record('shield: its one charge is used up', !/shield/.test(fxx), fxx.split('\n').filter((l) => /shield/.test(l)).join(' | ').slice(0, 120));
-  record('rollover: 50% of 10 unspent points rolled over for the player with the override', rx && rx[2] === 10 && rx[4] === 5 && rx[3] === 5, rx && `before ${rx[2]} rolled ${rx[4]} after ${rx[3]}`);
-  record('rollover: the default 0% for the other player', ry && ry[4] === 0 && ry[3] === 0, ry && `rolled ${ry[4]} after ${ry[3]}`);
-  record('points: the balance after the cycle end is the stored points_after', db(`SELECT points FROM players WHERE name='${X}'`)[0][0] === 5);
+  record('rollover: 100% of 10 unspent points rolled over for the player with the override', rx && rx[2] === 10 && rx[4] === 10 && rx[3] === 10, rx && `before ${rx[2]} rolled ${rx[4]} after ${rx[3]}`);
+  record('rollover: the default 50% for the other player', ry && ry[4] === 5 && ry[3] === 5, ry && `rolled ${ry[4]} after ${ry[3]}`);
+  record('points: the balance after the cycle end is the stored points_after', db(`SELECT points FROM players WHERE name='${X}'`)[0][0] === 10);
   // "for the whole cycle": the punishment lasts through the new cycle and ends at its end
   await consoleOut('hca cycle end confirm', 5000);
   const fx2 = await consoleOut(`hca effects ${Y}`);
   record('outcomes: the cycle-long punishment ends at the next cycle end', !/bounty|glowing/.test(fx2), fx2.split('\n').filter((l) => /^\s*-|\[/.test(l)).join(' | ').slice(0, 160));
   await sleep(1000);
   const h2 = y.inventory.slots[5];
-  record('outcomes: and the dunce cap comes off', !h2 || h2.name !== 'carved_pumpkin', h2 ? h2.name : 'nothing');
+  record('outcomes: and the dunce cap comes off', !h2 || h2.name !== 'jack_o_lantern', h2 ? h2.name : 'nothing');
   x.quit(); y.quit();
   await sleep(800);
   process.exit(L.summary() ? 1 : 0);

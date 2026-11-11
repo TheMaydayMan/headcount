@@ -112,71 +112,90 @@ lists:
       count: 30
     - title: "<gold>Nice!"
 
+  # A lit jack o'lantern locked on the head. It's easy to spot across the map and, unlike a carved pumpkin, doesn't
+  # cover the wearer's screen.
   dunce-cap:
     - type: equip
       slot: head
       lock: true
       duration: cycle
       item:
-        material: CARVED_PUMPKIN
+        material: JACK_O_LANTERN
         name: "<red>Dunce Cap"
-        lore: ["<gray>Earned with a negative score.", "<gray>Comes off when the cycle ends."]
+        lore: ["<gray>Earned by being wanted.", "<gray>Comes off when the cycle ends."]
       start-message: "<red>You have to wear the dunce cap until the cycle ends."
       end-message: "<green>The dunce cap is off."
 
   # ---------------------------------------------------------------- punishments (used by outcomes.yml)
+  # Timed parts count only time online, so a player who is away doesn't sit out their punishment offline.
   punish-mild:
-    - message: "<red>Your score was <score>. You are slowed for a day of playtime."
+    - message: "<red>Your score was <score>, so you're slowed for your next 2 hours of play. <gray>A trade or two next cycle keeps you clear."
     - type: potion
       effect: slowness
       amplifier: 0
-      duration: 1d
+      duration: 2h
       time: online
       key: punish-slowness
       end-message: "<green>Your penalty is over."
 
   punish-medium:
-    - message: "<red>Your score was <score>. You are weakened and lose 2 hearts for 2 days of playtime."
+    - message: "<red>Your score was <score>. For your next 3 hours of play you're weakened and have 2 fewer hearts, and you carry the Dunce title until the cycle ends."
     - type: potion
       effect: weakness
       amplifier: 0
-      duration: 2d
+      duration: 3h
       time: online
     - type: attribute
       attribute: max_health
       amount: -4
-      duration: 2d
+      duration: 3h
       time: online
       end-message: "<green>Your health is back to normal."
+    - type: force-title
+      title: dunce
+      duration: cycle
 
+  # Wanted: the player is worth hunting for a while. The PvP lock and location reports cover 2 hours of play. The
+  # visible marks, the bounty and the extra head for the first killer last until the cycle ends.
   punish-severe:
-    - message: "<dark_red>Your score was <score>. Until the end of the next cycle you wear the dunce cap, glow, and have a bounty on you."
+    - message: "<dark_red>Your score was <score>. You are wanted: for your next 2 hours of play your PvP is locked on and your location is announced every 10 minutes. Until the cycle ends you glow, wear the dunce cap and carry a 5-point bounty, and whoever kills you gets two of your heads."
     - dunce-cap
     - type: glowing
+      duration: cycle
+    - type: force-title
+      title: dunce
       duration: cycle
     - type: bounty
       points: 5
       duration: cycle
       claims: 1
+    - type: extra-heads
+      amount: 1
+      charges: 1
+      duration: cycle
+    - type: pvp
+      state: "on"
+      lock: true
+      duration: 2h
+      time: online
     - type: broadcast-location
-      duration: 1d
-      repeat: 30m
-      text: "<red><player></red> <gray>has a bounty and is at <yellow><x>, <y>, <z></yellow> in <world>."
+      duration: 2h
+      time: online
+      repeat: 10m
+      text: "<red><player></red> <gray>is wanted, with a bounty, at <yellow><x>, <y>, <z></yellow> in <world>."
 
   # ---------------------------------------------------------------- rewards
   reward-top:
     - celebrate
-    - type: grant-title
-      title: champion
     - points:
-        amount: 5
+        amount: 3
         when: now
 
-  # An example of the random type: one of three rewards, picked by weight.
+  # The shop's mystery box: one of four prizes, picked by weight. The jackpot pays back twice the box's price.
   mystery-box:
     - type: random
       choices:
-        - weight: 5
+        - weight: 4
           actions:
             - type: give-item
               material: GOLDEN_APPLE
@@ -186,10 +205,14 @@ lists:
             - type: give-item
               material: DIAMOND
               amount: 3
+        - weight: 2
+          actions:
+            - type: give-item
+              material: EXPERIENCE_BOTTLE
+              amount: 16
         - weight: 1
           actions:
-            - type: give-heads
-              owner: self
-              amount: 3
-              cycle: next
-            - message: "<gold>Lucky draw: 3 extra heads of your own next cycle."
+            - points:
+                amount: 8
+                when: now
+            - message: "<gold>Jackpot: 8 points."

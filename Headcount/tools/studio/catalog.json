@@ -2294,6 +2294,10 @@
   ],
   "ideas": [
    {
+    "name": "The 1.0 default, a point per head over a quarter of the server",
+    "formula": "unique - ceil(active / 4)"
+   },
+   {
     "name": "Exponential, rewarding big collections",
     "formula": "floor(pow(unique, 1.5) / 2) - ceil(active / 4)"
    },
@@ -2310,16 +2314,8 @@
     "formula": "round(unique / max(active, 1) * 10) - 5"
    },
    {
-    "name": "Streak bonus on top of the default",
-    "formula": "unique - ceil(active / 4) + min(streak_positive, 3)"
-   },
-   {
-    "name": "Punish hoarding your own head",
-    "formula": "unique - ceil(active / 4) - floor(own / 10)"
-   },
-   {
     "name": "Kills matter",
-    "formula": "unique + kills - deaths - ceil(active / 4)"
+    "formula": "unique + kills - deaths - clamp(round(sqrt(active)), 1, 4)"
    }
   ]
  },
@@ -2375,8 +2371,8 @@
   {
    "file": "config.yml",
    "path": "cycle.length-days",
-   "default": "30",
-   "help": "Length of a cycle in days. A change takes effect at the next cycle or the next /hca reset cycle. The running cycle keeps its end."
+   "default": "14",
+   "help": "Length of a cycle in days. A change takes effect at the next cycle or the next /hca reset cycle. The running cycle keeps its end. Two weeks gives a player who logs on twice a week four or five sessions to trade in, and still ends often enough that rewards and punishments feel tied to what they did."
   },
   {
    "file": "config.yml",
@@ -2405,8 +2401,8 @@
   {
    "file": "config.yml",
    "path": "activity.min-playtime",
-   "default": "0",
-   "help": "Playtime in a cycle needed to count as active. 0 means joining once is enough. Only active players get a score, points and outcomes."
+   "default": "2h",
+   "help": "Playtime in a cycle needed to count as active. 0 means joining once is enough. Only active players get a score, points and outcomes. Two hours keeps someone who drops in for a look from being scored, and punished, before they've had a chance to trade."
   },
   {
    "file": "config.yml",
@@ -2429,8 +2425,8 @@
   {
    "file": "config.yml",
    "path": "vault.starting-heads",
-   "default": "27",
-   "help": "How many of their own heads each player starts a cycle with, up to the vault size. Extra starting heads from next-cycle actions, like a shop purchase or the streak bonus, are given as items if they don't fit."
+   "default": "18",
+   "help": "How many of their own heads each player starts a cycle with, up to the vault size. Extra starting heads from next-cycle actions, like a shop purchase, are given as items if they don't fit. Each trade costs one of these, so they are what a player spends. 18 is enough to trade with everyone on a server of up to 18 active players. On bigger servers the keenest traders run short and buy heads with items, take them in fights, or buy more in the shop. The 9 empty slots also show a new player where the other heads go."
   },
   {
    "file": "config.yml",
@@ -2813,7 +2809,7 @@
   {
    "file": "config.yml",
    "path": "kills.killer-pickup-only",
-   "default": "0s",
+   "default": "15s",
    "help": "How long only the killer can pick up the head. 0 lets anyone."
   },
   {
@@ -2825,8 +2821,8 @@
   {
    "file": "config.yml",
    "path": "points.rollover-percent",
-   "default": "0",
-   "help": "Percent of unspent points kept when a cycle ends. The rest are gone. A positive score gives points at the end of a cycle, to spend during the next one."
+   "default": "50",
+   "help": "Percent of unspent points kept when a cycle ends. The rest are gone. A positive score gives points at the end of a cycle, to spend during the next one. At 50, savings level off at about twice what a player earns in a cycle, so saving for a Legendary item works but a lead can't grow forever."
   },
   {
    "file": "config.yml",
@@ -3041,8 +3037,8 @@
   {
    "file": "config.yml",
    "path": "sidebar.shown-for-new-players",
-   "default": "false",
-   "help": "Whether the sidebar starts shown for a player's first join. Players who already joined keep their choice."
+   "default": "true",
+   "help": "Whether the sidebar starts shown for a player's first join. Players who already joined keep their choice. It shows a new player their unique heads and score changing as they trade, which teaches the game fastest."
   },
   {
    "file": "config.yml",
@@ -3612,6 +3608,24 @@
    "file": "config.yml",
    "path": "hooks.player.first-join",
    "default": "",
+   "help": "Runs the first time a player ever joins. The shield means a new player's first bad cycle teaches them the rules instead of punishing them."
+  },
+  {
+   "file": "config.yml",
+   "path": "hooks.player.first-join.charges",
+   "default": "1",
+   "help": ""
+  },
+  {
+   "file": "config.yml",
+   "path": "hooks.player.first-join.duration",
+   "default": "cycles:2",
+   "help": ""
+  },
+  {
+   "file": "config.yml",
+   "path": "hooks.player.first-join.start-message",
+   "default": "\"<gold>You start with a shield. It blocks your first punishment.\"",
    "help": ""
   },
   {
@@ -3623,7 +3637,7 @@
   {
    "file": "config.yml",
    "path": "hooks.player.became-active",
-   "default": "[]",
+   "default": "",
    "help": ""
   },
   {
@@ -3995,8 +4009,8 @@
   {
    "file": "integrations.yml",
    "path": "economy.provider",
-   "default": "vault",
-   "help": "Which economy the money action uses: vault | none vault uses the economy plugin behind Vault, like EssentialsX or CMI."
+   "default": "none",
+   "help": "Which economy the money action uses: vault | none Headcount has no money of its own, so the default content gives none out. With Vault and an economy plugin like EssentialsX or CMI installed, set vault to use the money action."
   },
   {
    "file": "integrations.yml",
@@ -4235,8 +4249,8 @@
   {
    "file": "integrations.yml",
    "path": "discord.provider",
-   "default": "discordsrv",
-   "help": "Which plugin sends Discord messages: discordsrv | none"
+   "default": "none",
+   "help": "Which plugin sends Discord messages: discordsrv | none Set discordsrv once DiscordSRV is installed and connected to a bot."
   },
   {
    "file": "integrations.yml",
@@ -4253,8 +4267,8 @@
   {
    "file": "integrations.yml",
    "path": "items.providers",
-   "default": "[itemsadder, oraxen, nexo]",
-   "help": "Custom item plugins to use, out of itemsadder, oraxen and nexo. Ones that aren't installed are skipped, and [] turns custom items off."
+   "default": "[]",
+   "help": "Custom item plugins to use, out of itemsadder, oraxen and nexo. Ones that aren't installed are skipped, and [] turns custom items off. List the ones you install, like [itemsadder]."
   },
   {
    "file": "integrations.yml",
@@ -4265,8 +4279,8 @@
   {
    "file": "integrations.yml",
    "path": "bedrock.provider",
-   "default": "floodgate",
-   "help": "How Bedrock players are recognized: floodgate | geyser | none floodgate also knows players who have no Java account."
+   "default": "none",
+   "help": "How Bedrock players are recognized: floodgate | geyser | none floodgate also knows players who have no Java account. Set it, or geyser, when Geyser is installed."
   },
   {
    "file": "integrations.yml",
@@ -5141,8 +5155,8 @@
   {
    "file": "scoring.yml",
    "path": "formula",
-   "default": "\"unique - ceil(active / 4)\"",
-   "help": "The score formula, worked out for each active player when a cycle ends. It takes normal math: + - * / % (remainder) ^ (power), parentheses, comparisons (< <= > >= == !=, which give 1 or 0), && || !, and \"condition ? a : b\". Functions: min(a, b, ...) max(...) avg(...) floor ceil round(x[, digits]) trunc abs sign pow(x, y) sqrt cbrt exp log(x[, base]) ln log10 log2 clamp(x, low, high) if(condition, a, b) sin cos tan Constants: pi e true false Variables: unique            unique heads in the vault, from different owners (your own head counts once) total             all heads in the vault, duplicates included own               copies of your own head in the vault duplicates        total - unique vault_size        your vault slots this cycle vault_free        empty vault slots starting_heads    heads every vault started with this cycle active            active players this cycle players           everyone who has ever joined online            players online now rank              your rank among active players by unique heads, 1 being the most (ties share a rank) percentile        your percentile among active players, from 0 at the bottom to 100 at the top unique_avg, unique_median, unique_max, unique_min, unique_sum unique heads over all active players kills             kill heads you got this cycle deaths            kill heads others got from you trades            completed trades heads_in          heads received through trades heads_out         heads given through trades purchases         shop purchases this cycle points_spent      points spent this cycle points            points you hold now points_next       points already waiting for next cycle playtime          minutes played this cycle playtime_hours    hours played this cycle streak            +N after N positive cycles in a row, -N after N negative ones streak_positive   the length of a positive streak, else 0 streak_negative   the length of a negative streak, else 0 last_score        last cycle's score, or 0 if there was none last_unique       last cycle's unique heads has_last          1 if there was a last score bonus             score bonus from actions (see add-bonus-after-formula) titles            titles you own cycle             the cycle ID cycle_length      cycle length in days days_elapsed      days since the cycle started days_left         days until it ends is_active         1 if you are active %any_placeholder% any numeric PlaceholderAPI placeholder, like %statistic_player_kills%. For offline players it gives whatever the placeholder supports. Anything that isn't a number counts as 0. Other formulas to try (copy one into 'formula'): Exponential, rewarding big collections:   floor(pow(unique, 1.5) / 2) - ceil(active / 4) Percent-based, compared to everyone:      round((percentile - 50) / 10) Rank-based, top 3 rewarded:               rank <= 3 ? 10 - rank * 2 : (percentile < 25 ? -3 : 0) Share of all active players collected:    round(unique / max(active, 1) * 10) - 5 Streak bonus on top of the default:       unique - ceil(active / 4) + min(streak_positive, 3) Punish hoarding your own head:            unique - ceil(active / 4) - floor(own / 10) Kills matter:                             unique + kills - deaths - ceil(active / 4) The default gives one point per unique head, minus a quarter of the active players rounded up. With 12 active players, 3 unique heads scores 0 and 10 unique heads scores 7."
+   "default": "\"unique - clamp(round(sqrt(active)), 1, 4) + ceil(clamp(6 * (unique - 1) / max(min(active, vault_size) - 1, 1), 0, 6))\"",
+   "help": "The score formula, worked out for each active player when a cycle ends. It takes normal math: + - * / % (remainder) ^ (power), parentheses, comparisons (< <= > >= == !=, which give 1 or 0), && || !, and \"condition ? a : b\". Functions: min(a, b, ...) max(...) avg(...) floor ceil round(x[, digits]) trunc abs sign pow(x, y) sqrt cbrt exp log(x[, base]) ln log10 log2 clamp(x, low, high) if(condition, a, b) sin cos tan Constants: pi e true false Variables: unique            unique heads in the vault, from different owners (your own head counts once) total             all heads in the vault, duplicates included own               copies of your own head in the vault duplicates        total - unique vault_size        your vault slots this cycle vault_free        empty vault slots starting_heads    heads every vault started with this cycle active            active players this cycle players           everyone who has ever joined online            players online now rank              your rank among active players by unique heads, 1 being the most (ties share a rank) percentile        your percentile among active players, from 0 at the bottom to 100 at the top unique_avg, unique_median, unique_max, unique_min, unique_sum unique heads over all active players kills             kill heads you got this cycle deaths            kill heads others got from you trades            completed trades heads_in          heads received through trades heads_out         heads given through trades purchases         shop purchases this cycle points_spent      points spent this cycle points            points you hold now points_next       points already waiting for next cycle playtime          minutes played this cycle playtime_hours    hours played this cycle streak            +N after N positive cycles in a row, -N after N negative ones streak_positive   the length of a positive streak, else 0 streak_negative   the length of a negative streak, else 0 last_score        last cycle's score, or 0 if there was none last_unique       last cycle's unique heads has_last          1 if there was a last score bonus             score bonus from actions (see add-bonus-after-formula) titles            titles you own cycle             the cycle ID cycle_length      cycle length in days days_elapsed      days since the cycle started days_left         days until it ends is_active         1 if you are active %any_placeholder% any numeric PlaceholderAPI placeholder, like %statistic_player_kills%. For offline players it gives whatever the placeholder supports. Anything that isn't a number counts as 0. Other formulas to try (copy one into 'formula'): The 1.0 default, a point per head over a quarter of the server:   unique - ceil(active / 4) Exponential, rewarding big collections:   floor(pow(unique, 1.5) / 2) - ceil(active / 4) Percent-based, compared to everyone:      round((percentile - 50) / 10) Rank-based, top 3 rewarded:               rank <= 3 ? 10 - rank * 2 : (percentile < 25 ? -3 : 0) Share of all active players collected:    round(unique / max(active, 1) * 10) - 5 Kills matter:                             unique + kills - deaths - clamp(round(sqrt(active)), 1, 4) The default has three parts. 'unique' is a point for each different head in the vault, your own included. The par, clamp(round(sqrt(active)), 1, 4), grows slowly with the server: 1 for up to 2 active players, 2 for 3 to 6, 3 for 7 to 12 and 4 from 13 up. The last part adds up to 6 for the share of the server's heads collected, so a full set is worth the same bonus on a server of any size. On servers bigger than the vault, a full vault counts as a full set. Someone who never trades lands between 0 and -3. docs/formula.md works through examples."
   },
   {
    "file": "scoring.yml",
@@ -5184,7 +5198,7 @@
    "file": "outcomes.yml",
    "path": "mode",
    "default": "most-extreme",
-   "help": "Which matching rules a player gets: all | most-extreme all gives every rule the score matches. most-extreme gives only the most extreme match in each group, so a score of -12 gets the severe penalty and not all three."
+   "help": "Which matching rules a player gets: all | most-extreme all gives every rule the score matches. most-extreme gives only the most extreme match in each group, so a player who qualifies for Wanted gets that and not the two lighter penalties as well."
   },
   {
    "file": "outcomes.yml",
@@ -5194,73 +5208,109 @@
   },
   {
    "file": "outcomes.yml",
-   "path": "rules.penalty-1",
+   "path": "rules.minor",
    "default": "(section)",
-   "help": "---------------------------------------------------------------- punishments"
+   "help": "---------------------------------------------------------------- punishments Punishments climb with repeat offences, not with the size of the score. With the default formula a player who never trades scores -3 at worst, so one bad cycle costs a minor penalty. Two in a row bring the Penalty, and three make a player Wanted. The score conditions catch very low scores from score-bonus actions or a harsher formula."
   },
   {
    "file": "outcomes.yml",
-   "path": "rules.penalty-1.display",
+   "path": "rules.minor.display",
    "default": "\"<yellow>Minor penalty\"",
    "help": ""
   },
   {
    "file": "outcomes.yml",
-   "path": "rules.penalty-1.score",
+   "path": "rules.minor.score",
    "default": "\"..-1\"",
    "help": ""
   },
   {
    "file": "outcomes.yml",
-   "path": "rules.penalty-1.actions",
+   "path": "rules.minor.actions",
    "default": "punish-mild",
    "help": ""
   },
   {
    "file": "outcomes.yml",
-   "path": "rules.penalty-5",
+   "path": "rules.penalty",
    "default": "(section)",
    "help": ""
   },
   {
    "file": "outcomes.yml",
-   "path": "rules.penalty-5.display",
+   "path": "rules.penalty.display",
    "default": "\"<gold>Penalty\"",
    "help": ""
   },
   {
    "file": "outcomes.yml",
-   "path": "rules.penalty-5.score",
-   "default": "\"..-5\"",
+   "path": "rules.penalty.score",
+   "default": "\"..-1\"",
    "help": ""
   },
   {
    "file": "outcomes.yml",
-   "path": "rules.penalty-5.actions",
-   "default": "punish-medium",
+   "path": "rules.penalty.priority",
+   "default": "3",
    "help": ""
   },
   {
    "file": "outcomes.yml",
-   "path": "rules.penalty-10",
+   "path": "rules.penalty.conditions",
    "default": "(section)",
    "help": ""
   },
   {
    "file": "outcomes.yml",
-   "path": "rules.penalty-10.display",
-   "default": "\"<red>Severe penalty\"",
+   "path": "rules.penalty.conditions.expression",
+   "default": "\"score <= -4 || streak <= -2\"",
    "help": ""
   },
   {
    "file": "outcomes.yml",
-   "path": "rules.penalty-10.score",
-   "default": "\"..-10\"",
+   "path": "rules.penalty.actions",
+   "default": "punish-medium",
    "help": ""
   },
   {
    "file": "outcomes.yml",
-   "path": "rules.penalty-10.actions",
+   "path": "rules.wanted",
+   "default": "(section)",
+   "help": ""
+  },
+  {
+   "file": "outcomes.yml",
+   "path": "rules.wanted.display",
+   "default": "\"<red>Wanted\"",
+   "help": ""
+  },
+  {
+   "file": "outcomes.yml",
+   "path": "rules.wanted.score",
+   "default": "\"..-1\"",
+   "help": ""
+  },
+  {
+   "file": "outcomes.yml",
+   "path": "rules.wanted.priority",
+   "default": "6",
+   "help": ""
+  },
+  {
+   "file": "outcomes.yml",
+   "path": "rules.wanted.conditions",
+   "default": "(section)",
+   "help": ""
+  },
+  {
+   "file": "outcomes.yml",
+   "path": "rules.wanted.conditions.expression",
+   "default": "\"score <= -6 || streak <= -3\"",
+   "help": ""
+  },
+  {
+   "file": "outcomes.yml",
+   "path": "rules.wanted.actions",
    "default": "punish-severe",
    "help": ""
   },
@@ -5268,7 +5318,7 @@
    "file": "outcomes.yml",
    "path": "rules.ban-repeat-offenders",
    "default": "(section)",
-   "help": "Bans a player for a day after three negative cycles in a row. Off by default."
+   "help": "Bans a player for a day after four negative cycles in a row, one more than Wanted. Off by default."
   },
   {
    "file": "outcomes.yml",
@@ -5303,7 +5353,7 @@
   {
    "file": "outcomes.yml",
    "path": "rules.ban-repeat-offenders.conditions.streak",
-   "default": "\"<=-3\"",
+   "default": "\"<=-4\"",
    "help": ""
   },
   {
@@ -5315,7 +5365,7 @@
   {
    "file": "outcomes.yml",
    "path": "rules.ban-repeat-offenders.actions.reason",
-   "default": "\"Three negative Headcount cycles in a row\"",
+   "default": "\"Four negative Headcount cycles in a row\"",
    "help": ""
   },
   {
@@ -5370,7 +5420,7 @@
    "file": "outcomes.yml",
    "path": "rules.top-three",
    "default": "(section)",
-   "help": "---------------------------------------------------------------- rewards outside the shop"
+   "help": "---------------------------------------------------------------- rewards outside the shop The top three get 3 points. They also need to be in the top half, so on a server of two or three players finishing \"third\" isn't a prize."
   },
   {
    "file": "outcomes.yml",
@@ -5410,15 +5460,81 @@
   },
   {
    "file": "outcomes.yml",
+   "path": "rules.top-three.conditions.expression",
+   "default": "\"percentile >= 50\"",
+   "help": ""
+  },
+  {
+   "file": "outcomes.yml",
    "path": "rules.top-three.actions",
    "default": "reward-top",
    "help": ""
   },
   {
    "file": "outcomes.yml",
-   "path": "rules.streak-bonus",
+   "path": "rules.champion",
+   "default": "(section)",
+   "help": "First place gets the Champion title. Players tied for first all get it."
+  },
+  {
+   "file": "outcomes.yml",
+   "path": "rules.champion.display",
+   "default": "\"<gold>Champion\"",
+   "help": ""
+  },
+  {
+   "file": "outcomes.yml",
+   "path": "rules.champion.score",
+   "default": "\"1..\"",
+   "help": ""
+  },
+  {
+   "file": "outcomes.yml",
+   "path": "rules.champion.group",
+   "default": "champion",
+   "help": ""
+  },
+  {
+   "file": "outcomes.yml",
+   "path": "rules.champion.punishment",
+   "default": "false",
+   "help": ""
+  },
+  {
+   "file": "outcomes.yml",
+   "path": "rules.champion.conditions",
    "default": "(section)",
    "help": ""
+  },
+  {
+   "file": "outcomes.yml",
+   "path": "rules.champion.conditions.rank",
+   "default": "\"1\"",
+   "help": ""
+  },
+  {
+   "file": "outcomes.yml",
+   "path": "rules.champion.conditions.expression",
+   "default": "\"percentile >= 50\"",
+   "help": ""
+  },
+  {
+   "file": "outcomes.yml",
+   "path": "rules.champion.actions",
+   "default": "[message: \"<gold>You finished cycle <cycle> in first place.\", type: grant-title]",
+   "help": ""
+  },
+  {
+   "file": "outcomes.yml",
+   "path": "rules.champion.actions.title",
+   "default": "champion",
+   "help": ""
+  },
+  {
+   "file": "outcomes.yml",
+   "path": "rules.streak-bonus",
+   "default": "(section)",
+   "help": "A small, flat thank-you for staying positive. It doesn't grow with the streak, so it can't snowball."
   },
   {
    "file": "outcomes.yml",
@@ -5453,13 +5569,19 @@
   {
    "file": "outcomes.yml",
    "path": "rules.streak-bonus.actions",
-   "default": "[message: \"<aqua><streak> good cycles in a row. You start next cycle with 3 extra heads.\", type: next-cycle]",
+   "default": "[message: \"<aqua><streak> good cycles in a row. Here are 2 extra points.\", points:]",
    "help": ""
   },
   {
    "file": "outcomes.yml",
-   "path": "rules.streak-bonus.actions.starting-heads",
-   "default": "\"+3\"",
+   "path": "rules.streak-bonus.actions.amount",
+   "default": "2",
+   "help": ""
+  },
+  {
+   "file": "outcomes.yml",
+   "path": "rules.streak-bonus.actions.when",
+   "default": "now",
    "help": ""
   },
   {
@@ -5471,8 +5593,8 @@
   {
    "file": "shop.yml",
    "path": "settings.confirm-at-price",
-   "default": "50",
-   "help": "Price at which a purchase asks for confirmation first. An entry can override this with confirm: true or false."
+   "default": "10",
+   "help": "Price at which a purchase asks for confirmation first. An entry can override this with confirm: true or false. 10 is about what a good cycle earns, so a purchase that takes that much asks first."
   },
   {
    "file": "shop.yml",
@@ -5940,13 +6062,13 @@
    "file": "shop.yml",
    "path": "tiers",
    "default": "(section)",
-   "help": "The shop's tiers, in order. A tier with 'threshold: none' is always unlocked. Tier settings: name, threshold (a last-cycle score, or none), pages (the minimum; entries can add more), enabled and entries. Entry settings: name                 the entry's name in messages (default: its display name without formatting) enabled              false hides it page, slot           where it goes (page starts at 1) price                in points display              item definition (material, name, lore, item-model, glint, enchants, custom ...) display-states       per-state overrides (affordable, too-expensive, sold-out, locked, limit-reached, cooldown, unavailable) actions              what a purchase does limit-per-cycle      purchases per player per cycle, 0 for no limit stock                global stock, -1 for unlimited cooldown             time between purchases per player conditions           extra requirements (see actions.yml) requires             titles: [..], purchases: [entry or tier.entry, ever], purchases-this-cycle: [..], permissions: [..] confirm              force the confirmation menu on (true) or off (false)"
+   "help": "The shop's tiers, in order. A tier with 'threshold: none' is always unlocked. Tier settings: name, threshold (a last-cycle score, or none), pages (the minimum; entries can add more), enabled and entries. Entry settings: name                 the entry's name in messages (default: its display name without formatting) enabled              false hides it page, slot           where it goes (page starts at 1) price                in points display              item definition (material, name, lore, item-model, glint, enchants, custom ...) display-states       per-state overrides (affordable, too-expensive, sold-out, locked, limit-reached, cooldown, unavailable) actions              what a purchase does limit-per-cycle      purchases per player per cycle, 0 for no limit stock                global stock, -1 for unlimited cooldown             time between purchases per player conditions           extra requirements (see actions.yml) requires             titles: [..], purchases: [entry or tier.entry, ever], purchases-this-cycle: [..], permissions: [..] confirm              force the confirmation menu on (true) or off (false) The default prices assume a positive score of about 3 to 10 points a cycle, more for the best players on big servers. With half of unspent points carried over, Common and Uncommon are everyday buys, Rare takes a good cycle and Legendary takes a few cycles of saving."
   },
   {
    "file": "shop.yml",
    "path": "tiers.common",
    "default": "(section)",
-   "help": ""
+   "help": "Everyday supplies, and insurance against a bad cycle."
   },
   {
    "file": "shop.yml",
@@ -5981,7 +6103,7 @@
   {
    "file": "shop.yml",
    "path": "tiers.common.entries.steak.price",
-   "default": "2",
+   "default": "1",
    "help": ""
   },
   {
@@ -6035,13 +6157,13 @@
   {
    "file": "shop.yml",
    "path": "tiers.common.entries.speed.price",
-   "default": "3",
+   "default": "2",
    "help": ""
   },
   {
    "file": "shop.yml",
    "path": "tiers.common.entries.speed.limit-per-cycle",
-   "default": "5",
+   "default": "3",
    "help": ""
   },
   {
@@ -6060,6 +6182,12 @@
    "file": "shop.yml",
    "path": "tiers.common.entries.speed.display.name",
    "default": "\"<aqua>Speed for 30 minutes\"",
+   "help": ""
+  },
+  {
+   "file": "shop.yml",
+   "path": "tiers.common.entries.speed.display.lore",
+   "default": "[\"<gray>Counts only time you're online.\"]",
    "help": ""
   },
   {
@@ -6084,6 +6212,12 @@
    "file": "shop.yml",
    "path": "tiers.common.entries.speed.actions.duration",
    "default": "30m",
+   "help": ""
+  },
+  {
+   "file": "shop.yml",
+   "path": "tiers.common.entries.speed.actions.time",
+   "default": "online",
    "help": ""
   },
   {
@@ -6119,7 +6253,7 @@
   {
    "file": "shop.yml",
    "path": "tiers.common.entries.extra-heads.price",
-   "default": "5",
+   "default": "3",
    "help": ""
   },
   {
@@ -6155,7 +6289,7 @@
   {
    "file": "shop.yml",
    "path": "tiers.common.entries.extra-heads.display.lore",
-   "default": "[\"<gray>Heads that don't fit in your vault\", \"<gray>are given to you as items.\"]",
+   "default": "[\"<gray>Three more of your own heads to trade.\", \"<gray>Useful when you have more people\", \"<gray>to trade with than heads.\"]",
    "help": ""
   },
   {
@@ -6185,7 +6319,7 @@
   {
    "file": "shop.yml",
    "path": "tiers.common.entries.shield.price",
-   "default": "8",
+   "default": "4",
    "help": ""
   },
   {
@@ -6215,7 +6349,7 @@
   {
    "file": "shop.yml",
    "path": "tiers.common.entries.shield.display.lore",
-   "default": "[\"<gray>Blocks your next punishment.\"]",
+   "default": "[\"<gray>Blocks your next punishment.\", \"<gray>Lasts through the next two cycle ends.\"]",
    "help": ""
   },
   {
@@ -6246,7 +6380,7 @@
    "file": "shop.yml",
    "path": "tiers.uncommon",
    "default": "(section)",
-   "help": ""
+   "help": "Tools for playing the game better."
   },
   {
    "file": "shop.yml",
@@ -6257,7 +6391,7 @@
   {
    "file": "shop.yml",
    "path": "tiers.uncommon.threshold",
-   "default": "5",
+   "default": "3",
    "help": ""
   },
   {
@@ -6281,7 +6415,7 @@
   {
    "file": "shop.yml",
    "path": "tiers.uncommon.entries.haste.price",
-   "default": "6",
+   "default": "3",
    "help": ""
   },
   {
@@ -6300,6 +6434,12 @@
    "file": "shop.yml",
    "path": "tiers.uncommon.entries.haste.display.name",
    "default": "\"<green>Haste II for 1 hour\"",
+   "help": ""
+  },
+  {
+   "file": "shop.yml",
+   "path": "tiers.uncommon.entries.haste.display.lore",
+   "default": "[\"<gray>Counts only time you're online.\"]",
    "help": ""
   },
   {
@@ -6347,7 +6487,7 @@
   {
    "file": "shop.yml",
    "path": "tiers.uncommon.entries.head-protection.price",
-   "default": "10",
+   "default": "4",
    "help": ""
   },
   {
@@ -6371,13 +6511,13 @@
   {
    "file": "shop.yml",
    "path": "tiers.uncommon.entries.head-protection.display.name",
-   "default": "\"<green>Head protection (1 day)\"",
+   "default": "\"<green>Head protection\"",
    "help": ""
   },
   {
    "file": "shop.yml",
    "path": "tiers.uncommon.entries.head-protection.display.lore",
-   "default": "[\"<gray>Your head does not drop when you are killed.\"]",
+   "default": "[\"<gray>The next 2 times you're killed this\", \"<gray>cycle, your head doesn't drop.\"]",
    "help": ""
   },
   {
@@ -6388,62 +6528,80 @@
   },
   {
    "file": "shop.yml",
-   "path": "tiers.uncommon.entries.head-protection.actions.duration",
-   "default": "1d",
+   "path": "tiers.uncommon.entries.head-protection.actions.charges",
+   "default": "2",
    "help": ""
   },
   {
    "file": "shop.yml",
-   "path": "tiers.uncommon.entries.bigger-vault",
+   "path": "tiers.uncommon.entries.head-protection.actions.duration",
+   "default": "cycle",
+   "help": ""
+  },
+  {
+   "file": "shop.yml",
+   "path": "tiers.uncommon.entries.head-protection.actions.start-message",
+   "default": "\"<green>Your head won't drop the next 2 times you're killed this cycle.\"",
+   "help": ""
+  },
+  {
+   "file": "shop.yml",
+   "path": "tiers.uncommon.entries.rollover",
    "default": "(section)",
    "help": ""
   },
   {
    "file": "shop.yml",
-   "path": "tiers.uncommon.entries.bigger-vault.slot",
+   "path": "tiers.uncommon.entries.rollover.slot",
    "default": "14",
    "help": ""
   },
   {
    "file": "shop.yml",
-   "path": "tiers.uncommon.entries.bigger-vault.price",
-   "default": "12",
+   "path": "tiers.uncommon.entries.rollover.price",
+   "default": "3",
    "help": ""
   },
   {
    "file": "shop.yml",
-   "path": "tiers.uncommon.entries.bigger-vault.limit-per-cycle",
+   "path": "tiers.uncommon.entries.rollover.limit-per-cycle",
    "default": "1",
    "help": ""
   },
   {
    "file": "shop.yml",
-   "path": "tiers.uncommon.entries.bigger-vault.display",
+   "path": "tiers.uncommon.entries.rollover.display",
    "default": "(section)",
    "help": ""
   },
   {
    "file": "shop.yml",
-   "path": "tiers.uncommon.entries.bigger-vault.display.material",
-   "default": "CHEST",
+   "path": "tiers.uncommon.entries.rollover.display.material",
+   "default": "CLOCK",
    "help": ""
   },
   {
    "file": "shop.yml",
-   "path": "tiers.uncommon.entries.bigger-vault.display.name",
-   "default": "\"<green>+9 vault slots next cycle\"",
+   "path": "tiers.uncommon.entries.rollover.display.name",
+   "default": "\"<green>Keep 25% more points\"",
    "help": ""
   },
   {
    "file": "shop.yml",
-   "path": "tiers.uncommon.entries.bigger-vault.actions",
-   "default": "[type: next-cycle]",
+   "path": "tiers.uncommon.entries.rollover.display.lore",
+   "default": "[\"<gray>When this cycle ends, keep 75% of\", \"<gray>your unspent points instead of 50%.\"]",
    "help": ""
   },
   {
    "file": "shop.yml",
-   "path": "tiers.uncommon.entries.bigger-vault.actions.vault-size",
-   "default": "\"+9\"",
+   "path": "tiers.uncommon.entries.rollover.actions",
+   "default": "[type: rollover]",
+   "help": ""
+  },
+  {
+   "file": "shop.yml",
+   "path": "tiers.uncommon.entries.rollover.actions.add",
+   "default": "25",
    "help": ""
   },
   {
@@ -6461,7 +6619,7 @@
   {
    "file": "shop.yml",
    "path": "tiers.uncommon.entries.mystery.price",
-   "default": "7",
+   "default": "4",
    "help": ""
   },
   {
@@ -6484,6 +6642,12 @@
   },
   {
    "file": "shop.yml",
+   "path": "tiers.uncommon.entries.mystery.display.lore",
+   "default": "[\"<gray>Golden apples, diamonds, bottles\", \"<gray>o' enchanting, or an 8-point jackpot.\"]",
+   "help": ""
+  },
+  {
+   "file": "shop.yml",
    "path": "tiers.uncommon.entries.mystery.actions",
    "default": "mystery-box",
    "help": ""
@@ -6492,7 +6656,7 @@
    "file": "shop.yml",
    "path": "tiers.rare",
    "default": "(section)",
-   "help": ""
+   "help": "Status, and room to grow on a big server."
   },
   {
    "file": "shop.yml",
@@ -6503,13 +6667,97 @@
   {
    "file": "shop.yml",
    "path": "tiers.rare.threshold",
-   "default": "10",
+   "default": "6",
    "help": ""
   },
   {
    "file": "shop.yml",
    "path": "tiers.rare.entries",
    "default": "(section)",
+   "help": ""
+  },
+  {
+   "file": "shop.yml",
+   "path": "tiers.rare.entries.title-headhunter",
+   "default": "(section)",
+   "help": ""
+  },
+  {
+   "file": "shop.yml",
+   "path": "tiers.rare.entries.title-headhunter.slot",
+   "default": "10",
+   "help": ""
+  },
+  {
+   "file": "shop.yml",
+   "path": "tiers.rare.entries.title-headhunter.price",
+   "default": "6",
+   "help": ""
+  },
+  {
+   "file": "shop.yml",
+   "path": "tiers.rare.entries.title-headhunter.limit-per-cycle",
+   "default": "1",
+   "help": ""
+  },
+  {
+   "file": "shop.yml",
+   "path": "tiers.rare.entries.title-headhunter.conditions",
+   "default": "(section)",
+   "help": ""
+  },
+  {
+   "file": "shop.yml",
+   "path": "tiers.rare.entries.title-headhunter.conditions.expression",
+   "default": "\"kills >= 3\"",
+   "help": ""
+  },
+  {
+   "file": "shop.yml",
+   "path": "tiers.rare.entries.title-headhunter.display",
+   "default": "(section)",
+   "help": ""
+  },
+  {
+   "file": "shop.yml",
+   "path": "tiers.rare.entries.title-headhunter.display.material",
+   "default": "IRON_SWORD",
+   "help": ""
+  },
+  {
+   "file": "shop.yml",
+   "path": "tiers.rare.entries.title-headhunter.display.name",
+   "default": "\"<blue>Title: Headhunter\"",
+   "help": ""
+  },
+  {
+   "file": "shop.yml",
+   "path": "tiers.rare.entries.title-headhunter.display.lore",
+   "default": "[\"<gray>Take 3 heads in fights this cycle\", \"<gray>to unlock it.\"]",
+   "help": ""
+  },
+  {
+   "file": "shop.yml",
+   "path": "tiers.rare.entries.title-headhunter.display.flags",
+   "default": "[HIDE_ATTRIBUTES]",
+   "help": ""
+  },
+  {
+   "file": "shop.yml",
+   "path": "tiers.rare.entries.title-headhunter.actions",
+   "default": "[type: grant-title]",
+   "help": ""
+  },
+  {
+   "file": "shop.yml",
+   "path": "tiers.rare.entries.title-headhunter.actions.title",
+   "default": "headhunter",
+   "help": ""
+  },
+  {
+   "file": "shop.yml",
+   "path": "tiers.rare.entries.title-headhunter.actions.equip",
+   "default": "true",
    "help": ""
   },
   {
@@ -6521,13 +6769,13 @@
   {
    "file": "shop.yml",
    "path": "tiers.rare.entries.title-collector.slot",
-   "default": "11",
+   "default": "12",
    "help": ""
   },
   {
    "file": "shop.yml",
    "path": "tiers.rare.entries.title-collector.price",
-   "default": "20",
+   "default": "8",
    "help": ""
   },
   {
@@ -6556,18 +6804,6 @@
   },
   {
    "file": "shop.yml",
-   "path": "tiers.rare.entries.title-collector.requires",
-   "default": "(section)",
-   "help": ""
-  },
-  {
-   "file": "shop.yml",
-   "path": "tiers.rare.entries.title-collector.requires.permissions",
-   "default": "[]",
-   "help": ""
-  },
-  {
-   "file": "shop.yml",
    "path": "tiers.rare.entries.title-collector.actions",
    "default": "[type: grant-title]",
    "help": ""
@@ -6586,62 +6822,62 @@
   },
   {
    "file": "shop.yml",
-   "path": "tiers.rare.entries.rollover",
+   "path": "tiers.rare.entries.bigger-vault",
    "default": "(section)",
    "help": ""
   },
   {
    "file": "shop.yml",
-   "path": "tiers.rare.entries.rollover.slot",
-   "default": "13",
+   "path": "tiers.rare.entries.bigger-vault.slot",
+   "default": "14",
    "help": ""
   },
   {
    "file": "shop.yml",
-   "path": "tiers.rare.entries.rollover.price",
-   "default": "15",
+   "path": "tiers.rare.entries.bigger-vault.price",
+   "default": "6",
    "help": ""
   },
   {
    "file": "shop.yml",
-   "path": "tiers.rare.entries.rollover.limit-per-cycle",
+   "path": "tiers.rare.entries.bigger-vault.limit-per-cycle",
    "default": "1",
    "help": ""
   },
   {
    "file": "shop.yml",
-   "path": "tiers.rare.entries.rollover.display",
+   "path": "tiers.rare.entries.bigger-vault.display",
    "default": "(section)",
    "help": ""
   },
   {
    "file": "shop.yml",
-   "path": "tiers.rare.entries.rollover.display.material",
-   "default": "CLOCK",
+   "path": "tiers.rare.entries.bigger-vault.display.material",
+   "default": "CHEST",
    "help": ""
   },
   {
    "file": "shop.yml",
-   "path": "tiers.rare.entries.rollover.display.name",
-   "default": "\"<blue>Keep 50% of unspent points\"",
+   "path": "tiers.rare.entries.bigger-vault.display.name",
+   "default": "\"<blue>+9 vault slots next cycle\"",
    "help": ""
   },
   {
    "file": "shop.yml",
-   "path": "tiers.rare.entries.rollover.display.lore",
-   "default": "[\"<gray>At the end of this cycle.\"]",
+   "path": "tiers.rare.entries.bigger-vault.display.lore",
+   "default": "[\"<gray>Only helps on a server big enough\", \"<gray>to fill 27 slots with different heads.\"]",
    "help": ""
   },
   {
    "file": "shop.yml",
-   "path": "tiers.rare.entries.rollover.actions",
-   "default": "[type: rollover]",
+   "path": "tiers.rare.entries.bigger-vault.actions",
+   "default": "[type: next-cycle]",
    "help": ""
   },
   {
    "file": "shop.yml",
-   "path": "tiers.rare.entries.rollover.actions.percent",
-   "default": "50",
+   "path": "tiers.rare.entries.bigger-vault.actions.vault-size",
+   "default": "\"+9\"",
    "help": ""
   },
   {
@@ -6653,19 +6889,19 @@
   {
    "file": "shop.yml",
    "path": "tiers.rare.entries.diamonds.slot",
-   "default": "15",
+   "default": "16",
    "help": ""
   },
   {
    "file": "shop.yml",
    "path": "tiers.rare.entries.diamonds.price",
-   "default": "25",
+   "default": "10",
    "help": ""
   },
   {
    "file": "shop.yml",
    "path": "tiers.rare.entries.diamonds.stock",
-   "default": "10",
+   "default": "5",
    "help": ""
   },
   {
@@ -6684,6 +6920,12 @@
    "file": "shop.yml",
    "path": "tiers.rare.entries.diamonds.display.name",
    "default": "\"<blue>Diamond block\"",
+   "help": ""
+  },
+  {
+   "file": "shop.yml",
+   "path": "tiers.rare.entries.diamonds.display.lore",
+   "default": "[\"<gray>5 for the whole server each cycle.\"]",
    "help": ""
   },
   {
@@ -6714,7 +6956,7 @@
    "file": "shop.yml",
    "path": "tiers.legendary",
    "default": "(section)",
-   "help": ""
+   "help": "Prestige. These take a few good cycles of saving."
   },
   {
    "file": "shop.yml",
@@ -6725,13 +6967,277 @@
   {
    "file": "shop.yml",
    "path": "tiers.legendary.threshold",
-   "default": "20",
+   "default": "9",
    "help": ""
   },
   {
    "file": "shop.yml",
    "path": "tiers.legendary.entries",
    "default": "(section)",
+   "help": ""
+  },
+  {
+   "file": "shop.yml",
+   "path": "tiers.legendary.entries.totem",
+   "default": "(section)",
+   "help": ""
+  },
+  {
+   "file": "shop.yml",
+   "path": "tiers.legendary.entries.totem.slot",
+   "default": "10",
+   "help": ""
+  },
+  {
+   "file": "shop.yml",
+   "path": "tiers.legendary.entries.totem.price",
+   "default": "10",
+   "help": ""
+  },
+  {
+   "file": "shop.yml",
+   "path": "tiers.legendary.entries.totem.limit-per-cycle",
+   "default": "1",
+   "help": ""
+  },
+  {
+   "file": "shop.yml",
+   "path": "tiers.legendary.entries.totem.display",
+   "default": "(section)",
+   "help": ""
+  },
+  {
+   "file": "shop.yml",
+   "path": "tiers.legendary.entries.totem.display.material",
+   "default": "TOTEM_OF_UNDYING",
+   "help": ""
+  },
+  {
+   "file": "shop.yml",
+   "path": "tiers.legendary.entries.totem.display.name",
+   "default": "\"<gold>Totem of Undying\"",
+   "help": ""
+  },
+  {
+   "file": "shop.yml",
+   "path": "tiers.legendary.entries.totem.actions",
+   "default": "[type: give-item]",
+   "help": ""
+  },
+  {
+   "file": "shop.yml",
+   "path": "tiers.legendary.entries.totem.actions.material",
+   "default": "TOTEM_OF_UNDYING",
+   "help": ""
+  },
+  {
+   "file": "shop.yml",
+   "path": "tiers.legendary.entries.totem.actions.amount",
+   "default": "1",
+   "help": ""
+  },
+  {
+   "file": "shop.yml",
+   "path": "tiers.legendary.entries.blessing",
+   "default": "(section)",
+   "help": ""
+  },
+  {
+   "file": "shop.yml",
+   "path": "tiers.legendary.entries.blessing.slot",
+   "default": "12",
+   "help": ""
+  },
+  {
+   "file": "shop.yml",
+   "path": "tiers.legendary.entries.blessing.price",
+   "default": "8",
+   "help": ""
+  },
+  {
+   "file": "shop.yml",
+   "path": "tiers.legendary.entries.blessing.cooldown",
+   "default": "1d",
+   "help": ""
+  },
+  {
+   "file": "shop.yml",
+   "path": "tiers.legendary.entries.blessing.display",
+   "default": "(section)",
+   "help": ""
+  },
+  {
+   "file": "shop.yml",
+   "path": "tiers.legendary.entries.blessing.display.material",
+   "default": "BEACON",
+   "help": ""
+  },
+  {
+   "file": "shop.yml",
+   "path": "tiers.legendary.entries.blessing.display.name",
+   "default": "\"<gold>Champion's blessing\"",
+   "help": ""
+  },
+  {
+   "file": "shop.yml",
+   "path": "tiers.legendary.entries.blessing.display.lore",
+   "default": "[\"<gray>Strength, Resistance and Regeneration\", \"<gray>for 30 minutes of play. Once a day.\"]",
+   "help": ""
+  },
+  {
+   "file": "shop.yml",
+   "path": "tiers.legendary.entries.blessing.actions",
+   "default": "[type: potion]",
+   "help": ""
+  },
+  {
+   "file": "shop.yml",
+   "path": "tiers.legendary.entries.blessing.actions.effect",
+   "default": "strength",
+   "help": ""
+  },
+  {
+   "file": "shop.yml",
+   "path": "tiers.legendary.entries.blessing.actions.amplifier",
+   "default": "0",
+   "help": ""
+  },
+  {
+   "file": "shop.yml",
+   "path": "tiers.legendary.entries.blessing.actions.duration",
+   "default": "30m",
+   "help": ""
+  },
+  {
+   "file": "shop.yml",
+   "path": "tiers.legendary.entries.blessing.actions.time",
+   "default": "online",
+   "help": ""
+  },
+  {
+   "file": "shop.yml",
+   "path": "tiers.legendary.entries.blessing.actions.start-message",
+   "default": "\"<gold>You're blessed for <duration>.\"",
+   "help": ""
+  },
+  {
+   "file": "shop.yml",
+   "path": "tiers.legendary.entries.blessing.actions.effect",
+   "default": "resistance",
+   "help": ""
+  },
+  {
+   "file": "shop.yml",
+   "path": "tiers.legendary.entries.blessing.actions.amplifier",
+   "default": "0",
+   "help": ""
+  },
+  {
+   "file": "shop.yml",
+   "path": "tiers.legendary.entries.blessing.actions.duration",
+   "default": "30m",
+   "help": ""
+  },
+  {
+   "file": "shop.yml",
+   "path": "tiers.legendary.entries.blessing.actions.time",
+   "default": "online",
+   "help": ""
+  },
+  {
+   "file": "shop.yml",
+   "path": "tiers.legendary.entries.blessing.actions.effect",
+   "default": "regeneration",
+   "help": ""
+  },
+  {
+   "file": "shop.yml",
+   "path": "tiers.legendary.entries.blessing.actions.amplifier",
+   "default": "0",
+   "help": ""
+  },
+  {
+   "file": "shop.yml",
+   "path": "tiers.legendary.entries.blessing.actions.duration",
+   "default": "30m",
+   "help": ""
+  },
+  {
+   "file": "shop.yml",
+   "path": "tiers.legendary.entries.blessing.actions.time",
+   "default": "online",
+   "help": ""
+  },
+  {
+   "file": "shop.yml",
+   "path": "tiers.legendary.entries.blessing.actions.end-message",
+   "default": "\"<gray>Your blessing wore off.\"",
+   "help": ""
+  },
+  {
+   "file": "shop.yml",
+   "path": "tiers.legendary.entries.elytra",
+   "default": "(section)",
+   "help": ""
+  },
+  {
+   "file": "shop.yml",
+   "path": "tiers.legendary.entries.elytra.slot",
+   "default": "14",
+   "help": ""
+  },
+  {
+   "file": "shop.yml",
+   "path": "tiers.legendary.entries.elytra.price",
+   "default": "20",
+   "help": ""
+  },
+  {
+   "file": "shop.yml",
+   "path": "tiers.legendary.entries.elytra.stock",
+   "default": "1",
+   "help": ""
+  },
+  {
+   "file": "shop.yml",
+   "path": "tiers.legendary.entries.elytra.display",
+   "default": "(section)",
+   "help": ""
+  },
+  {
+   "file": "shop.yml",
+   "path": "tiers.legendary.entries.elytra.display.material",
+   "default": "ELYTRA",
+   "help": ""
+  },
+  {
+   "file": "shop.yml",
+   "path": "tiers.legendary.entries.elytra.display.name",
+   "default": "\"<gold>Elytra\"",
+   "help": ""
+  },
+  {
+   "file": "shop.yml",
+   "path": "tiers.legendary.entries.elytra.display.lore",
+   "default": "[\"<gray>One for the whole server each cycle.\"]",
+   "help": ""
+  },
+  {
+   "file": "shop.yml",
+   "path": "tiers.legendary.entries.elytra.actions",
+   "default": "[type: give-item]",
+   "help": ""
+  },
+  {
+   "file": "shop.yml",
+   "path": "tiers.legendary.entries.elytra.actions.material",
+   "default": "ELYTRA",
+   "help": ""
+  },
+  {
+   "file": "shop.yml",
+   "path": "tiers.legendary.entries.elytra.actions.amount",
+   "default": "1",
    "help": ""
   },
   {
@@ -6743,13 +7249,13 @@
   {
    "file": "shop.yml",
    "path": "tiers.legendary.entries.title-legend.slot",
-   "default": "11",
+   "default": "16",
    "help": ""
   },
   {
    "file": "shop.yml",
    "path": "tiers.legendary.entries.title-legend.price",
-   "default": "60",
+   "default": "25",
    "help": ""
   },
   {
@@ -6768,6 +7274,12 @@
    "file": "shop.yml",
    "path": "tiers.legendary.entries.title-legend.display.name",
    "default": "\"<gold>Title: Legend\"",
+   "help": ""
+  },
+  {
+   "file": "shop.yml",
+   "path": "tiers.legendary.entries.title-legend.display.lore",
+   "default": "[\"<gray>Needs the Collector title.\"]",
    "help": ""
   },
   {
@@ -6804,144 +7316,6 @@
    "file": "shop.yml",
    "path": "tiers.legendary.entries.title-legend.actions.equip",
    "default": "true",
-   "help": ""
-  },
-  {
-   "file": "shop.yml",
-   "path": "tiers.legendary.entries.flight",
-   "default": "(section)",
-   "help": ""
-  },
-  {
-   "file": "shop.yml",
-   "path": "tiers.legendary.entries.flight.slot",
-   "default": "13",
-   "help": ""
-  },
-  {
-   "file": "shop.yml",
-   "path": "tiers.legendary.entries.flight.price",
-   "default": "40",
-   "help": ""
-  },
-  {
-   "file": "shop.yml",
-   "path": "tiers.legendary.entries.flight.cooldown",
-   "default": "1d",
-   "help": ""
-  },
-  {
-   "file": "shop.yml",
-   "path": "tiers.legendary.entries.flight.display",
-   "default": "(section)",
-   "help": ""
-  },
-  {
-   "file": "shop.yml",
-   "path": "tiers.legendary.entries.flight.display.material",
-   "default": "FEATHER",
-   "help": ""
-  },
-  {
-   "file": "shop.yml",
-   "path": "tiers.legendary.entries.flight.display.name",
-   "default": "\"<gold>Fly for 1 hour\"",
-   "help": ""
-  },
-  {
-   "file": "shop.yml",
-   "path": "tiers.legendary.entries.flight.actions",
-   "default": "[type: permission]",
-   "help": ""
-  },
-  {
-   "file": "shop.yml",
-   "path": "tiers.legendary.entries.flight.actions.permission",
-   "default": "essentials.fly",
-   "help": ""
-  },
-  {
-   "file": "shop.yml",
-   "path": "tiers.legendary.entries.flight.actions.duration",
-   "default": "1h",
-   "help": ""
-  },
-  {
-   "file": "shop.yml",
-   "path": "tiers.legendary.entries.flight.actions.time",
-   "default": "online",
-   "help": ""
-  },
-  {
-   "file": "shop.yml",
-   "path": "tiers.legendary.entries.next-cycle-heads",
-   "default": "(section)",
-   "help": ""
-  },
-  {
-   "file": "shop.yml",
-   "path": "tiers.legendary.entries.next-cycle-heads.slot",
-   "default": "15",
-   "help": ""
-  },
-  {
-   "file": "shop.yml",
-   "path": "tiers.legendary.entries.next-cycle-heads.price",
-   "default": "50",
-   "help": ""
-  },
-  {
-   "file": "shop.yml",
-   "path": "tiers.legendary.entries.next-cycle-heads.limit-per-cycle",
-   "default": "1",
-   "help": ""
-  },
-  {
-   "file": "shop.yml",
-   "path": "tiers.legendary.entries.next-cycle-heads.display",
-   "default": "(section)",
-   "help": ""
-  },
-  {
-   "file": "shop.yml",
-   "path": "tiers.legendary.entries.next-cycle-heads.display.material",
-   "default": "SKELETON_SKULL",
-   "help": ""
-  },
-  {
-   "file": "shop.yml",
-   "path": "tiers.legendary.entries.next-cycle-heads.display.name",
-   "default": "\"<gold>5 of your heads in next cycle's vault\"",
-   "help": ""
-  },
-  {
-   "file": "shop.yml",
-   "path": "tiers.legendary.entries.next-cycle-heads.actions",
-   "default": "[type: give-heads]",
-   "help": ""
-  },
-  {
-   "file": "shop.yml",
-   "path": "tiers.legendary.entries.next-cycle-heads.actions.owner",
-   "default": "self",
-   "help": ""
-  },
-  {
-   "file": "shop.yml",
-   "path": "tiers.legendary.entries.next-cycle-heads.actions.amount",
-   "default": "5",
-   "help": ""
-  },
-  {
-   "file": "shop.yml",
-   "path": "tiers.legendary.entries.next-cycle-heads.actions.cycle",
-   "default": "next",
-   "help": ""
-  },
-  {
-   "file": "shop.yml",
-   "path": "tiers.legendary.entries.next-cycle-heads.actions.to",
-   "default": "vault",
    "help": ""
   },
   {
@@ -7019,13 +7393,37 @@
   {
    "file": "titles.yml",
    "path": "titles.champion.description",
-   "default": "[\"<gray>Finished a cycle in the top 3.\"]",
+   "default": "[\"<gray>Finished a cycle in first place.\"]",
    "help": ""
   },
   {
    "file": "titles.yml",
    "path": "titles.champion.icon",
    "default": "{ material: GOLDEN_HELMET }",
+   "help": ""
+  },
+  {
+   "file": "titles.yml",
+   "path": "titles.headhunter",
+   "default": "(section)",
+   "help": ""
+  },
+  {
+   "file": "titles.yml",
+   "path": "titles.headhunter.display",
+   "default": "\"<red>[Headhunter]\"",
+   "help": ""
+  },
+  {
+   "file": "titles.yml",
+   "path": "titles.headhunter.description",
+   "default": "[\"<gray>Took 3 heads in fights in one cycle.\"]",
+   "help": ""
+  },
+  {
+   "file": "titles.yml",
+   "path": "titles.headhunter.icon",
+   "default": "{ material: IRON_SWORD, flags: [HIDE_ATTRIBUTES] }",
    "help": ""
   },
   {
@@ -7091,13 +7489,13 @@
   {
    "file": "titles.yml",
    "path": "titles.dunce.description",
-   "default": "[\"<gray>Given out by punishments.\"]",
+   "default": "[\"<gray>Worn for a cycle after the Penalty or Wanted punishment.\"]",
    "help": ""
   },
   {
    "file": "titles.yml",
    "path": "titles.dunce.icon",
-   "default": "{ material: CARVED_PUMPKIN }",
+   "default": "{ material: JACK_O_LANTERN }",
    "help": ""
   },
   {
@@ -7278,7 +7676,7 @@
    "file": "actions.yml",
    "path": "lists.dunce-cap",
    "default": "[type: equip]",
-   "help": ""
+   "help": "A lit jack o'lantern locked on the head. It's easy to spot across the map and, unlike a carved pumpkin, doesn't cover the wearer's screen."
   },
   {
    "file": "actions.yml",
@@ -7307,7 +7705,7 @@
   {
    "file": "actions.yml",
    "path": "lists.dunce-cap.item.material",
-   "default": "CARVED_PUMPKIN",
+   "default": "JACK_O_LANTERN",
    "help": ""
   },
   {
@@ -7319,7 +7717,7 @@
   {
    "file": "actions.yml",
    "path": "lists.dunce-cap.item.lore",
-   "default": "[\"<gray>Earned with a negative score.\", \"<gray>Comes off when the cycle ends.\"]",
+   "default": "[\"<gray>Earned by being wanted.\", \"<gray>Comes off when the cycle ends.\"]",
    "help": ""
   },
   {
@@ -7337,8 +7735,8 @@
   {
    "file": "actions.yml",
    "path": "lists.punish-mild",
-   "default": "[message: \"<red>Your score was <score>. You are slowed for a day of playtime.\", type: potion]",
-   "help": "---------------------------------------------------------------- punishments (used by outcomes.yml)"
+   "default": "",
+   "help": "---------------------------------------------------------------- punishments (used by outcomes.yml) Timed parts count only time online, so a player who is away doesn't sit out their punishment offline."
   },
   {
    "file": "actions.yml",
@@ -7355,7 +7753,7 @@
   {
    "file": "actions.yml",
    "path": "lists.punish-mild.duration",
-   "default": "1d",
+   "default": "2h",
    "help": ""
   },
   {
@@ -7379,7 +7777,7 @@
   {
    "file": "actions.yml",
    "path": "lists.punish-medium",
-   "default": "[message: \"<red>Your score was <score>. You are weakened and lose 2 hearts for 2 days of playtime.\", type: potion]",
+   "default": "",
    "help": ""
   },
   {
@@ -7397,7 +7795,7 @@
   {
    "file": "actions.yml",
    "path": "lists.punish-medium.duration",
-   "default": "2d",
+   "default": "3h",
    "help": ""
   },
   {
@@ -7421,7 +7819,7 @@
   {
    "file": "actions.yml",
    "path": "lists.punish-medium.duration",
-   "default": "2d",
+   "default": "3h",
    "help": ""
   },
   {
@@ -7438,8 +7836,32 @@
   },
   {
    "file": "actions.yml",
+   "path": "lists.punish-medium.title",
+   "default": "dunce",
+   "help": ""
+  },
+  {
+   "file": "actions.yml",
+   "path": "lists.punish-medium.duration",
+   "default": "cycle",
+   "help": ""
+  },
+  {
+   "file": "actions.yml",
    "path": "lists.punish-severe",
    "default": "",
+   "help": "Wanted: the player is worth hunting for a while. The PvP lock and location reports cover 2 hours of play. The visible marks, the bounty and the extra head for the first killer last until the cycle ends."
+  },
+  {
+   "file": "actions.yml",
+   "path": "lists.punish-severe.duration",
+   "default": "cycle",
+   "help": ""
+  },
+  {
+   "file": "actions.yml",
+   "path": "lists.punish-severe.title",
+   "default": "dunce",
    "help": ""
   },
   {
@@ -7468,43 +7890,85 @@
   },
   {
    "file": "actions.yml",
+   "path": "lists.punish-severe.amount",
+   "default": "1",
+   "help": ""
+  },
+  {
+   "file": "actions.yml",
+   "path": "lists.punish-severe.charges",
+   "default": "1",
+   "help": ""
+  },
+  {
+   "file": "actions.yml",
    "path": "lists.punish-severe.duration",
-   "default": "1d",
+   "default": "cycle",
+   "help": ""
+  },
+  {
+   "file": "actions.yml",
+   "path": "lists.punish-severe.state",
+   "default": "\"on\"",
+   "help": ""
+  },
+  {
+   "file": "actions.yml",
+   "path": "lists.punish-severe.lock",
+   "default": "true",
+   "help": ""
+  },
+  {
+   "file": "actions.yml",
+   "path": "lists.punish-severe.duration",
+   "default": "2h",
+   "help": ""
+  },
+  {
+   "file": "actions.yml",
+   "path": "lists.punish-severe.time",
+   "default": "online",
+   "help": ""
+  },
+  {
+   "file": "actions.yml",
+   "path": "lists.punish-severe.duration",
+   "default": "2h",
+   "help": ""
+  },
+  {
+   "file": "actions.yml",
+   "path": "lists.punish-severe.time",
+   "default": "online",
    "help": ""
   },
   {
    "file": "actions.yml",
    "path": "lists.punish-severe.repeat",
-   "default": "30m",
+   "default": "10m",
    "help": ""
   },
   {
    "file": "actions.yml",
    "path": "lists.punish-severe.text",
-   "default": "\"<red><player></red> <gray>has a bounty and is at <yellow><x>, <y>, <z></yellow> in <world>.\"",
+   "default": "\"<red><player></red> <gray>is wanted, with a bounty, at <yellow><x>, <y>, <z></yellow> in <world>.\"",
    "help": ""
   },
   {
    "file": "actions.yml",
    "path": "lists.reward-top",
-   "default": "[celebrate, type: grant-title]",
+   "default": "[celebrate, points:]",
    "help": "---------------------------------------------------------------- rewards"
   },
   {
    "file": "actions.yml",
-   "path": "lists.reward-top.title",
-   "default": "champion",
+   "path": "lists.reward-top.amount",
+   "default": "3",
    "help": ""
   },
   {
    "file": "actions.yml",
-   "path": "lists.reward-top.title.amount",
-   "default": "5",
-   "help": ""
-  },
-  {
-   "file": "actions.yml",
-   "path": "lists.reward-top.title.when",
+   "path": "lists.reward-top.when",
    "default": "now",
    "help": ""
   },
@@ -7512,12 +7976,12 @@
    "file": "actions.yml",
    "path": "lists.mystery-box",
    "default": "[type: random]",
-   "help": "An example of the random type: one of three rewards, picked by weight."
+   "help": "The shop's mystery box: one of four prizes, picked by weight. The jackpot pays back twice the box's price."
   },
   {
    "file": "actions.yml",
    "path": "lists.mystery-box.choices",
-   "default": "[weight: 5]",
+   "default": "[weight: 4]",
    "help": ""
   },
   {
@@ -7559,118 +8023,102 @@
   {
    "file": "actions.yml",
    "path": "lists.mystery-box.choices.actions",
-   "default": "[type: give-heads]",
+   "default": "[type: give-item]",
    "help": ""
   },
   {
    "file": "actions.yml",
-   "path": "lists.mystery-box.choices.actions.owner",
-   "default": "self",
+   "path": "lists.mystery-box.choices.actions.material",
+   "default": "EXPERIENCE_BOTTLE",
    "help": ""
   },
   {
    "file": "actions.yml",
    "path": "lists.mystery-box.choices.actions.amount",
-   "default": "3",
+   "default": "16",
    "help": ""
   },
   {
    "file": "actions.yml",
-   "path": "lists.mystery-box.choices.actions.cycle",
-   "default": "next",
+   "path": "lists.mystery-box.choices.actions",
+   "default": "[points:]",
+   "help": ""
+  },
+  {
+   "file": "actions.yml",
+   "path": "lists.mystery-box.choices.actions.amount",
+   "default": "8",
+   "help": ""
+  },
+  {
+   "file": "actions.yml",
+   "path": "lists.mystery-box.choices.actions.when",
+   "default": "now",
    "help": ""
   }
  ],
  "recipes": [
   {
-   "title": "A weekly cycle that ends Sunday evening",
-   "text": "",
+   "title": "Weekly cycles for an active group",
+   "text": "For a group that plays most days. A cycle lasts a week and ends Sunday evening, when most people are around to see the results. A week leaves less time to trade, so the par stops at 3 instead of 4 and a single trade still gets most players out of the red.\n\nTo line the cycles up with Sunday, end the running cycle on a Sunday once, for example with `/hca cycle setend 2026-11-15T20:00`. Every cycle after it is a week long.",
    "yaml": [
-    "# config.yml\ncycle:\n  length-days: 7\n  start-date: 2026-11-15      # a Sunday\n  end-time: \"20:00\"\n  time-zone: America/Denver\n"
+    "# config.yml\ncycle:\n  length-days: 7\n  end-time: \"20:00\"\n# scoring.yml\nformula: \"unique - clamp(round(sqrt(active)), 1, 3) + ceil(clamp(6 * (unique - 1) / max(min(active, vault_size) - 1, 1), 0, 6))\"\n"
    ]
   },
   {
-   "title": "Hardcore: harsh punishments and bans for repeat offenders",
-   "text": "",
+   "title": "Monthly seasons for a slower server",
+   "text": "For a server where most people log on once or twice a week. A month gives everyone time to meet, so vaults start full with 27 heads and a player needs 3 hours of play to count. Scores run higher over a month, so each shop tier asks for a little more, and a reminder goes out a week before the end.",
    "yaml": [
-    "# outcomes.yml\nmode: all                      # every matching rule applies\nrules:\n  ban-repeat-offenders:\n    enabled: true\n# actions.yml: make punish-mild stronger\n  punish-mild:\n    - message: \"<red>Score <score>. You are slowed for a full day.\"\n    - type: potion\n      effect: slowness\n      amplifier: 1\n      duration: 1d\n"
+    "# config.yml\ncycle:\n  length-days: 30\nactivity:\n  min-playtime: 3h\nvault:\n  starting-heads: 27\nhooks:\n  warnings:\n    7d:\n      before: 7d\n      global:\n        - message: \"<yellow>Cycle <cycle> ends in <white>a week</white>. Fill your vault with unique heads! <gray>/hc\"\n# shop.yml\ntiers:\n  uncommon:\n    threshold: 4\n  rare:\n    threshold: 8\n  legendary:\n    threshold: 12\n"
    ]
   },
   {
-   "title": "Points carry over, and big collections are rewarded more",
-   "text": "",
+   "title": "Hardcore PvP",
+   "text": "Everyone fights, all the time. PvP is always on and can't be turned off, so only being in combat stops trades and vault moves. Each kill is worth a point on top of the head it drops, each death costs one, and logging out of a fight costs 5 points. A kill head is only the killer's to pick up for 30 seconds. Four bad cycles in a row bring a day's ban, one step past Wanted.\n\nFights push scores up, so the shop tiers ask for more and head protection costs more. If you already run PvPManager, leave out the integrations.yml part, set `pvp.provider: pvpmanager` and restart.",
    "yaml": [
-    "# config.yml\npoints:\n  rollover-percent: 50\n# scoring.yml\nformula: \"floor(pow(unique, 1.5) / 2) - ceil(active / 4)\"\n"
+    "# integrations.yml\npvp:\n  included:\n    toggle:\n      default: \"on\"\n      allow-toggle: false\n    newbie-protection:\n      duration: 30m\n    combat-tag:\n      duration: 30s\n      block-elytra: true\n      block-ender-pearls: true\n    combat-log:\n      actions:\n        - type: points\n          amount: -5\n        - message: \"<red>You logged out during a fight and lost 5 points.\"\n    messages:\n      countdown: bossbar\n# config.yml\nvault:\n  block-movement:\n    statuses: [combat-tagged, creative-or-spectator, sleeping-or-dead]\nkills:\n  killer-pickup-only: 30s\n# trade.yml\nstatuses:\n  block-request: [combat-tagged, creative-or-spectator, sleeping-or-dead]\n  block-accept: [combat-tagged, creative-or-spectator, sleeping-or-dead]\n  cancel-open: [combat-tagged, creative-or-spectator, sleeping-or-dead]\n# scoring.yml\nformula: \"unique + kills - deaths - clamp(round(sqrt(active)), 1, 4) + ceil(clamp(6 * (unique - 1) / max(min(active, vault_size) - 1, 1), 0, 6))\"\n# outcomes.yml\nrules:\n  ban-repeat-offenders:\n    enabled: true\n# shop.yml\ntiers:\n  uncommon:\n    threshold: 4\n    entries:\n      head-protection:\n        price: 6\n  rare:\n    threshold: 8\n  legendary:\n    threshold: 12\n"
    ]
   },
   {
-   "title": "Using another combat plugin through PlaceholderAPI",
-   "text": "",
+   "title": "Cozy, with no PvP",
+   "text": "For a building server where nobody wants to fight. PvP is off for everyone and kills drop no heads, so trading is the only way to collect. Punishments are a nudge: the minor penalty is half an hour of slowness, the Penalty is only the Dunce title, and nobody becomes Wanted. Shields are cheaper, three quarters of unspent points carry over, and the shop entries that only matter in fights are hidden.",
    "yaml": [
-    "# statuses.yml\n  combat-tagged:\n    source: placeholder\n    placeholder: \"%combatlogx_in_combat%\"\n    operator: equals\n    value: \"Yes\"\n    fallback: recent-pvp-damage\n"
+    "# integrations.yml\npvp:\n  included:\n    toggle:\n      allow-toggle: false\n    combat-log:\n      enabled: false\n# config.yml\nkills:\n  enabled: false\npoints:\n  rollover-percent: 75\n# outcomes.yml\nrules:\n  wanted:\n    enabled: false\n# actions.yml\nlists:\n  punish-mild:\n    - message: \"<yellow>Your score was <score>, so you're a little slower for your next 30 minutes of play. <gray>A trade or two next cycle keeps you clear.\"\n    - type: potion\n      effect: slowness\n      amplifier: 0\n      duration: 30m\n      time: online\n      key: punish-slowness\n      end-message: \"<green>Your penalty is over.\"\n  punish-medium:\n    - message: \"<gold>Your score was <score>, so you carry the Dunce title until the cycle ends.\"\n    - type: force-title\n      title: dunce\n      duration: cycle\n# shop.yml\ntiers:\n  common:\n    entries:\n      shield:\n        price: 2\n  uncommon:\n    entries:\n      head-protection:\n        enabled: false\n  rare:\n    entries:\n      title-headhunter:\n        enabled: false\n"
    ]
   },
   {
-   "title": "Only count players who actually play",
-   "text": "",
+   "title": "A big server",
+   "text": "For 40 or more active players. Vaults hold 36 heads and start with 24, so the best traders have room to keep collecting, and 3 hours of play are needed to count. With this many people scores run high, so a score point earns half a point and each shop tier asks for more. The diamonds and the elytra get more stock to go around.",
    "yaml": [
-    "# config.yml\nactivity:\n  min-playtime: 2h\n"
-   ]
-  },
-  {
-   "title": "Another scoreboard plugin shows Headcount instead",
-   "text": "Then use `%headcount_unique%`, `%headcount_score%`, `%headcount_points%`, `%headcount_time_left%` and `%headcount_streak_text%` in that plugin.",
-   "yaml": [
-    "# config.yml\nsidebar:\n  enabled: false\n"
-   ]
-  },
-  {
-   "title": "Titles as LuckPerms prefixes",
-   "text": "",
-   "yaml": [
-    "# titles.yml\nsettings:\n  permission-prefix:\n    enabled: true\n    type: prefix\n    priority: 100\n"
-   ]
-  },
-  {
-   "title": "A shop entry that rents a rank for three days",
-   "text": "",
-   "yaml": [
-    "# shop.yml, under a tier's entries\n      vip-rental:\n        slot: 22\n        price: 30\n        limit-per-cycle: 1\n        display: { material: GOLD_INGOT, name: \"<gold>VIP for 3 days\" }\n        actions:\n          - type: group\n            group: vip\n            duration: 3d\n            start-message: \"<gold>You are VIP for <duration>.\"\n            end-message: \"<gray>Your VIP rental ended.\"\n"
-   ]
-  },
-  {
-   "title": "A punishment that locks PvP on",
-   "text": "",
-   "yaml": [
-    "# actions.yml\n  punish-pvp:\n    - type: pvp\n      state: on\n      lock: true\n      duration: 1d\n      start-message: \"<red>Your PvP is forced on for a day.\"\n"
+    "# config.yml\nactivity:\n  min-playtime: 3h\nvault:\n  size: 36\n  starting-heads: 24\npoints:\n  earn-multiplier: 0.5\n# shop.yml\ntiers:\n  uncommon:\n    threshold: 5\n  rare:\n    threshold: 10\n    entries:\n      bigger-vault:\n        display:\n          lore: [\"<gray>Only helps on a server big enough\", \"<gray>to fill 36 slots with different heads.\"]\n      diamonds:\n        stock: 15\n        display:\n          lore: [\"<gray>15 for the whole server each cycle.\"]\n  legendary:\n    threshold: 16\n    entries:\n      elytra:\n        stock: 3\n        display:\n          lore: [\"<gray>3 for the whole server each cycle.\"]\n"
    ]
   },
   {
    "title": "PvP always on in the Nether, and logging out of a fight costs points",
-   "text": "",
+   "text": "With PvP on, the default rules stop players moving heads in or out of their vault and trading, so in the Nether they have to bring heads home before they count.",
    "yaml": [
     "# integrations.yml\npvp:\n  included:\n    toggle:\n      force-on-worlds: [world_nether]\n    combat-log:\n      actions:\n        - type: points\n          amount: -5\n        - message: \"<red>You logged out during a fight and lost 5 points.\"\n"
    ]
   },
   {
-   "title": "Everyone fights by default, with a longer combat tag",
-   "text": "With PvP on by default, the default vault and trade blocks for `in-pvp` apply to everyone until they turn PvP off. If you don't want that, remove `in-pvp` from `vault.block-movement.statuses` and from the trade statuses.",
+   "title": "A shop entry that lends a permission for a day",
+   "text": "A purchase can give any permission for a while. This one lets a player trade without the cooldown for a day. The included permissions provider handles it, so no other plugin is needed. With a permissions plugin, the same entry can lend another plugin's permission, like `essentials.fly`.",
    "yaml": [
-    "# integrations.yml\npvp:\n  included:\n    toggle:\n      default: \"on\"\n    combat-tag:\n      duration: 30s\n      block-elytra: true\n      block-ender-pearls: true\n    messages:\n      countdown: bossbar\n"
+    "# shop.yml\ntiers:\n  uncommon:\n    entries:\n      no-trade-cooldown:\n        slot: 22\n        price: 3\n        limit-per-cycle: 1\n        display: { material: FEATHER, name: \"<green>No trade cooldown for a day\" }\n        actions:\n          - type: permission\n            permission: headcount.bypass.trade.cooldown\n            duration: 1d\n            start-message: \"<green>No trade cooldown for <duration>.\"\n            end-message: \"<gray>Your trade cooldown is back.\"\n"
    ]
   },
   {
-   "title": "Keep using PvPManager",
-   "text": "Restart the server after switching.",
+   "title": "A gift for everyone when a cycle starts",
+   "text": "Each player gets 16 bread at the start of every cycle. Players who are offline get it when they next join.",
    "yaml": [
-    "# integrations.yml\npvp:\n  provider: pvpmanager\n"
+    "# config.yml\nhooks:\n  cycle-start:\n    per-player:\n      players: all\n      offline: deliver\n      expire-after-cycles: 1\n      actions:\n        - type: give-item\n          material: BREAD\n          amount: 16\n        - message: \"<gold>A new cycle has started. Here's some bread.\"\n"
    ]
   },
   {
-   "title": "Bans by LibertyBans, jail by EssentialsX",
-   "text": "",
+   "title": "Another scoreboard plugin shows Headcount instead",
+   "text": "Then use `%headcount_unique%`, `%headcount_score%`, `%headcount_points%`, `%headcount_time_left%` and `%headcount_streak_text%` in that plugin. Other plugins can only read them when `placeholders.provider` in integrations.yml is `placeholderapi` and PlaceholderAPI is installed.",
    "yaml": [
-    "# integrations.yml\nmoderation:\n  provider: libertybans\n  kinds:\n    jail: essentials\n"
+    "# config.yml\nsidebar:\n  enabled: false\n"
    ]
   },
   {

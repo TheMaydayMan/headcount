@@ -55,17 +55,20 @@ config-version: 1
 #                     it gives whatever the placeholder supports. Anything that isn't a number counts as 0.
 #
 # Other formulas to try (copy one into 'formula'):
+#   The 1.0 default, a point per head over a quarter of the server:   unique - ceil(active / 4)
 #   Exponential, rewarding big collections:   floor(pow(unique, 1.5) / 2) - ceil(active / 4)
 #   Percent-based, compared to everyone:      round((percentile - 50) / 10)
 #   Rank-based, top 3 rewarded:               rank <= 3 ? 10 - rank * 2 : (percentile < 25 ? -3 : 0)
 #   Share of all active players collected:    round(unique / max(active, 1) * 10) - 5
-#   Streak bonus on top of the default:       unique - ceil(active / 4) + min(streak_positive, 3)
-#   Punish hoarding your own head:            unique - ceil(active / 4) - floor(own / 10)
-#   Kills matter:                             unique + kills - deaths - ceil(active / 4)
+#   Kills matter:                             unique + kills - deaths - clamp(round(sqrt(active)), 1, 4)
 #
-# The default gives one point per unique head, minus a quarter of the active players rounded up. With 12 active
-# players, 3 unique heads scores 0 and 10 unique heads scores 7.
-formula: "unique - ceil(active / 4)"
+# The default has three parts. 'unique' is a point for each different head in the vault, your own included. The
+# par, clamp(round(sqrt(active)), 1, 4), grows slowly with the server: 1 for up to 2 active players, 2 for 3 to 6,
+# 3 for 7 to 12 and 4 from 13 up. The last part adds up to 6 for the share of the server's heads collected, so a
+# full set is worth the same bonus on a server of any size. On servers bigger than the vault, a full vault counts
+# as a full set.
+# Someone who never trades lands between 0 and -3. docs/formula.md works through examples.
+formula: "unique - clamp(round(sqrt(active)), 1, 4) + ceil(clamp(6 * (unique - 1) / max(min(active, vault_size) - 1, 1), 0, 6))"
 
 # How the formula's result is rounded to a whole number: floor | round | ceil
 rounding: floor

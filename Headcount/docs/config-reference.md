@@ -78,16 +78,16 @@ Hooks are explained in [hooks.md](hooks.md).
 | `storage` | `(section)` |  |
 | `storage.file` | `headcount.db` | SQLite database file in plugins/Headcount/. Every change is saved as it happens. |
 | `cycle` | `(section)` | Cycle |
-| `cycle.length-days` | `30` | Length of a cycle in days. A change takes effect at the next cycle or the next /hca reset cycle. The running cycle keeps its end. |
+| `cycle.length-days` | `14` | Length of a cycle in days. A change takes effect at the next cycle or the next /hca reset cycle. The running cycle keeps its end. Two weeks gives a player who logs on twice a week four or five sessions to trade in, and still ends often enough that rewards and punishments feel tied to what they did. |
 | `cycle.start-date` | `auto` | The day the first cycle starts, as YYYY-MM-DD, or "auto" to start right away, lined up to end-time today. Until a future date arrives, no cycle runs. |
 | `cycle.end-time` | `"00:00"` | Time of day cycles roll over, as 24-hour HH:MM. |
 | `cycle.time-zone` | `UTC` | Time zone for start-date and end-time. Use a region like America/Denver or Europe/London (follows daylight saving), an abbreviation like MST or CET (a fixed offset all year, so MST is always UTC-7), an offset like GMT-7 or UTC+5:30, or "system". If the server was offline at a rollover, the next... (the full comment is in the file) |
 | `activity` | `(section)` |  |
-| `activity.min-playtime` | `0` | Playtime in a cycle needed to count as active. 0 means joining once is enough. Only active players get a score, points and outcomes. |
+| `activity.min-playtime` | `2h` | Playtime in a cycle needed to count as active. 0 means joining once is enough. Only active players get a score, points and outcomes. Two hours keeps someone who drops in for a look from being scored, and punished, before they've had a chance to trade. |
 | `activity.check-interval` | `30s` | How often playtime is saved and the active threshold checked. |
 | `vault` | `(section)` | Head vault (/hc) |
 | `vault.size` | `27` | Slots in each vault. Up to 54 fits on one screen. Bigger vaults are split into pages of 45. Size and starting heads change at the start of the next cycle or at a /hca reset cycle. |
-| `vault.starting-heads` | `27` | How many of their own heads each player starts a cycle with, up to the vault size. Extra starting heads from next-cycle actions, like a shop purchase or the streak bonus, are given as items if they don't fit. |
+| `vault.starting-heads` | `18` | How many of their own heads each player starts a cycle with, up to the vault size. Extra starting heads from next-cycle actions, like a shop purchase, are given as items if they don't fit. Each trade costs one of these, so they are what a player spends. 18 is enough to trade with everyone on a... (the full comment is in the file) |
 | `vault.max-size` | `270` | Largest size the next-cycle vault-size action can grow a vault to. |
 | `vault.block-movement` | `(section)` |  |
 | `vault.block-movement.statuses` | `[in-pvp, combat-tagged, creative-or-spectator, sleeping-or-dead]` | Statuses (statuses.yml) that stop a player moving heads in or out of their vault. Each one has its own message, gates.vault-move.&lt;status&gt; in the lang file, and its own bypass permission, headcount.bypass.vault-move.&lt;status&gt;. Put ! before a status to block while it is NOT active. |
@@ -151,9 +151,9 @@ Hooks are explained in [hooks.md](hooks.md).
 | `kills.heads-per-kill` | `1` | Heads dropped per kill. extra-heads actions add to this. |
 | `kills.disabled-worlds` | `[]` | Worlds where kills drop nothing. |
 | `kills.killer-blocked-statuses` | `[]` | Statuses on the killer that stop a drop, like creative-or-spectator. |
-| `kills.killer-pickup-only` | `0s` | How long only the killer can pick up the head. 0 lets anyone. |
+| `kills.killer-pickup-only` | `15s` | How long only the killer can pick up the head. 0 lets anyone. |
 | `points` | `(section)` | Points (Headcount's own currency, not Vault money) |
-| `points.rollover-percent` | `0` | Percent of unspent points kept when a cycle ends. The rest are gone. A positive score gives points at the end of a cycle, to spend during the next one. |
+| `points.rollover-percent` | `50` | Percent of unspent points kept when a cycle ends. The rest are gone. A positive score gives points at the end of a cycle, to spend during the next one. At 50, savings level off at about twice what a player earns in a cycle, so saving for a Legendary item works but a lead can't grow forever. |
 | `points.earn-multiplier` | `1.0` | Points per score point, rounded down. With 1.0 a score of 7 gives 7 points. |
 | `points.allow-negative` | `false` | Let balances go below zero when points are taken. |
 | `gates` | `(section)` | Messages, menus, placeholders |
@@ -189,7 +189,7 @@ Hooks are explained in [hooks.md](hooks.md).
 | `history.gui.buttons.close` | `{ slot: 49, material: BARRIER, name: "&lt;red&gt;Close" }` |  |
 | `sidebar` | `(section)` | Sidebar |
 | `sidebar.enabled` | `true` | Turns Headcount's sidebar on for the server. Set false to show Headcount's placeholders in another scoreboard plugin instead. Players toggle their own with /hc sidebar. |
-| `sidebar.shown-for-new-players` | `false` | Whether the sidebar starts shown for a player's first join. Players who already joined keep their choice. |
+| `sidebar.shown-for-new-players` | `true` | Whether the sidebar starts shown for a player's first join. Players who already joined keep their choice. It shows a new player their unique heads and score changing as they trade, which teaches the game fastest. |
 | `sidebar.update-interval` | `1s` | How often the lines are redrawn. |
 | `sidebar.title` | `"&lt;gold&gt;&lt;bold&gt;HEADCOUNT"` |  |
 | `sidebar.lines` | `list of 8` | Sidebar lines, up to 15. Headcount and PlaceholderAPI placeholders both work. |
@@ -325,7 +325,7 @@ Every formula variable and function is in [formula.md](formula.md).
 
 | Option | Default | Description |
 |---|---|---|
-| `formula` | `"unique - ceil(active / 4)"` | The score formula, worked out for each active player when a cycle ends. It takes normal math: + - * / % (remainder) ^ (power), parentheses, comparisons (&lt; &lt;= &gt; &gt;= == !=, which give 1 or 0), && \|\| !, and "condition ? a : b". Functions: min(a, b, ...) max(...) avg(...) floor ceil round(x[,... (the full comment is in the file) |
+| `formula` | `"unique - clamp(round(sqrt(active)), 1, 4) + ceil(clamp(6 * (unique...` | The score formula, worked out for each active player when a cycle ends. It takes normal math: + - * / % (remainder) ^ (power), parentheses, comparisons (&lt; &lt;= &gt; &gt;= == !=, which give 1 or 0), && \|\| !, and "condition ? a : b". Functions: min(a, b, ...) max(...) avg(...) floor ceil round(x[,... (the full comment is in the file) |
 | `rounding` | `floor` | How the formula's result is rounded to a whole number: floor \| round \| ceil |
 | `add-bonus-after-formula` | `true` | Add the total from 'score-bonus' actions after the formula and rounding. Set false if your formula uses 'bonus'. |
 | `rank-mode` | `competition` | How tied scores are ranked: competition \| dense Scores of 10, 10 and 8 rank 1, 1, 3 with competition and 1, 1, 2 with dense. |
@@ -414,7 +414,7 @@ What each integration does is in [integrations.md](integrations.md).
 | `placeholders.placeholderapi.register-expansion` | `true` | Register the %headcount_...% expansion, so other plugins like scoreboards, tab and chat can show Headcount's data. |
 | `placeholders.placeholderapi.expansion-format` | `legacy` | How formatted values like %headcount_title% are passed to other plugins: legacy \| minimessage \| plain |
 | `economy` | `(section)` | Money, for the money action. Points are Headcount's own currency and need nothing. |
-| `economy.provider` | `vault` | Which economy the money action uses: vault \| none vault uses the economy plugin behind Vault, like EssentialsX or CMI. |
+| `economy.provider` | `none` | Which economy the money action uses: vault \| none Headcount has no money of its own, so the default content gives none out. With Vault and an economy plugin like EssentialsX or CMI installed, set vault to use the money action. |
 | `permissions` | `(section)` | Permissions: the permission, group, primary-group, track, prefix and suffix actions, and title prefixes (titles.yml permission-prefix). |
 | `permissions.provider` | `included` | Which plugin handles permissions: included \| luckperms \| vault \| none included:  Headcount sets permission nodes itself, saves them and re-applies them on every join. It can't do groups, tracks, prefixes or suffixes, so those actions are skipped with a warning. luckperms: everything, with... (the full comment is in the file) |
 | `permissions.luckperms` | `(section)` |  |
@@ -454,12 +454,12 @@ What each integration does is in [integrations.md](integrations.md).
 | `moderation.commands.tempjail` | `""` |  |
 | `moderation.commands.unjail` | `""` |  |
 | `discord` | `(section)` | Discord, for the discord action. |
-| `discord.provider` | `discordsrv` | Which plugin sends Discord messages: discordsrv \| none |
+| `discord.provider` | `none` | Which plugin sends Discord messages: discordsrv \| none Set discordsrv once DiscordSRV is installed and connected to a bot. |
 | `discord.default-channel` | `global` | DiscordSRV game channel for actions that don't name one. |
 | `items` | `(section)` | Custom items: item definitions written as "custom: itemsadder:ns:id", "custom: oraxen:id", "custom: nexo:id". |
-| `items.providers` | `[itemsadder, oraxen, nexo]` | Custom item plugins to use, out of itemsadder, oraxen and nexo. Ones that aren't installed are skipped, and [] turns custom items off. |
+| `items.providers` | `[]` | Custom item plugins to use, out of itemsadder, oraxen and nexo. Ones that aren't installed are skipped, and [] turns custom items off. List the ones you install, like [itemsadder]. |
 | `bedrock` | `(section)` | Bedrock players, through Geyser. They get /trade accept instead of the chat link, and every menu and the sidebar work for them. This also feeds the bedrock status. |
-| `bedrock.provider` | `floodgate` | How Bedrock players are recognized: floodgate \| geyser \| none floodgate also knows players who have no Java account. |
+| `bedrock.provider` | `none` | How Bedrock players are recognized: floodgate \| geyser \| none floodgate also knows players who have no Java account. Set it, or geyser, when Geyser is installed. |
 | `player-state` | `(section)` | Player states: afk, vanished, god, jailed and muted, for the player-state status source (the afk and vanished statuses in statuses.yml). |
 | `player-state.provider` | `included` | Which plugin reports player states: included \| essentials \| none included:   AFK after 'afk.after' without activity, and vanished from the "vanished" flag most vanish plugins set. God mode comes from the player's invulnerable flag. Jailed and muted come from the built-in jail and mute, or from... (the full comment is in the file) |
 | `player-state.included` | `(section)` |  |
@@ -482,7 +482,7 @@ Tiers and entries are explained in [shop.md](shop.md).
 | Option | Default | Description |
 |---|---|---|
 | `settings` | `(section)` |  |
-| `settings.confirm-at-price` | `50` | Price at which a purchase asks for confirmation first. An entry can override this with confirm: true or false. |
+| `settings.confirm-at-price` | `10` | Price at which a purchase asks for confirmation first. An entry can override this with confirm: true or false. 10 is about what a good cycle earns, so a purchase that takes that much asks first. |
 | `settings.new-player-score` | `0` | Last-cycle score for players who don't have one, because they are new or were inactive. |
 | `settings.stock-reset` | `cycle` | When global stock refills: cycle \| never |
 | `gui` | `(section)` |  |
@@ -695,7 +695,7 @@ Writing rules is explained in [outcomes.md](outcomes.md).
 
 | Option | Default | Description |
 |---|---|---|
-| `mode` | `most-extreme` | Which matching rules a player gets: all \| most-extreme all gives every rule the score matches. most-extreme gives only the most extreme match in each group, so a score of -12 gets the severe penalty and not all three. |
+| `mode` | `most-extreme` | Which matching rules a player gets: all \| most-extreme all gives every rule the score matches. most-extreme gives only the most extreme match in each group, so a player who qualifies for Wanted gets that and not the two lighter penalties as well. |
 | `rules` | `(section)` | (see the linked page) |
 
 ## actions.yml

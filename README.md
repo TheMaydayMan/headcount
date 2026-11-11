@@ -4,7 +4,7 @@ Headcount is a Paper plugin where player heads are the currency. This repository
 
 The whole project was written by Claude, Anthropic's AI model, from a specification by Grady Chastain, so read it and test it before you run it on a server you care about.
 
-Each player starts a cycle with a vault full of their own head and collects other players' heads by trading and killing. When the cycle ends, the unique heads in each vault become a score, which earns shop points or punishments, and everything resets. [Headcount/README.md](Headcount/README.md) describes the features.
+Each player starts a cycle with a vault of their own heads and collects other players' heads by trading and killing. When the cycle ends, the unique heads in each vault become a score, which earns shop points or punishments, and everything resets. [Headcount/README.md](Headcount/README.md) describes the features.
 
 Version 1.0.0 is the latest release. Version 1.1.0 is on `main` and still being tested. The [changelog](Headcount/CHANGELOG.md) lists what changed.
 

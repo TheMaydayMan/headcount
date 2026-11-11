@@ -6,15 +6,15 @@
 mode: most-extreme      # or: all
 
 rules:
-  penalty-5:
+  penalty:
     display: "<gold>Penalty"   # name in reports and history
-    score: "..-5"              # -5 or lower
+    score: "..-1"              # -1 or lower
     conditions:                # optional, written like action conditions (see actions.md)
       streak: "<=-2"
     actions: punish-medium     # an action list or the name of one in actions.yml
     punishment: true           # shields block it; defaults to true when the whole range is below 0
     group: punishments         # rules only compete within their group; defaults to punishments or rewards
-    priority: 5                # optional, higher wins in most-extreme mode
+    priority: 3                # optional, higher wins in most-extreme mode
     enabled: true
 ```
 
@@ -30,14 +30,19 @@ Outcome actions run as the old cycle ends, after the new point balance and strea
 
 The bundled rules, all of which you can change:
 
+Punishments climb with repeat offences rather than with the size of the score. With the default formula, a player who never trades scores -3 at worst, so a single bad cycle only brings `minor`. Timed parts count only time online.
+
 | Rule | Score | Does |
 |---|---|---|
-| `penalty-1` | -1 or lower | A message and a day of slowness (online time). |
-| `penalty-5` | -5 or lower | Two days of weakness and -2 hearts. |
-| `penalty-10` | -10 or lower | A locked dunce cap, glowing and a 5-point bounty for the whole next cycle, and the player's location broadcast every 30 minutes for a day. |
-| `ban-repeat-offenders` | negative, with a streak of -3 or worse | A 1-day ban. Off by default. |
+| `minor` | -1 or lower | 2 hours of slowness. |
+| `penalty` | negative two cycles in a row, or -4 or lower | 3 hours of weakness and 2 fewer hearts, and the Dunce title until the next cycle ends. |
+| `wanted` | negative three cycles in a row, or -6 or lower | For 2 hours of play, PvP locked on and the player's location broadcast every 10 minutes. Until the next cycle ends, a locked dunce cap (a lit jack o'lantern), glowing, the Dunce title, a 5-point bounty, and an extra head for whoever kills them. |
+| `ban-repeat-offenders` | negative, with a streak of -4 or worse | A 1-day ban. Off by default. |
 | `ban-extreme` | -25 or lower | A permanent ban. Off by default. |
-| `top-three` | positive and rank 1-3 | Celebration, the Champion title, +5 points. |
-| `streak-bonus` | positive and a streak of 3 or more | +3 starting heads next cycle. |
+| `top-three` | positive, rank 1-3 and in the top half | Celebration and +3 points. |
+| `champion` | positive, rank 1 and in the top half | The Champion title. |
+| `streak-bonus` | positive and a streak of 3 or more | +2 points. |
+
+New players also get a shield from the `first-join` hook in config.yml, so their first punishment is blocked.
 
 `/hca cycle simulate` shows which rules each player would get right now, without applying anything.

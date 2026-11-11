@@ -198,12 +198,12 @@ Timed effects are re-applied every second while active, so they survive death an
 ## Examples
 
 ```yaml
-# A dunce cap for the rest of the cycle
+# A dunce cap for the rest of the cycle (a carved pumpkin would also cover the wearer's screen)
 - type: equip
   slot: head
   lock: true
   duration: cycle
-  item: { material: CARVED_PUMPKIN, name: "<red>Dunce Cap" }
+  item: { material: JACK_O_LANTERN, name: "<red>Dunce Cap" }
 
 # Lightning every 10 minutes for an hour of playtime
 - type: lightning

@@ -4,7 +4,17 @@ At the end of a cycle, each active player's score is the result of `formula` in 
 
 A positive score gives that many points, multiplied by `points.earn-multiplier` in config.yml. A negative score triggers the punishments in outcomes.yml. `/hc score` shows a player's score if the cycle ended now, and `/hca cycle simulate` shows everyone's.
 
-The default is `unique - ceil(active / 4)`. With 12 active players, 3 unique heads scores 0 and 10 unique heads scores 7.
+The default is:
+
+```yaml
+formula: "unique - clamp(round(sqrt(active)), 1, 4) + ceil(clamp(6 * (unique - 1) / max(min(active, vault_size) - 1, 1), 0, 6))"
+```
+
+It has three parts. `unique` is a point per different head, your own included. The par, `clamp(round(sqrt(active)), 1, 4)`, grows slowly with the server: 1 for up to 2 active players, 2 for 3 to 6, 3 for 7 to 12 and 4 from 13 up. The last part adds up to 6 for the share of the server's heads you collected, so a full set is worth the same bonus on a server of any size. On a server bigger than your vault, a full vault counts as a full set.
+
+A player who never trades scores between 0 and -3, and one or two trades bring them back to 0. With 10 active players, 1 unique head scores -2, 3 score 2, 6 score 7 and all 10 score 13. A full set scores 9 with 5 active players, and a full vault of 27 different heads scores 29 with 30.
+
+Before 1.1 the default was `unique - ceil(active / 4)`. It left small servers with scores of 1 to 3, and on big servers the par outgrew what a 27-slot vault can hold.
 
 ## Syntax
 
@@ -56,7 +66,7 @@ formula: "floor(pow(unique, 1.5) / 2) - ceil(active / 4)"                      #
 formula: "round((percentile - 50) / 10)"                                        # compared to everyone: -5 .. +5
 formula: "rank <= 3 ? 10 - rank * 2 : (percentile < 25 ? -3 : 0)"              # top three rewarded, bottom quarter punished
 formula: "round(unique / max(active, 1) * 10) - 5"                              # share of all active players collected
-formula: "unique - ceil(active / 4) + min(streak_positive, 3)"                  # streak bonus on top of the default
+formula: "unique - ceil(active / 4) + min(streak_positive, 3)"                  # the 1.0 default with a streak bonus
 formula: "unique - ceil(active / 4) - floor(own / 10)"                          # punish hoarding your own head
 formula: "unique + kills - deaths - ceil(active / 4)"                           # kills matter
 formula: "playtime_hours < 2 ? min(0, unique - ceil(active / 4)) : unique - ceil(active / 4)"  # no points without playtime

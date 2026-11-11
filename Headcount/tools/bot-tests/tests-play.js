@@ -171,9 +171,9 @@ const pvpOn = async (bot, want) => {
   w = await openWindow(a, '/hc shop');
   record('shop: /hc shop opens', !!w);
   ma = a.chatLog.length;
-  await a.clickWindow(12, 0, 0);          // Speed (3 points)
+  await a.clickWindow(12, 0, 0);          // Speed (2 points)
   await sleep(1200);
-  record('shop: buying an entry takes its price and runs its actions', await waitChat(a, /Bought Speed for 30 minutes\. \(-3 points/, ma, 2000) && db(`SELECT points FROM players WHERE name='Alpha'`)[0][0] === 97,
+  record('shop: buying an entry takes its price and runs its actions', await waitChat(a, /Bought Speed for 30 minutes\. \(-2 points/, ma, 2000) && db(`SELECT points FROM players WHERE name='Alpha'`)[0][0] === 98,
     `points=${db(`SELECT points FROM players WHERE name='Alpha'`)[0][0]}`);
   out = await consoleOut('hca effects Alpha');
   record('effects: the timed speed effect is tracked', /speed/.test(out));
@@ -189,6 +189,10 @@ const pvpOn = async (bot, want) => {
   a.closeWindow(a.currentWindow);
 
   // --- sidebar and titles -----------------------------------------------------------
+  ma = a.chatLog.length;
+  a.chat('/hc sidebar');                   // on since the first join (sidebar.shown-for-new-players), so this hides it
+  record('sidebar: /hc sidebar hides the sidebar a new player starts with', await waitChat(a, /Sidebar off/, ma, 1500));
+  await sleep(500);
   ma = a.chatLog.length;
   a.chat('/hc sidebar');
   await sleep(2000);
@@ -213,7 +217,7 @@ const pvpOn = async (bot, want) => {
   record('cycle end: Alpha gets his report with his score', await waitChat(a, /Your cycle 1 report/, ma, 3000));
   record('cycle start: "Cycle 2 has begun" is announced', await waitChat(a, /Cycle 2 has begun/, ma, 3000));
   const v2 = db(`SELECT COUNT(*), MIN(cycle) FROM vault_items v JOIN players p ON p.uuid=v.uuid WHERE p.name='Alpha'`)[0];
-  record('cycle start: the vault was refilled with 27 heads of the new cycle', v2[0] === 27 && v2[1] === 2, JSON.stringify(v2));
+  record('cycle start: the vault was refilled with 18 heads of the new cycle', v2[0] === 18 && v2[1] === 2, JSON.stringify(v2));
   await sleep(1500);
   w = await openWindow(a, '/hc');
   const expired = a.inventory.items().filter((i) => isEcon(i));

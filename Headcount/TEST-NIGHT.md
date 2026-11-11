@@ -24,27 +24,33 @@ To restart, type `restart` in the console (or Studio's Console). The server come
 
 5 or 6 is ideal. 4 to 8 works well with Studio running. 9 or 10 is noticeably harder.
 
-Scores only mean something from 5 players up. With 4 or fewer, the formula subtracts 1, so a player who never trades scores 0 and gets no reward or penalty. At 5 to 8 that player scores -1, so penalties happen on their own and the hoarder role matters.
+Scores mean something from 3 players up. With 2, a player who never trades scores 0 and gets no penalty. From 3 to 6 that player scores -1, so penalties happen on their own and the hoarder role matters.
 
-The top 3 is only a real cut from 4 players up. With 2 or 3, everyone with a positive score is in the top three and gets the +5 points and the Champion title, so the top-3 reward never sets anyone apart.
+The top-3 reward also needs a place in the top half, so it's a real cut from 5 players up. With 2 to 4 players, only the top one or two get the 3 points. First place gets the Champion title at any size.
 
 5 players gives two trade pairs plus a ring of three, and PvP teams of 2 against 3. 6 gives two even teams of 3. Several people are also needed for the diamonds' shared stock of 10, bounties with more than one hunter, and a leaderboard worth ranking.
 
-7 or 8 scores exactly like 5 or 6 (`ceil(N/4)` is still 2), and the trade-cancel and moderation cases get spread over more people, which helps. The cost is the host's attention. Without Studio you'd spend the night typing `/hca` commands and reading chat. Studio's **This cycle** and **Players** pages take most of that away, but have a second op watch chat and the console anyway.
+At 7 or 8 the par goes up to 3, so the non-trader scores -2 and a player needs two other heads to get above 0. The trade-cancel and moderation cases get spread over more people, which helps. The cost is the host's attention. Without Studio you'd spend the night typing `/hca` commands and reading chat. Studio's **This cycle** and **Players** pages take most of that away, but have a second op watch chat and the console anyway.
 
-At 9 or 10, a positive score needs **4** unique heads and the non-trader scores -2, so in 40-minute cycles some players won't get there. "Everyone does X" steps take twice as long, there's more to confirm than one host can keep up with, and chat moves fast enough that raw tags and wrong messages get missed. If you have 9 or 10, make the cycles 50 to 60 minutes and split into two groups of trade partners, each with its own checker (you, and a second op on Studio).
+At 9 or 10 the scoring works like 7 or 8, but a full set takes 9 trades each, so in 40-minute cycles some players won't get there. "Everyone does X" steps take twice as long, there's more to confirm than one host can keep up with, and chat moves fast enough that raw tags and wrong messages get missed. If you have 9 or 10, make the cycles 50 to 60 minutes and split into two groups of trade partners, each with its own checker (you, and a second op on Studio).
 
 With 2 or 3 players the plan still covers everything. Use `/hca run <player> test-minus-10` (and `/hca points ... give`) for the score cases that won't happen naturally.
 
 ### Numbers that depend on N
 
-The default score is `unique - ceil(active / 4)`. Your own head counts as 1 unique head.
+Each unique head is worth a point. A small par, bigger on bigger servers, comes off the top, and a big share of everyone's heads adds up to 6 more. Your own head counts as 1 unique head. A full set is a head from every player.
 
-| N | ceil(N/4) | Unique heads for a **positive** score | Score of someone who never trades or kills |
-|---|---|---|---|
-| 2-4 | 1 | 2 | 0 (no reward, no penalty) |
-| 5-8 | 2 | 3 | -1 (minor penalty) |
-| 9-10 | 3 | 4 | -2 (minor penalty) |
+| N | Par | Never trades or kills | 1 other head | 2 other heads | Full set |
+|---|---|---|---|---|---|
+| 2 | 1 | 0 (no penalty) | 7 (full set) | | 7 |
+| 3 | 2 | -1 (minor penalty) | 3 | 7 (full set) | 7 |
+| 4 | 2 | -1 | 2 | 5 | 8 |
+| 5 | 2 | -1 | 2 | 4 | 9 |
+| 6 | 2 | -1 | 2 | 4 | 10 |
+| 7-8 | 3 | -2 | 0 | 2 | 10-11 |
+| 9-10 | 3 | -2 | 0 | 2 | 12-13 |
+
+A score is also the points it earns. So after a cycle of trading with everyone, each player has 7 to 13 points, enough for a few Common and Uncommon buys and maybe one Rare one. The shop tiers open at a score of 3 (Uncommon), 6 (Rare) and 9 (Legendary), so with 5 or more players a full set opens Legendary.
 
 - **Teams** (for PvP): `T = ceil(N / 3)` teams, split as evenly as you can. With N = 2 it's 1 v 1.
 - **Hoarder**: one player per cycle who never trades or kills, so there's always a low score to test. With N = 2, the host is the hoarder in cycle 2.
@@ -59,16 +65,16 @@ The default score is `unique - ceil(active / 4)`. Your own head counts as 1 uniq
 - [ ] **Take PvPManager out for tonight.** Move `TestServer/plugins/PvPManager.jar` (or `PvPManager-*.jar`) to a folder outside `plugins/`. Headcount's own PvP is the 1.1 default, and PvPManager would run its own rules on top of it. Part 4 puts it back for one optional test.
 - [ ] Rebuild if needed (`cd Headcount && ./gradlew build`), then `./start.sh`. The console shows `Ready. Cycle N ends ...` with no Headcount warnings. This start also turns RCON on.
 - [ ] *console* `hca selftest`: every check passes.
-- [ ] *console* `hca integrations` shows:
+- [ ] *console* `hca integrations` shows the defaults, which need no other plugin:
   - PvP = included
   - placeholders = included
-  - money = Vault
+  - money = none
   - permissions = included
   - moderation = included
   - player states = included
-  - Discord = DiscordSRV
-  - Bedrock = Floodgate
-  - custom items: none installed
+  - Discord = none
+  - Bedrock = none
+  - custom items: none
 - [ ] **Studio:** double-click `Headcount Studio/Headcount Studio.desktop`. If it won't launch, right-click it and choose **Allow Launching**.
   - [ ] It opens in the browser on **Overview**, which describes the setup in plain words and shows no problems.
   - [ ] The server light at the bottom of the sidebar is on and reads **RCON on**.
@@ -93,7 +99,7 @@ The default score is `unique - ceil(active / 4)`. Your own head counts as 1 uniq
 - [ ] **Backups** has a backup from each save above. Comparing one with the current file shows only that line.
 - [ ] **Real hard reset, keeping heads, from Studio's Console.** Take 2 heads out of your vault first. Then type `hca reset hard keep-heads` in Studio's **Console**, and Studio asks before sending it. The codes show up in the console, so type `hca reset hard <code>` three times. Then check:
   - [ ] The warning listed the counts (players, cycles, heads, points...) and said "kept as defunct heads".
-  - [ ] You get the first-join welcome again and a new vault with 27 heads, and `/hca cycle info` says cycle 1 with a new run ID.
+  - [ ] You get the first-join welcome and the starter shield again, and a new vault with 18 heads and 9 empty slots. `/hca cycle info` says cycle 1 with a new run ID.
   - [ ] The 2 heads in your inventory now say **(defunct)** with a gray cycle number, and the vault refuses them ("defunct").
   - [ ] `plugins/Headcount/backups/hard-reset-<time>/` holds `headcount.db` and an `audit/` folder. The live `audit/` folder only has new lines, and Studio's **Audit log** shows only new events.
   - [ ] You count as a new player again, so newbie protection runs for 10 minutes: `/hca status <you>` shows `newbie-protected`.
@@ -122,6 +128,7 @@ Make these changes in Studio's **Set up** pages. Save them all at once with **Re
   - [ ] **Head lore:** the cycle number should be gold on current heads and gray on expired and defunct ones (the 1.1 defaults). The tooltip preview shows all three.
 - [ ] **Integrations**, set for tonight's tests:
   - [ ] `placeholders.provider: placeholderapi`, so `/papi parse` and other plugins can see Headcount's placeholders.
+  - [ ] `economy.provider: vault`, `discord.provider: discordsrv` and `bedrock.provider: floodgate`, the plugins this server has. After the reload, `hca integrations` shows money = Vault, Discord = DiscordSRV and Bedrock = Floodgate.
   - [ ] `player-state.included.afk.after: 1m`, so AFK is quick to test.
   - [ ] `moderation.included-jail.location`: pick a spot for a small jail, read its coordinates from F3, and enter `world,<x>,<y>,<z>`.
   - [ ] Look over the **PvP message previews**, which show how each PvP message will look in chat, the action bar or a title.
@@ -131,6 +138,8 @@ Make these changes in Studio's **Set up** pages. Save them all at once with **Re
     - a `message`: `<red>Test: -10 score this cycle`
   - [ ] `test-mod`:
     - a `mute`, reason `Test mute`, duration `1m`
+  - [ ] `test-heads`:
+    - a `give-heads` of `12` of the player's own heads, cycle `next`, to `vault`
   - [ ] Open actions.yml in **Raw files**. The lists are there, and the comments around them are untouched.
 - [ ] **Review and save** shows every change above, across all the files. Save, reload, and run `/hca selftest`: all pass.
 - [ ] Start the first cycle fresh with `/hca reset cycle delete-heads confirm`. Then press **In an hour** on **This cycle** (or `/hca cycle setend <today>T<now + 50 min>`), and check it with `/hca cycle info`.
@@ -143,22 +152,25 @@ Make these changes in Studio's **Set up** pages. Save them all at once with **Re
 
 **Everyone:** join one at a time, Bedrock players last. Each one shows up in the online list on Studio's **This cycle** page.
 
-- [ ] About a second after joining, each new player gets two lines, in this order:
+- [ ] About a second after joining, each new player gets these, in this order:
   1. the **first-join** welcome
-  2. the **first-join-cycle** line (cycle number, time left, points)
+  2. "You start with a shield", from the starter shield
+  3. the **first-join-cycle** line (cycle number, time left, points)
+- [ ] Each new player's sidebar is already on, showing cycle, unique, score, points, streak and time left.
 - [ ] **Everyone:** `/hc help` lists only player commands, including `/pvp`. Ops also see `/hca help`, which lists both resets.
-- [ ] **Everyone:** `/hc` opens your vault with 27 of your own heads. The title shows 1 unique and a score colored by sign (see the table above). On Bedrock, the same chest menu works.
+- [ ] **Everyone:** `/hc` opens your vault with 18 of your own heads and 9 empty slots. The title shows 1 unique and a score colored by sign (see the table above). On Bedrock, the same chest menu works.
 - [ ] **Everyone:** `/pvp status` says PvP is **off** and that new players are protected for 10 minutes.
-- [ ] **Everyone:** `/hc sidebar` shows cycle, unique, score, points, streak and time left, and it ticks down. Run it again to hide it, then turn it back on and leave it.
+- [ ] **Everyone:** `/hc sidebar` hides the sidebar. Run it again to bring it back, and leave it on. It ticks down.
 - [ ] **Everyone:** check that each of these looks right:
   - [ ] `/hc points`
   - [ ] `/hc score`: the "You are active / not active yet" part is colored, with no raw tags
   - [ ] `/hc top`
   - [ ] `/hc history`: empty
-  - [ ] `/hc effects`: none
+  - [ ] `/hc effects`: only the starter shield
   - [ ] `/hc titles`: the menu, with locked titles
 - [ ] **Host:** `/hca placeholders P1` shows sensible values for every `%headcount_*%` placeholder. `/papi parse P1 %headcount_unique% %headcount_time_left% %headcount_title%` works too.
 - [ ] **Host:** `/hca status P1` shows every status, with `in-pvp` false and `newbie-protected` true.
+- [ ] After 5 minutes of play, each player gets the **became-active** line ("You've played enough to count this cycle"), and `/hc score` now says they're active.
 - [ ] P1's page in Studio (from **Players**) shows the same vault P1 sees in game.
 - [ ] Watch for raw tags (`<cycle>`, `<green>`, ...) in any message so far, and note where each one showed up.
 
@@ -239,7 +251,7 @@ Split into T teams and find somewhere flat. **Everyone:** `/pvp on`, except one 
 - [ ] *console* `kick <tagged player>`. Kicks don't count, so nothing happens to them.
 
 **Kill heads**
-- [ ] A kill drops a fresh head of the victim at their body. The killer picks it up, and it counts as a current head.
+- [ ] A kill drops a fresh head of the victim at their body. For 15 seconds only the killer can pick it up, so let someone else try first. Then the killer picks it up, and it counts as a current head.
 - [ ] The same killer kills the same victim again. No head this time ("already took").
 - [ ] A bow kill and a knock-into-lava kill both count (use different victims).
 - [ ] `/kill` and falling to your death on your own drop no head.
@@ -279,6 +291,7 @@ Check `/hca status <player>` while players are:
 About 15 minutes before the end, remind the hoarder not to trade or kill.
 
 - [ ] Check the activity rule: anyone with under 5 minutes of playtime is inactive (`/hc score` says not active yet). Make sure everyone has played longer than that.
+- [ ] Every player still has the starter shield from their first join. **Host:** `/hca effects <hoarder>` and remove the hoarder's shield with `/hca effects <hoarder> remove <id>`, so their penalty lands. Leave everyone else's.
 - [ ] **Host:** `/hca cycle simulate` lists every score and the outcome each would get. Compare it with the N table. Studio's **Players** page should show the same scores and outcomes.
 - [ ] Set the end 12 minutes from now on **This cycle** (or with `/hca cycle setend`). The countdown follows.
 - [ ] The **10-minute** warning arrives in chat.
@@ -287,10 +300,12 @@ About 15 minutes before the end, remind the hoarder not to trade or kill.
 - [ ] At the end:
   - [ ] everyone sees the results broadcast with the top 3
   - [ ] each player gets a personal report: unique, score, points, streak text in color, tier, outcomes
-  - [ ] vaults are refilled with 27 new heads
+  - [ ] vaults are refilled with 18 new heads
   - [ ] cycle 2 starts
 - [ ] Heads left in inventories now say **expired**, with a gray cycle number, and the vault refuses them.
-- [ ] Points: a positive score gives that many points, with **+5 for the top 3** (the `reward-top` list). If the hoarder is negative, they get "Minor penalty" slowness, and `/hc effects` shows it with time left (only online time counts).
+- [ ] Points: a positive score gives that many points, with **+3 for the top 3** in the top half (the `reward-top` list). First place gets the Champion title.
+- [ ] If the hoarder is negative, they get "Minor penalty": 2 hours of slowness, which `/hc effects` shows with time left (only online time counts).
+- [ ] Any other negative player still had the starter shield, so they read "Your shield blocked Minor penalty" instead, and the shield is gone from `/hc effects`.
 - [ ] `/hc history`, `/hc top last`, `/hca history <player>` and Studio's **Past cycles** page all match.
 - [ ] Have one player log out just before the end. When they rejoin, their report and outcome actions arrive before the first-join-cycle line.
 
@@ -304,32 +319,34 @@ About 15 minutes before the end, remind the hoarder not to trade or kill.
 
 ### 3.1 Shop (10 min)
 
-Players with points from cycle 1 go shopping. The host gives the others some with `/hca points P3 give 20` or the **Points** button on their Studio player page. Give a few players enough for the higher tiers.
+Players with points from cycle 1 go shopping first, with what they earned. The host then gives everyone some with `/hca points P3 give 20` or the **Points** button on their Studio player page, and a few players enough for the dearest entries.
 
 - [ ] `/hc shop` opens on the highest tier you unlocked with last cycle's score:
   - Common: always
-  - Uncommon: 5+
-  - Rare: 10+
-  - Legendary: 20+
+  - Uncommon: 3+
+  - Rare: 6+
+  - Legendary: 9+
 
   Browse to a locked tier, and its entries show **Locked** and the score needed. `/hc shop rare` opens that tier directly.
 - [ ] With no points, an entry shows "too expensive". After `/hca points <p> give 100`, the entries become buyable.
 - [ ] Between all of you, buy each of these at least once:
-  - [ ] Steak (2)
-  - [ ] Speed (3; buy it 5 times to see "limit reached")
-  - [ ] Extra heads (5)
-  - [ ] Shield (8)
-  - [ ] Haste (6)
-  - [ ] Head protection (10)
-  - [ ] Bigger vault (12)
-  - [ ] Mystery box (7)
-  - [ ] Title: Collector (20)
-  - [ ] Rollover (15)
-  - [ ] Diamonds (25; one stock of 10 shared by everyone)
-  - [ ] Title: Legend (60; needs Collector)
-  - [ ] Flight (40; 1-day cooldown)
-  - [ ] Next-cycle heads (50)
-- [ ] Anything priced 50 or more asks for confirmation. Cancel works, and spam-clicking confirm buys it only once.
+  - [ ] Steak (1)
+  - [ ] Speed (2; buy it 3 times to see "limit reached")
+  - [ ] Extra heads (3)
+  - [ ] Shield (4)
+  - [ ] Haste (3)
+  - [ ] Head protection (4)
+  - [ ] Keep 25% more points (3)
+  - [ ] Mystery box (4)
+  - [ ] Title: Headhunter (6). It says the requirements aren't met until you've taken 3 heads in fights this cycle, so buy it after 3.6.
+  - [ ] Title: Collector (8)
+  - [ ] Bigger vault (6)
+  - [ ] Diamonds (10; one stock of 5 shared by everyone)
+  - [ ] Totem of Undying (10)
+  - [ ] Champion's blessing (8; 1-day cooldown, so a second try says when it's available again)
+  - [ ] Elytra (20; one for the whole server, so a second buyer sees it sold out)
+  - [ ] Title: Legend (25; needs Collector)
+- [ ] Anything priced 10 or more asks for confirmation. Cancel works, and spam-clicking confirm buys it only once.
 - [ ] No item can be taken out of the shop, titles, history or confirmation menus, whatever you click, drag or press.
 - [ ] On Bedrock, the shop and confirmations work.
 - [ ] The chest grid on Studio's **Shop** page matches the in-game shop page by page, and each buyer's Studio player page lists what they bought.
@@ -349,10 +366,11 @@ Players with points from cycle 1 go shopping. The host gives the others some wit
 **Host:** run `/hca run <player> <list>` for each of these lists, on different players, while everyone watches:
 
 - [ ] `celebrate`
-- [ ] `dunce-cap`: a pumpkin locked on the head. It can't be taken off and comes back after death.
+- [ ] `dunce-cap`: a lit jack o'lantern locked on the head. It can't be taken off and comes back after death.
 - [ ] `punish-mild`, `punish-medium`, `punish-severe`
 - [ ] `reward-top`
 - [ ] `mystery-box`
+- [ ] `test-heads`, on a player who didn't buy Bigger vault. It's checked at the end of cycle 2.
 
 Then:
 
@@ -382,9 +400,9 @@ Warn everyone first, since their vaults get refilled.
 - [ ] Two players each take 2 heads out of their vault. One keeps them in their inventory, and the other puts them in a chest.
 - [ ] **Host:** `/hca reset cycle keep-heads` gives a confirm message that mentions "kept as defunct heads". Then run `/hca reset cycle keep-heads confirm` (or **Keep old heads** under "Start it over" on **This cycle**).
   - [ ] Everyone gets the "An admin restarted cycle 2" message, a refilled vault, and the first-join-cycle line again.
-  - [ ] It's still cycle 2. `/hca cycle info` shows a new run ID, and it and **This cycle** show an end time 30 days out (shorten it again with `setend`).
+  - [ ] It's still cycle 2. `/hca cycle info` shows a new run ID, and it and **This cycle** show an end time 14 days out (shorten it again with `setend`).
   - [ ] The heads that were taken out are **(defunct)**, gray, and refused by the vault. Points, titles and effects haven't changed.
-  - [ ] Shop limits for "this cycle" reset, so Speed can be bought 5 more times. Kill claims reset too, so the same killer and victim drop a head again.
+  - [ ] Shop limits for "this cycle" reset, so Speed can be bought 3 more times. Kill claims reset too, so the same killer and victim drop a head again.
 - [ ] Take heads out again, then `/hca reset cycle delete-heads confirm`. Heads in inventories vanish at once. Opening the chest removes the ones in it, including any inside a shulker box or bundle. A player who was offline loses theirs when they join.
 - [ ] `/hca audit type:head_delete` lists each deletion with `reason=reset` and where it happened.
 - [ ] Shorten the cycle again so it ends in 25 minutes.
@@ -394,22 +412,25 @@ Warn everyone first, since their vaults get refilled.
 Back to PvP for a round. Everyone `/pvp on`.
 
 - [ ] Kill a player who bought **head protection**. No head drops ("protected").
-- [ ] Kill a player who bought **extra heads**. More heads drop than usual.
-- [ ] **Host:** `/hca run <player> punish-severe`, which includes a bounty. The bounty is announced, and when someone claims it, the killer gets the points and the claim is broadcast.
-- [ ] The severe punishment's location broadcasts keep repeating while it lasts.
+- [ ] **Host:** `/hca run <player> punish-severe`, the Wanted punishment. Its bounty is announced, their PvP is locked on, and `/hc effects` lists each part.
+- [ ] Kill the wanted player. Two of their heads drop instead of one (its extra-heads part), the killer gets the bounty's 5 points, and the claim is broadcast.
+- [ ] The wanted player's location broadcasts keep repeating every 10 minutes while they're online.
+- [ ] Whoever now has 3 kill heads this cycle can buy **Title: Headhunter**.
 - [ ] **PvP lock:** run a list with `pvp: on`, `lock: true` and duration `5m` on one player. `/pvp off` says it's locked, and `/hc effects` describes it as "PvP forced on (locked)".
 
 ### 3.7 End of cycle 2, the punishment test
 
 - [ ] **Host:** `/hca run <hoarder> test-minus-10`, so their score is -10 or lower. `/hca cycle simulate` and Studio's Players table both show it.
-- [ ] One player who bought a **shield** should also be negative. Check the simulate output.
+- [ ] One player with a **shield** (bought, or the starter one) should also be negative. Check the simulate output.
 - [ ] `/hca cycle end confirm` (or **End the cycle** on **This cycle**, which asks first):
-  - [ ] The -10 player gets "Severe penalty": the dunce cap, glowing, and location broadcasts.
+  - [ ] The -10 player gets "Wanted": the dunce cap, glowing, the Dunce title, PvP locked on, and location broadcasts.
   - [ ] The shielded player's penalty is blocked ("shield used").
+  - [ ] If anyone besides the -10 player was negative in both cycles, they get "Penalty" (weakness, 2 fewer hearts, the Dunce title) instead of "Minor penalty".
   - [ ] Punishments with "cycle" length last through cycle 3.
 - [ ] Streaks: anyone who was positive twice shows a 2-cycle streak in green on the sidebar.
-- [ ] Rollover: whoever bought it kept that percentage of their unspent points.
-- [ ] Whoever bought Bigger vault or Next-cycle heads starts cycle 3 with the bigger vault or the extra heads. Extras that don't fit arrive as items. Their vault chest in Studio shows the new size.
+- [ ] Rollover: whoever bought "Keep 25% more points" kept 75% of their unspent points, and everyone else 50%.
+- [ ] Whoever bought Bigger vault or Extra heads starts cycle 3 with the bigger vault or 3 more heads. Their vault chest in Studio shows the new size.
+- [ ] The `test-heads` player has a full vault, and the heads that didn't fit arrive as items.
 
 **Notes:**
 
@@ -443,10 +464,10 @@ Back to PvP for a round. Everyone `/pvp on`.
   - [ ] `combat-log.actions`: add a `points` action of `-5`. The next combat logger loses 5 points (check their Studio player page).
 - [ ] **AFK:** set `afk.announce: everyone`, and everyone sees "<name> is now AFK".
 - [ ] **Placeholders off:** set `placeholders.provider: none`. The sidebar's `%headcount_rank%` line now shows the placeholder as plain text. Set it back to `placeholderapi`.
-- [ ] **A recipe:** on **Recipes** (under Help), apply one (for example "A punishment that locks PvP on"). Studio shows the diff first. Save and reload, then undo it.
+- [ ] **A recipe:** on **Recipes** (under Help), apply one (for example "A gift for everyone when a cycle starts"). Studio shows the diff first. Save and reload, then undo it.
 - [ ] **A conflict:** with an unsaved Studio change to config.yml, edit `config.yml` in a text editor and save it there. When you save in Studio, it warns that the file changed on disk instead of overwriting it.
 - [ ] **A mistake:** open shop.yml in **Raw files** and give one entry the same `slot` as another in its tier. The **Problems** page flags it before you save. Undo it. Studio doesn't check materials, but `/hca selftest` does: type `DIAMOND_BLOK` in an entry, save and reload, and the selftest names it. Fix it.
-- [ ] Turn on `ban-repeat-offenders` in outcomes, with a 1-minute ban for the test.
+- [ ] Turn on `ban-repeat-offenders` in outcomes, with a 1-minute ban and its streak condition set to `"<=-1"` for the test, so anyone negative at the end of cycle 3 gets it.
 - [ ] Bedrock check (if you have one): vault, a trade with a Java player, shop, sidebar.
 - [ ] **Optional, PvPManager:**
   1. Put `PvPManager.jar` back and set `pvp.provider: pvpmanager`.
@@ -457,6 +478,7 @@ Back to PvP for a round. Everyone `/pvp on`.
 
 - [ ] Let it end on schedule, without `cycle end`. The warnings arrive on time and the boss bar counts down to the second.
 - [ ] Everything from 2.6 holds again. History now shows 3 cycles, with streaks carried over.
+- [ ] Anyone negative is banned for a minute on top of their penalty, and the ban lifts on its own.
 
 **Notes:**
 

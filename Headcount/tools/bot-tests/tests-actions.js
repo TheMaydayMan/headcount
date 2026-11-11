@@ -448,7 +448,7 @@ const LISTS = `
   await sleep(1000);
   const vaultAfter = db(`SELECT COUNT(*) FROM vault_items WHERE uuid='${uuidOf()}'`)[0][0];
   const headsAfter = j.inventory.items().filter(isEcon).length;
-  record('next-cycle: +5 starting heads; the 5 that don\'t fit the 27-slot vault arrive as items', vaultAfter === 27 && headsAfter === headsBefore + 5,
+  record('next-cycle: +5 starting heads; 18 + 5 fit the 27-slot vault, so none arrive as items', vaultAfter === 23 && headsAfter === headsBefore,
     `vault ${vaultAfter}, heads in inventory ${headsBefore} -> ${headsAfter}`);
 
   // --- flow and common options ------------------------------------------------------------------------------

@@ -18,7 +18,7 @@ const status = async (player, st) => {
   const iw = a.chatLog.findIndex((m) => m.includes('Welcome to Headcount'));
   const ic = a.chatLog.findIndex((m) => m.includes('Cycle 1 is running'));
   record('join: first-join welcome then first-join-cycle message, in that order', okJoin && iw >= 0 && iw < ic, `welcome@${iw} cycle@${ic}`);
-  record('join: vault set up with 27 own heads', vaultCount('Alpha') === 27, `count=${vaultCount('Alpha')}`);
+  record('join: vault set up with 18 own heads', vaultCount('Alpha') === 18, `count=${vaultCount('Alpha')}`);
   serverConsole('op Alpha');
   await sleep(500);
 
@@ -27,12 +27,12 @@ const status = async (player, st) => {
   if (pvp === 'false') { a.chat('/pvp'); await sleep(800); pvp = await status('Alpha', 'in-pvp'); }
   record('status: in-pvp follows PvPManager (on by default)', pvp === 'true', `in-pvp=${pvp}`);
   let w = await openWindow(a, '/hc');
-  record('vault: /hc opens a 27-slot vault holding 27 heads', !!w && w.slots.slice(0, 27).filter((s) => s && s.name === 'player_head').length === 27,
+  record('vault: /hc opens a 27-slot vault holding 18 heads', !!w && w.slots.slice(0, 27).filter((s) => s && s.name === 'player_head').length === 18,
     w ? `type=${w.type} heads=${w.slots.slice(0, 27).filter((s) => s && s.name === 'player_head').length}` : 'no window');
   let mark = a.chatLog.length;
   await a.clickWindow(0, 0, 0);
   await sleep(700);
-  record('gate: with PvP on, taking a head out is refused with the in-pvp message', vaultCount('Alpha') === 27 && await waitChat(a, /PvP is on/, mark, 1500),
+  record('gate: with PvP on, taking a head out is refused with the in-pvp message', vaultCount('Alpha') === 18 && await waitChat(a, /PvP is on/, mark, 1500),
     `count=${vaultCount('Alpha')}`);
   if (a.currentWindow) a.closeWindow(a.currentWindow);
   await sleep(300);
@@ -48,27 +48,27 @@ const status = async (player, st) => {
   await sleep(300);
   await a.clickWindow(inv0, 0, 0);       // place in first inventory slot
   await sleep(800);
-  record('vault: pick up and place into inventory moves a head out', vaultCount('Alpha') === 26, `count=${vaultCount('Alpha')}`);
+  record('vault: pick up and place into inventory moves a head out', vaultCount('Alpha') === 17, `count=${vaultCount('Alpha')}`);
   await a.clickWindow(inv0, 0, 1);       // shift-click back
   await sleep(800);
-  record('vault: shift-click from inventory puts it back', vaultCount('Alpha') === 27, `count=${vaultCount('Alpha')}`);
+  record('vault: shift-click from inventory puts it back', vaultCount('Alpha') === 18, `count=${vaultCount('Alpha')}`);
   const freeKey = w.slots.slice(w.hotbarStart, w.hotbarStart + 9).findIndex((s) => !s);
   await a.clickWindow(2, freeKey, 2);    // number key on vault slot 2 -> an empty hotbar slot
   await sleep(800);
-  record('vault: number key swaps a head to the hotbar', vaultCount('Alpha') === 26, `key=${freeKey + 1} count=${vaultCount('Alpha')}`);
+  record('vault: number key swaps a head to the hotbar', vaultCount('Alpha') === 17, `key=${freeKey + 1} count=${vaultCount('Alpha')}`);
   await a.clickWindow(2, freeKey, 2);    // and back
   await sleep(800);
-  record('vault: number key swaps it back', vaultCount('Alpha') === 27, `count=${vaultCount('Alpha')}`);
+  record('vault: number key swaps it back', vaultCount('Alpha') === 18, `count=${vaultCount('Alpha')}`);
   const entitiesBefore = Object.values(a.entities).filter((e) => e.name === 'item').length;
   rawClick(a, w, 3, 0, 4);               // Q on a vault slot
   rawClick(a, w, 3, 1, 4);               // Ctrl+Q
   await sleep(1000);
   const entitiesAfter = Object.values(a.entities).filter((e) => e.name === 'item').length;
-  record('vault: drop keys (Q, Ctrl+Q) on a vault slot are refused', vaultCount('Alpha') === 27 && entitiesAfter === entitiesBefore,
+  record('vault: drop keys (Q, Ctrl+Q) on a vault slot are refused', vaultCount('Alpha') === 18 && entitiesAfter === entitiesBefore,
     `count=${vaultCount('Alpha')} items ${entitiesBefore}->${entitiesAfter}`);
   rawClick(a, w, 4, 2, 3);               // middle click (clone) on a vault slot
   await sleep(600);
-  record('vault: middle click (clone) changes nothing', vaultCount('Alpha') === 27, `count=${vaultCount('Alpha')}`);
+  record('vault: middle click (clone) changes nothing', vaultCount('Alpha') === 18, `count=${vaultCount('Alpha')}`);
 
   // --- what may not go in ------------------------------------------------
   await a.clickWindow(0, 0, 1);          // shift-click a head out to free slot 0
@@ -84,20 +84,20 @@ const status = async (player, st) => {
   await sleep(300);
   await a.clickWindow(0, 0, 0);          // try to put it in vault slot 0
   await sleep(800);
-  record('vault: dirt cannot be placed in a vault slot', vaultCount('Alpha') === 26 && await waitChat(a, /Only economy heads/, mark, 1500),
+  record('vault: dirt cannot be placed in a vault slot', vaultCount('Alpha') === 17 && await waitChat(a, /Only economy heads/, mark, 1500),
     `count=${vaultCount('Alpha')}`);
   await a.clickWindow(dirtSlot, 0, 0);   // put dirt back
   await sleep(500);
   mark = a.chatLog.length;
   await a.clickWindow(dirtSlot, 0, 1);   // shift-click dirt
   await sleep(800);
-  record('vault: dirt cannot be shift-clicked into the vault', vaultCount('Alpha') === 26, `count=${vaultCount('Alpha')}`);
+  record('vault: dirt cannot be shift-clicked into the vault', vaultCount('Alpha') === 17, `count=${vaultCount('Alpha')}`);
   w = a.currentWindow;
   const vanilla = w.slots.findIndex((s, i) => i >= w.inventoryStart && s && s.name === 'player_head' && !s.customName && !(JSON.stringify(s.components || s.nbt || '')).includes('head_id'));
   mark = a.chatLog.length;
   if (vanilla >= 0) await a.clickWindow(vanilla, 0, 1);
   await sleep(800);
-  record('vault: a vanilla /give player head is refused', vanilla >= 0 && vaultCount('Alpha') === 26 && await waitChat(a, /Only economy heads/, mark, 1500),
+  record('vault: a vanilla /give player head is refused', vanilla >= 0 && vaultCount('Alpha') === 17 && await waitChat(a, /Only economy heads/, mark, 1500),
     `slot=${vanilla} count=${vaultCount('Alpha')}`);
 
   // --- put the head back, check the audit trail --------------------------
@@ -105,7 +105,7 @@ const status = async (player, st) => {
   const own = w.slots.findIndex((s, i) => i >= w.inventoryStart && s && s.name === 'player_head' && JSON.stringify(s.components || s.nbt || '').includes('head_id'));
   if (own >= 0) await a.clickWindow(own, 0, 1);
   await sleep(800);
-  record('vault: the economy head goes back in (27 again)', vaultCount('Alpha') === 27, `slot=${own} count=${vaultCount('Alpha')}`);
+  record('vault: the economy head goes back in (18 again)', vaultCount('Alpha') === 18, `slot=${own} count=${vaultCount('Alpha')}`);
   a.closeWindow(a.currentWindow);
   await sleep(500);
   const audit = require('fs').readdirSync(L.db.length ? `${WORK}/botserver/plugins/Headcount/audit` : '.');

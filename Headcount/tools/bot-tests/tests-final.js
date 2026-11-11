@@ -28,7 +28,7 @@ const N = process.argv[2] || 'Charlie';
   // --- every join hook, in order, for a brand-new player who is not an operator ------------------
   let cfg = fs.readFileSync(HC + 'config.yml', 'utf8');
   if (!cfg.includes('HOOK became-active')) {
-    cfg = cfg.replace('    became-active: []\n    join: []', '    became-active:\n      - message: "HOOK became-active"\n    join:\n      - message: "HOOK join"');
+    cfg = cfg.replace('    became-active:\n', '    became-active:\n      - message: "HOOK became-active"\n').replace('    join: []', '    join:\n      - message: "HOOK join"');
     fs.writeFileSync(HC + 'config.yml', cfg);
   }
   await consoleOut('hca reload', 2500);
@@ -181,7 +181,7 @@ const N = process.argv[2] || 'Charlie';
   await consoleOut('hca cycle end confirm', 4000);
   w = await openWindow(c, '/hc');
   const refilled = vaultIds(N);
-  record('cycle: an online player gets a fresh vault at the new cycle', refilled.length === 27 && !refilled.includes(oldId), `vault=${refilled.length}`);
+  record('cycle: an online player gets a fresh vault at the new cycle', refilled.length === 18 && !refilled.includes(oldId), `vault=${refilled.length}`);
   await c.clickWindow(0, 0, 1);            // make room
   await sleep(700);
   w = c.currentWindow;

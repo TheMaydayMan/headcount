@@ -78,7 +78,9 @@ storage:
 cycle:
   # Length of a cycle in days. A change takes effect at the next cycle or the next /hca reset cycle. The running
   # cycle keeps its end.
-  length-days: 30
+  # Two weeks gives a player who logs on twice a week four or five sessions to trade in, and still ends often enough
+  # that rewards and punishments feel tied to what they did.
+  length-days: 14
   # The day the first cycle starts, as YYYY-MM-DD, or "auto" to start right away, lined up to end-time today.
   # Until a future date arrives, no cycle runs.
   start-date: auto
@@ -94,8 +96,9 @@ cycle:
 
 activity:
   # Playtime in a cycle needed to count as active. 0 means joining once is enough.
-  # Only active players get a score, points and outcomes.
-  min-playtime: 0
+  # Only active players get a score, points and outcomes. Two hours keeps someone who drops in for a look from being
+  # scored, and punished, before they've had a chance to trade.
+  min-playtime: 2h
   # How often playtime is saved and the active threshold checked.
   check-interval: 30s
 
@@ -107,8 +110,11 @@ vault:
   # Size and starting heads change at the start of the next cycle or at a /hca reset cycle.
   size: 27
   # How many of their own heads each player starts a cycle with, up to the vault size. Extra starting heads from
-  # next-cycle actions, like a shop purchase or the streak bonus, are given as items if they don't fit.
-  starting-heads: 27
+  # next-cycle actions, like a shop purchase, are given as items if they don't fit.
+  # Each trade costs one of these, so they are what a player spends. 18 is enough to trade with everyone on a server
+  # of up to 18 active players. On bigger servers the keenest traders run short and buy heads with items, take them in fights,
+  # or buy more in the shop. The 9 empty slots also show a new player where the other heads go.
+  starting-heads: 18
   # Largest size the next-cycle vault-size action can grow a vault to.
   max-size: 270
   block-movement:
@@ -237,15 +243,16 @@ kills:
   # Statuses on the killer that stop a drop, like creative-or-spectator.
   killer-blocked-statuses: []
   # How long only the killer can pick up the head. 0 lets anyone.
-  killer-pickup-only: 0s
+  killer-pickup-only: 15s
 
 # --------------------------------------------------------------------------------------------
 #  Points (Headcount's own currency, not Vault money)
 # --------------------------------------------------------------------------------------------
 points:
   # Percent of unspent points kept when a cycle ends. The rest are gone.
-  # A positive score gives points at the end of a cycle, to spend during the next one.
-  rollover-percent: 0
+  # A positive score gives points at the end of a cycle, to spend during the next one. At 50, savings level off at
+  # about twice what a player earns in a cycle, so saving for a Legendary item works but a lead can't grow forever.
+  rollover-percent: 50
   # Points per score point, rounded down. With 1.0 a score of 7 gives 7 points.
   earn-multiplier: 1.0
   # Let balances go below zero when points are taken.
@@ -312,7 +319,8 @@ sidebar:
   # scoreboard plugin instead. Players toggle their own with /hc sidebar.
   enabled: true
   # Whether the sidebar starts shown for a player's first join. Players who already joined keep their choice.
-  shown-for-new-players: false
+  # It shows a new player their unique heads and score changing as they trade, which teaches the game fastest.
+  shown-for-new-players: true
   # How often the lines are redrawn.
   update-interval: 1s
   title: "<gold><bold>HEADCOUNT"
@@ -500,12 +508,19 @@ hooks:
           countdown-to: cycle-end
 
   player:
+    # Runs the first time a player ever joins. The shield means a new player's first bad cycle teaches them the rules
+    # instead of punishing them.
     first-join:
       - message:
           - "<gold>Welcome to <bold>Headcount</bold>!"
-          - "<gray>Your vault holds <white>%headcount_vault_size%</white> heads. Collect heads of other players: the more unique heads you have when the cycle ends, the better your score."
-          - "<gray>A good score earns points for the shop; a bad one brings punishments. See <yellow>/hc help</yellow>."
+          - "<gray>Your vault, <yellow>/hc</yellow>, starts each cycle with <white>%headcount_starting_heads%</white> of your own heads. Trade them with <yellow>/trade</yellow> for other players' heads. Every different head in your vault when the cycle ends adds to your score."
+          - "<gray>A good score earns points for <yellow>/hc shop</yellow>. A bad one brings a punishment. <yellow>/hc help</yellow> has the rest."
+      - type: shield
+        charges: 1
+        duration: cycles:2
+        start-message: "<gold>You start with a shield. It blocks your first punishment."
     first-join-cycle:
       - message: "<gold>Cycle <cycle></gold> <gray>is running: <white><time_left></white> left. You have <gold><points></gold> points to spend in <yellow>/hc shop</yellow>."
-    became-active: []
+    became-active:
+      - message: "<gray>You've played enough to count this cycle. When it ends, your vault becomes your score: <yellow>/hc score</yellow> shows it now."
     join: []

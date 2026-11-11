@@ -37,8 +37,13 @@ titles:
   champion:
     display: "<gold>[Champion]"
     description:
-      - "<gray>Finished a cycle in the top 3."
+      - "<gray>Finished a cycle in first place."
     icon: { material: GOLDEN_HELMET }
+  headhunter:
+    display: "<red>[Headhunter]"
+    description:
+      - "<gray>Took 3 heads in fights in one cycle."
+    icon: { material: IRON_SWORD, flags: [HIDE_ATTRIBUTES] }
   collector:
     display: "<blue>[Collector]"
     description:
@@ -52,8 +57,8 @@ titles:
   dunce:
     display: "<gray>[Dunce]"
     description:
-      - "<gray>Given out by punishments."
-    icon: { material: CARVED_PUMPKIN }
+      - "<gray>Worn for a cycle after the Penalty or Wanted punishment."
+    icon: { material: JACK_O_LANTERN }
 
 gui:
   # Menu title. Variables: <page>

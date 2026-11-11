@@ -238,7 +238,7 @@
       amount: -10
   to-roll:
     - type: rollover
-      percent: 50
+      percent: 100
   ts-score:
     - type: score-bonus
       amount: 25

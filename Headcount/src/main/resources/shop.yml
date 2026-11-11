@@ -9,7 +9,8 @@ config-version: 2
 
 settings:
   # Price at which a purchase asks for confirmation first. An entry can override this with confirm: true or false.
-  confirm-at-price: 50
+  # 10 is about what a good cycle earns, so a purchase that takes that much asks first.
+  confirm-at-price: 10
   # Last-cycle score for players who don't have one, because they are new or were inactive.
   new-player-score: 0
   # When global stock refills: cycle | never
@@ -138,14 +139,18 @@ default-states:
 #   conditions           extra requirements (see actions.yml)
 #   requires             titles: [..], purchases: [entry or tier.entry, ever], purchases-this-cycle: [..], permissions: [..]
 #   confirm              force the confirmation menu on (true) or off (false)
+# The default prices assume a positive score of about 3 to 10 points a cycle, more for the best players on big
+# servers. With half of unspent points carried over, Common and Uncommon are everyday buys, Rare takes a good cycle
+# and Legendary takes a few cycles of saving.
 tiers:
+  # Everyday supplies, and insurance against a bad cycle.
   common:
     name: "<white>Common"
     threshold: none
     entries:
       steak:
         slot: 10
-        price: 2
+        price: 1
         display:
           material: COOKED_BEEF
           name: "<white>16 Steak"
@@ -155,56 +160,60 @@ tiers:
             amount: 16
       speed:
         slot: 12
-        price: 3
-        limit-per-cycle: 5
+        price: 2
+        limit-per-cycle: 3
         display:
           material: SUGAR
           name: "<aqua>Speed for 30 minutes"
+          lore: ["<gray>Counts only time you're online."]
         actions:
           - type: potion
             effect: speed
             amplifier: 0
             duration: 30m
+            time: online
             stacking: extend
             start-message: "<aqua>Speed for <duration>."
             end-message: "<gray>Your speed boost wore off."
       extra-heads:
         slot: 14
-        price: 5
+        price: 3
         limit-per-cycle: 2
         display:
           material: PLAYER_HEAD
           head: viewer
           name: "<yellow>+3 starting heads next cycle"
-          lore: ["<gray>Heads that don't fit in your vault", "<gray>are given to you as items."]
+          lore: ["<gray>Three more of your own heads to trade.", "<gray>Useful when you have more people", "<gray>to trade with than heads."]
         actions:
           - type: next-cycle
             starting-heads: "+3"
           - message: "<yellow>You will start next cycle with 3 more heads."
       shield:
         slot: 16
-        price: 8
+        price: 4
         limit-per-cycle: 1
         display:
           material: SHIELD
           name: "<gold>Punishment shield"
-          lore: ["<gray>Blocks your next punishment."]
+          lore: ["<gray>Blocks your next punishment.", "<gray>Lasts through the next two cycle ends."]
         actions:
           - type: shield
             charges: 1
             duration: cycles:2
             start-message: "<gold>A shield protects you from your next punishment."
 
+  # Tools for playing the game better.
   uncommon:
     name: "<green>Uncommon"
-    threshold: 5
+    threshold: 3
     entries:
       haste:
         slot: 10
-        price: 6
+        price: 3
         display:
           material: GOLDEN_PICKAXE
           name: "<green>Haste II for 1 hour"
+          lore: ["<gray>Counts only time you're online."]
         actions:
           - type: potion
             effect: haste
@@ -213,85 +222,156 @@ tiers:
             time: online
       head-protection:
         slot: 12
-        price: 10
+        price: 4
         limit-per-cycle: 1
         display:
           material: TOTEM_OF_UNDYING
-          name: "<green>Head protection (1 day)"
-          lore: ["<gray>Your head does not drop when you are killed."]
+          name: "<green>Head protection"
+          lore: ["<gray>The next 2 times you're killed this", "<gray>cycle, your head doesn't drop."]
         actions:
           - type: head-protection
-            duration: 1d
-      bigger-vault:
+            charges: 2
+            duration: cycle
+            start-message: "<green>Your head won't drop the next 2 times you're killed this cycle."
+      rollover:
         slot: 14
-        price: 12
+        price: 3
         limit-per-cycle: 1
         display:
-          material: CHEST
-          name: "<green>+9 vault slots next cycle"
+          material: CLOCK
+          name: "<green>Keep 25% more points"
+          lore: ["<gray>When this cycle ends, keep 75% of", "<gray>your unspent points instead of 50%."]
         actions:
-          - type: next-cycle
-            vault-size: "+9"
-          - message: "<green>Your vault grows by 9 slots next cycle."
+          - type: rollover
+            add: 25
+          - message: "<green>You'll keep 25% more of your unspent points when this cycle ends."
       mystery:
         slot: 16
-        price: 7
+        price: 4
         display:
           material: ENDER_CHEST
           name: "<green>Mystery box"
+          lore: ["<gray>Golden apples, diamonds, bottles", "<gray>o' enchanting, or an 8-point jackpot."]
         actions: mystery-box
 
+  # Status, and room to grow on a big server.
   rare:
     name: "<blue>Rare"
-    threshold: 10
+    threshold: 6
     entries:
+      title-headhunter:
+        slot: 10
+        price: 6
+        limit-per-cycle: 1
+        conditions:
+          expression: "kills >= 3"
+        display:
+          material: IRON_SWORD
+          name: "<blue>Title: Headhunter"
+          lore: ["<gray>Take 3 heads in fights this cycle", "<gray>to unlock it."]
+          flags: [HIDE_ATTRIBUTES]
+        actions:
+          - type: grant-title
+            title: headhunter
+            equip: true
       title-collector:
-        slot: 11
-        price: 20
+        slot: 12
+        price: 8
         limit-per-cycle: 1
         display:
           material: NAME_TAG
           name: "<blue>Title: Collector"
-        requires:
-          permissions: []
         actions:
           - type: grant-title
             title: collector
             equip: true
-      rollover:
-        slot: 13
-        price: 15
+      bigger-vault:
+        slot: 14
+        price: 6
         limit-per-cycle: 1
         display:
-          material: CLOCK
-          name: "<blue>Keep 50% of unspent points"
-          lore: ["<gray>At the end of this cycle."]
+          material: CHEST
+          name: "<blue>+9 vault slots next cycle"
+          lore: ["<gray>Only helps on a server big enough", "<gray>to fill 27 slots with different heads."]
         actions:
-          - type: rollover
-            percent: 50
+          - type: next-cycle
+            vault-size: "+9"
+          - message: "<blue>Your vault grows by 9 slots next cycle."
       diamonds:
-        slot: 15
-        price: 25
-        stock: 10
+        slot: 16
+        price: 10
+        stock: 5
         display:
           material: DIAMOND_BLOCK
           name: "<blue>Diamond block"
+          lore: ["<gray>5 for the whole server each cycle."]
           glint: true
         actions:
           - type: give-item
             material: DIAMOND_BLOCK
             amount: 1
 
+  # Prestige. These take a few good cycles of saving.
   legendary:
     name: "<gold>Legendary"
-    threshold: 20
+    threshold: 9
     entries:
+      totem:
+        slot: 10
+        price: 10
+        limit-per-cycle: 1
+        display:
+          material: TOTEM_OF_UNDYING
+          name: "<gold>Totem of Undying"
+        actions:
+          - type: give-item
+            material: TOTEM_OF_UNDYING
+            amount: 1
+      blessing:
+        slot: 12
+        price: 8
+        cooldown: 1d
+        display:
+          material: BEACON
+          name: "<gold>Champion's blessing"
+          lore: ["<gray>Strength, Resistance and Regeneration", "<gray>for 30 minutes of play. Once a day."]
+        actions:
+          - type: potion
+            effect: strength
+            amplifier: 0
+            duration: 30m
+            time: online
+            start-message: "<gold>You're blessed for <duration>."
+          - type: potion
+            effect: resistance
+            amplifier: 0
+            duration: 30m
+            time: online
+          - type: potion
+            effect: regeneration
+            amplifier: 0
+            duration: 30m
+            time: online
+            end-message: "<gray>Your blessing wore off."
+      elytra:
+        slot: 14
+        price: 20
+        stock: 1
+        display:
+          material: ELYTRA
+          name: "<gold>Elytra"
+          lore: ["<gray>One for the whole server each cycle."]
+        actions:
+          - type: give-item
+            material: ELYTRA
+            amount: 1
       title-legend:
-        slot: 11
-        price: 60
+        slot: 16
+        price: 25
         display:
           material: NETHER_STAR
           name: "<gold>Title: Legend"
+          lore: ["<gray>Needs the Collector title."]
           glint: true
         requires:
           titles: [collector]
@@ -300,29 +380,3 @@ tiers:
             title: legend
             equip: true
           - celebrate
-      flight:
-        slot: 13
-        price: 40
-        cooldown: 1d
-        display:
-          material: FEATHER
-          name: "<gold>Fly for 1 hour"
-        actions:
-          - type: permission
-            permission: essentials.fly
-            duration: 1h
-            time: online
-          - message: "<gold>You can use /fly for an hour of playtime."
-      next-cycle-heads:
-        slot: 15
-        price: 50
-        limit-per-cycle: 1
-        display:
-          material: SKELETON_SKULL
-          name: "<gold>5 of your heads in next cycle's vault"
-        actions:
-          - type: give-heads
-            owner: self
-            amount: 5
-            cycle: next
-            to: vault

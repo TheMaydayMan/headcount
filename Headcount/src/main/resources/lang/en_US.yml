@@ -107,7 +107,7 @@ points:
 score:
   preview: "<prefix><gray>If the cycle ended now: score <yellow><score></yellow> (<unique> unique, rank <rank> of <active>). <is_active> <dark_gray><time_left> left."
   you-are-active: "<green>You are active."
-  you-are-not-active: "<red>You are not active yet."
+  you-are-not-active: "<red>You are not active yet. <gray>Play a bit longer this cycle to get a score."
 
 top:
   header: "<gold>Top players, cycle <cycle>:"

@@ -21,8 +21,8 @@ const edit = (file, pairs) => {
 
 (async () => {
   const backup = fs.readFileSync(HC + 'shop.yml', 'utf8');
-  // test-only: confirmation at 50 (another suite lowers it), 2 diamond blocks in stock, and a page-2 entry
-  let shop = backup.replace(/confirm-at-price: \d+/, 'confirm-at-price: 50').replace('        stock: 10\n', '        stock: 2\n');
+  // test-only: confirmation at 20 (another suite lowers it), 2 diamond blocks in stock, and a page-2 entry
+  let shop = backup.replace(/confirm-at-price: \d+/, 'confirm-at-price: 20').replace('        stock: 5\n', '        stock: 2\n');
   shop = shop.replace('      steak:\n', `      page-two:
         page: 2
         slot: 10
@@ -54,7 +54,7 @@ const edit = (file, pairs) => {
     w && `${w.slots[10] && w.slots[10].name}`);
   let mp = p.chatLog.length;
   await p.clickWindow(10, 0, 0);
-  record('shop: buying from a locked tier is refused', await waitChat(p, /tier needs a last cycle score of 5/, mp, 2000));
+  record('shop: buying from a locked tier is refused', await waitChat(p, /tier needs a last cycle score of 3/, mp, 2000));
   p.closeWindow(p.currentWindow);
   await sleep(500);
 
@@ -62,7 +62,8 @@ const edit = (file, pairs) => {
   serverConsole(`hca run ${N} ts-score`);
   await sleep(500);
   await consoleOut('hca cycle end confirm', 4500);
-  record('setup: the last cycle score is 25', db(`SELECT last_score FROM players WHERE name='${N}'`)[0][0] === 25);
+  // +25 from the score-bonus, minus the par for however many players are active this cycle
+  record('setup: the last cycle score is at least 21', db(`SELECT last_score FROM players WHERE name='${N}'`)[0][0] >= 21);
   serverConsole(`hca points ${N} set 500`);
   await sleep(800);
 
@@ -82,36 +83,36 @@ const edit = (file, pairs) => {
   await sleep(500);
   record('shop: previous-page goes back', !!w && w.slots[10] && w.slots[10].name === 'cooked_beef');
 
-  // --- limit per cycle (shield: limit 1, price 8) ------------------------------------------------------------
+  // --- limit per cycle (shield: limit 1, price 4) ------------------------------------------------------------
   const before = pts();
   mp = p.chatLog.length;
   await p.clickWindow(16, 0, 0);
-  record('shop: a purchase takes exactly its price', await waitChat(p, /Bought .*\(-8 points/, mp, 2000) && pts() === before - 8, `${before} -> ${pts()}`);
+  record('shop: a purchase takes exactly its price', await waitChat(p, /Bought .*\(-4 points/, mp, 2000) && pts() === before - 4, `${before} -> ${pts()}`);
   await sleep(1200);
   w = p.currentWindow;
   record('shop: the entry now shows limit-reached', !!w && /already bought this 1 time/.test(text(w.slots[16])));
   mp = p.chatLog.length;
   await sleep(300);
   await p.clickWindow(16, 0, 0);
-  record('shop: buying past limit-per-cycle is refused', await waitChat(p, /can't buy that again this cycle/, mp, 2000) && pts() === before - 8);
+  record('shop: buying past limit-per-cycle is refused', await waitChat(p, /can't buy that again this cycle/, mp, 2000) && pts() === before - 4);
   p.closeWindow(p.currentWindow);
   await sleep(500);
 
   // --- tiers: Rare (stock and prerequisites) -------------------------------------------------------------------
   const toTier = (name) => openWindow(p, '/hc shop ' + name.toLowerCase());
   w = await toTier('Rare');
-  record('shop: Rare is unlocked with a last score of 25', !!w && /Rare/.test(JSON.stringify(w.title)) && w.slots[15] && w.slots[15].name === 'diamond_block');
+  record('shop: Rare is unlocked with a last score of 25', !!w && /Rare/.test(JSON.stringify(w.title)) && w.slots[16] && w.slots[16].name === 'diamond_block');
   for (let i = 0; i < 2; i++) {
     mp = p.chatLog.length;
-    await p.clickWindow(15, 0, 0);
+    await p.clickWindow(16, 0, 0);
     await waitChat(p, /Bought Diamond block/, mp, 2000);
     await sleep(1200);
   }
   w = p.currentWindow;
-  record('shop: global stock runs out (2 bought) and the entry shows sold out', !!w && w.slots[15] && w.slots[15].name === 'barrier' &&
+  record('shop: global stock runs out (2 bought) and the entry shows sold out', !!w && w.slots[16] && w.slots[16].name === 'barrier' &&
     db(`SELECT * FROM shop_stock`).length >= 1, JSON.stringify(db('SELECT * FROM shop_stock')));
   mp = p.chatLog.length;
-  await p.clickWindow(15, 0, 0);
+  await p.clickWindow(16, 0, 0);
   record('shop: buying a sold-out entry is refused', await waitChat(p, /sold out/, mp, 2000));
   p.closeWindow(p.currentWindow);
   await sleep(500);
@@ -127,25 +128,25 @@ const edit = (file, pairs) => {
   await sleep(500);
   w = await toTier('Rare');
   mp = p.chatLog.length;
-  await p.clickWindow(11, 0, 0);           // title-collector, price 20
+  await p.clickWindow(12, 0, 0);           // title-collector, price 8
   record('shop: buying the collector title', await waitChat(p, /Bought/, mp, 2000) && db(`SELECT COUNT(*) FROM titles t JOIN players p ON p.uuid=t.uuid WHERE p.name='${N}' AND t.title='collector'`)[0][0] === 1);
   p.closeWindow(p.currentWindow);
   await sleep(500);
   w = await toTier('Legendary');
   const before2 = pts();
   o = new Promise((r) => p.once('windowOpen', r));
-  await p.clickWindow(legendSlot, 0, 0);   // price 60: above confirm-at-price 50
+  await p.clickWindow(legendSlot, 0, 0);   // price 25: above confirm-at-price 20
   const cw = await Promise.race([o, sleep(3000).then(() => null)]);
   await sleep(600);
   record('shop: now the requirement is met, and the price opens the confirmation', !!cw && cw.type === 'minecraft:generic_9x3');
   mp = p.chatLog.length;
   await p.clickWindow(11, 0, 0);           // confirm
-  record('shop: confirming buys it', await waitChat(p, /Bought/, mp, 2500) && pts() === before2 - 60, `${before2} -> ${pts()}`);
+  record('shop: confirming buys it', await waitChat(p, /Bought/, mp, 2500) && pts() === before2 - 25, `${before2} -> ${pts()}`);
   await sleep(800);
   if (p.currentWindow) p.closeWindow(p.currentWindow);
   await sleep(400);
   w = await toTier('Legendary');
-  const flySlot = w.slots.findIndex((s, i) => i < 45 && s && /fl(y|ight)/i.test(text(s)));
+  const flySlot = w.slots.findIndex((s, i) => i < 45 && s && /blessing/i.test(text(s)));   // Champion's blessing, 1-day cooldown
   mp = p.chatLog.length;
   await p.clickWindow(flySlot, 0, 0);
   await waitChat(p, /Bought/, mp, 2000);
@@ -165,7 +166,7 @@ const edit = (file, pairs) => {
   record('shop: an entry above the balance shows too-expensive', !!w && /need|more points|Not enough|can't afford/i.test(text(w.slots[12])), text(w.slots[12]).slice(0, 120));
   mp = p.chatLog.length;
   await p.clickWindow(12, 0, 0);
-  record('shop: buying it says how many points are missing', await waitChat(p, /need 2 more points/, mp, 2000));
+  record('shop: buying it says how many points are missing', await waitChat(p, /need 1 more points/, mp, 2000));
   p.closeWindow(p.currentWindow);
 
   fs.writeFileSync(HC + 'shop.yml', backup);

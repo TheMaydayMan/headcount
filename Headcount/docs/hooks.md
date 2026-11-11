@@ -57,8 +57,9 @@ When several hooks run on one join, they go in this order: delivered per-player 
 | `cycle-end` global | A results broadcast with the top 3, the active count, the average score, and how many were rewarded and punished. |
 | `cycle-end` per player | A report: unique heads, rank, score, points earned and held, streak, tier unlocked, and outcomes (inactive players get a short note). |
 | `cycle-start` global | "Cycle N has begun!" with a sound. |
-| `first-join` | A welcome that explains Headcount and points to `/hc help`. |
+| `first-join` | A welcome that explains Headcount and points to `/hc help`, and a shield that blocks the player's first punishment. |
 | `first-join-cycle` | The cycle number, time left, and points to spend. |
-| `became-active`, `join` | Nothing. |
+| `became-active` | A line saying the player now counts this cycle, and that `/hc score` shows their score. |
+| `join` | Nothing. |
 
 Test any hook with `/hca hook <cycle-start|first-join|first-join-cycle|became-active|join|warning:<id>> [player]`.

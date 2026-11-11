@@ -30,7 +30,7 @@ const pts = (n) => db(`SELECT points FROM players WHERE name='${n}'`)[0][0];
   const api = await consoleOut(`hcaddon ${N}`, 1500);
   const cyc = db(`SELECT id FROM cycles WHERE state='active'`)[0][0];
   record('api: currentCycle and cycleEndsAt', new RegExp(`currentCycle=${cyc} endsInFuture=true`).test(api));
-  record('api: vaultCounts, previewScore, points', /vaultCounts=\[\d+, 27, 27\] previewScore=-?\d+ points=\d+/.test(api), (api.match(/vaultCounts[^\n]*/) || [''])[0]);
+  record('api: vaultCounts, previewScore, points', /vaultCounts=\[\d+, 18, 18\] previewScore=-?\d+ points=\d+/.test(api), (api.match(/vaultCounts[^\n]*/) || [''])[0]);
   record('api: addPoints adds and returns the new balance', new RegExp(`addPoints\\(3\\)=${p0 + 3}`).test(api) && pts(N) === p0 + 3);
   record('api: equippedTitle and hasStatus (false before the arena tag)', /hasStatus\(in-arena-test\)=false equippedTitle=null/.test(api));
   record('api: createHead makes a current economy head; headInfo reads it (and nothing from stone)', new RegExp(`owner=${N} cycle=${cyc} current=true source=addon plainStone=false`).test(api),
@@ -129,6 +129,7 @@ const pts = (n) => db(`SELECT points FROM players WHERE name='${n}'`)[0][0];
   const q = await makeBot(M);
   await sleep(2500);
   serverConsole(`minecraft:tag ${M} add addon-nooutcome`);
+  serverConsole(`hca effects ${M} remove all`);   // the starter shield would block the outcome before its event
   serverConsole(`hca run ${M} to-neg`);
   await sleep(800);
   m2 = logSize();
@@ -138,7 +139,7 @@ const pts = (n) => db(`SELECT points FROM players WHERE name='${n}'`)[0][0];
   const r1 = db(`SELECT score FROM results WHERE cycle=${cyc} AND name='${N}'`)[0];
   record('event: ScoreCalculatedEvent sets the final score too (42 stored)', r1 && r1[0] === 42, JSON.stringify(r1));
   const r2 = db(`SELECT score, outcomes FROM results WHERE cycle=${cyc} AND name='${M}'`)[0];
-  record('event: OutcomeApplyEvent can cancel an outcome (score -10 or lower, no penalty applied)', r2 && r2[0] <= -10 && !/penalty/.test(r2[1] || '') && /EVENT OutcomeApplyEvent[^\n]*getRuleId=penalty-10/.test(ev),
+  record('event: OutcomeApplyEvent can cancel an outcome (score -10 or lower, no punishment applied)', r2 && r2[0] <= -10 && !/wanted|penalty|minor/.test(r2[1] || '') && /EVENT OutcomeApplyEvent[^\n]*getRuleId=wanted/.test(ev),
     JSON.stringify(r2));
   const seen = new Set((logSince(0).match(/EVENT (\w+)/g) || []).map((x) => x.slice(6)));
   record('events: all 13 were fired during this run', seen.size === 13, [...seen].sort().join(','));

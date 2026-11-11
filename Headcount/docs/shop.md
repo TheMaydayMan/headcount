@@ -12,13 +12,13 @@ A tier unlocks when the player's score from last cycle is at or above its `thres
 tiers:
   rare:
     name: "<blue>Rare"
-    threshold: 10
+    threshold: 6
     entries:
       diamonds:
         page: 1
-        slot: 15
-        price: 25
-        stock: 10                  # shared by all players, -1 for unlimited; refills as set by settings.stock-reset
+        slot: 16
+        price: 10
+        stock: 5                   # shared by all players, -1 for unlimited; refills as set by settings.stock-reset
         limit-per-cycle: 1         # per player, 0 for unlimited
         cooldown: 1d               # per player
         confirm: true              # forces the confirmation menu on or off; by default it shows from settings.confirm-at-price up

@@ -68,20 +68,22 @@ const isPvP = async () => /in-pvp: true/.test(await consoleOut(`hca status ${N} 
 
   // --- sidebar ------------------------------------------------------------------------------------------
   const sidebarText = () => JSON.stringify(Object.values(u.teams || {}).map((t) => t.prefix && (t.prefix.toString ? t.prefix.toString() : t.prefix)));
+  record('sidebar: a new player starts with it on, with the configured lines', /Unique heads/.test(sidebarText()) && pl('sidebar') === 1);
+  record('sidebar: Bedrock-safe layout (lines are team prefixes on unique entries, scores hidden)', !!u.scoreboard && !!u.scoreboard.sidebar);
   mu = u.chatLog.length;
   u.chat('/hc sidebar');
-  await sleep(2000);
-  record('sidebar: /hc sidebar turns it on with the configured lines', await waitChat(u, /Sidebar on/, mu, 1500) && /Unique heads/.test(sidebarText()) && pl('sidebar') === 1);
-  record('sidebar: Bedrock-safe layout (lines are team prefixes on unique entries, scores hidden)', !!u.scoreboard && !!u.scoreboard.sidebar);
+  await sleep(1500);
+  record('sidebar: /hc sidebar turns it off', await waitChat(u, /Sidebar off/, mu, 1500) && pl('sidebar') === 0);
   u.quit();
   await sleep(1500);
   let u2 = await makeBot(N);
   await sleep(3000);
-  record('sidebar: the choice is remembered after rejoining', /Unique heads/.test(JSON.stringify(Object.values(u2.teams || {}).map((t) => t.prefix && t.prefix.toString()))));
+  record('sidebar: the choice is remembered after rejoining', pl('sidebar') === 0 && !(u2.scoreboard && u2.scoreboard.sidebar));
   mu = u2.chatLog.length;
   u2.chat('/hc sidebar');
-  await sleep(1500);
-  record('sidebar: /hc sidebar again turns it off', await waitChat(u2, /Sidebar off/, mu, 1500) && pl('sidebar') === 0 && !(u2.scoreboard && u2.scoreboard.sidebar));
+  await sleep(2000);
+  record('sidebar: /hc sidebar again turns it on', await waitChat(u2, /Sidebar on/, mu, 1500) && pl('sidebar') === 1 &&
+    /Unique heads/.test(JSON.stringify(Object.values(u2.teams || {}).map((t) => t.prefix && t.prefix.toString()))));
   edit('config.yml', [['sidebar:\n', 'sidebar:\n  enabled: false\n'], ['  enabled: true\n  update-interval: 1s', '  update-interval: 1s']]);
   await reload();
   mu = u2.chatLog.length;
@@ -91,7 +93,7 @@ const isPvP = async () => /in-pvp: true/.test(await consoleOut(`hca status ${N} 
   await reload();
 
   // --- vault paging (60 slots) -----------------------------------------------------------------------
-  edit('config.yml', [['  size: 27\n', '  size: 60\n'], ['  starting-heads: 27\n', '  starting-heads: 60\n']]);
+  edit('config.yml', [['  size: 27\n', '  size: 60\n'], ['  starting-heads: 18\n', '  starting-heads: 60\n']]);
   await reload();
   await consoleOut('hca cycle end confirm', 5000);
   await consoleOut(`pvp ${N} off`, 900);   // the console isn't held to PvPManager's toggle cooldown

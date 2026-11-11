@@ -20,8 +20,8 @@ A person is still needed for anything that depends on a real client or on someth
 
 ## 1. First join and the vault
 
-- [ ] A's first join shows the welcome message (first-join hook), then the cycle message with time left and points (first-join-cycle).
-- [ ] `/hc` opens "A's Head Vault" with 27 of A's own heads (27 slots, 3 rows). Each head shows A's skin, the cycle number and a short ID.
+- [ ] A's first join shows the welcome message and the starter shield (first-join hook), then the cycle message with time left and points (first-join-cycle).
+- [ ] `/hc` opens "A's Head Vault" with 18 of A's own heads (27 slots, 3 rows, the last 9 empty). Each head shows A's skin, the cycle number and a short ID.
 - [ ] `/hca inspect` on one of those heads (after taking it out) shows owner A, the current cycle, current: yes, in a vault: no.
 - [ ] Take a head out, put it back, and swap two heads by moving them between slots. Shift-click in and out works. Number keys 1-9 and F (offhand) on a vault slot swap with the hotbar or offhand.
 - [ ] A dirt block can't be put in the vault by click, shift-click, number key, drag or offhand ("Only economy heads...").
@@ -32,7 +32,7 @@ A person is still needed for anything that depends on a real client or on someth
 - [ ] `/gamemode creative`: moving heads is refused (creative message). Back to survival.
 - [ ] With `vault.block-movement.block-opening: true` and `/hca reload`, a blocked player can't open the vault at all. Set it back.
 - [ ] Grant `headcount.bypass.vault-move.in-pvp` (`lp user A permission set headcount.bypass.vault-move.in-pvp`): with PvP on, A can move heads. Unset it.
-- [ ] B's first join also gets a full vault of B's heads. A player who joins mid-cycle gets the same.
+- [ ] B's first join also gets a vault of B's heads. A player who joins mid-cycle gets the same.
 
 ## 2. Heads in the world
 
@@ -48,7 +48,7 @@ A person is still needed for anything that depends on a real client or on someth
 
 ## 3. Kills
 
-- [ ] A kills B with a sword: a fresh head of B drops where B died. It doesn't come from B's vault (B's vault still has 27).
+- [ ] A kills B with a sword: a fresh head of B drops where B died. It doesn't come from B's vault (B's vault still has 18).
 - [ ] A kills B again in the same cycle: no head, and "already took" is shown.
 - [ ] A kills B with a bow, and by knocking B into lava: credited kills drop heads (use a new cycle or another victim each time).
 - [ ] B kills themselves (lava alone, `/kill`): no head.
@@ -96,23 +96,23 @@ A person is still needed for anything that depends on a real client or on someth
 
 - [ ] `/hc shop` opens on the highest tier the player has unlocked (Common for a new player). Other tiers can be browsed with the arrows and show "Locked" with the needed score; `/hc shop rare` opens one directly.
 - [ ] With 0 points, an entry shows "too expensive". `/hca points A give 100`: entries become buyable.
-- [ ] Buy Speed: speed for 30 minutes, points go down, "left this cycle" drops. Buy it 5 times: it shows the limit reached.
-- [ ] An entry at or above 50 points asks for confirmation first. Cancel works; confirm buys it once even with rapid clicks.
+- [ ] Buy Speed: speed for 30 minutes, points go down, "left this cycle" drops. Buy it 3 times: it shows the limit reached.
+- [ ] An entry at or above 10 points asks for confirmation first. Cancel works; confirm buys it once even with rapid clicks.
 - [ ] The Rare diamond block has stock 10: after 10 purchases (across players) it shows sold out.
 - [ ] Legendary "Title: Legend" needs the Collector title: unavailable until Collector is bought.
 - [ ] No menu item can be taken out of the shop, titles, history or confirmation menus by any click, drag, number key or double click.
 
 ## 7. End of cycle and outcomes
 
-Set up A with a positive score and B with a negative one: put B's heads in A's vault through trades or kills, and keep B's vault poor. `/hca cycle simulate` shows the expected scores and outcomes first.
+Set up A with a positive score and B with a negative one: put B's heads in A's vault through trades or kills, and keep B's vault poor. Remove B's starter shield first (`/hca effects B`, then `/hca effects B remove <id>`), or it blocks B's penalty. `/hca cycle simulate` shows the expected scores and outcomes first.
 
 - [ ] `/hca cycle end confirm`: everyone online sees the results broadcast with the top 3. A sees a report (unique, score, points, streak, tier, outcomes), and B sees the penalty message.
-- [ ] Vaults are refilled with 27 new-cycle heads. Heads from last cycle in inventories now say "expired", and the vault refuses them.
-- [ ] A's points equal the positive score (+5 if top 3). B has the penalty's slowness. `/hc effects` lists it with time left; it counts only online time.
+- [ ] Vaults are refilled with 18 new-cycle heads. Heads from last cycle in inventories now say "expired", and the vault refuses them.
+- [ ] A's points equal the positive score (+3 if top 3 and in the top half). B has the minor penalty's slowness. `/hc effects` lists it with time left; it counts only online time.
 - [ ] A player offline at the end gets their report and any instant outcome actions on their next join.
 - [ ] `/hc history` shows the cycle with the right numbers; `/hca history B` works for admins.
 - [ ] `/hc top last` lists last cycle's top players.
-- [ ] A score of -10 or lower: dunce cap locked on the head (it can't be removed, and it comes back after death), glowing, a bounty announced, and location broadcasts every 30 minutes.
+- [ ] A score of -10 or lower makes the player Wanted: a dunce cap (a lit jack o'lantern) locked on the head that can't be removed and comes back after death, glowing, the Dunce title, a bounty announced, PvP locked on, and location broadcasts every 10 minutes while online.
 
 ## 8. Timed actions across restarts
 
@@ -129,7 +129,7 @@ Set up A with a positive score and B with a negative one: put B's heads in A's v
 
 ## 10. Sidebar, titles, placeholders
 
-- [ ] `/hc sidebar` shows the sidebar (cycle, unique, score, points, streak, time left) and updates every second. `/hc sidebar` again hides it.
+- [ ] A new player's sidebar is on from the first join (cycle, unique, score, points, streak, time left) and updates every second. `/hc sidebar` hides it, and again shows it.
 - [ ] The sidebar on Bedrock (C) shows the same lines.
 - [ ] `/hca title A grant champion`: it auto-equips. `/hc titles` shows it equipped; unequip and re-equip work.
 - [ ] `/papi parse A %headcount_title% %headcount_points% %headcount_unique% %headcount_time_left%` shows the right values.
@@ -137,7 +137,7 @@ Set up A with a positive score and B with a negative one: put B's heads in A's v
 
 ## 11. Bedrock (C)
 
-- [ ] C signs in with a real Xbox account through Floodgate, and Headcount treats C as a Bedrock player (`/hca status C` shows `bedrock-player` true).
+- [ ] With `bedrock.provider: floodgate` in integrations.yml, C signs in with a real Xbox account through Floodgate, and Headcount treats C as a Bedrock player (`/hca status C` shows `bedrock-player` true).
 - [ ] The vault, shop, titles, history and confirmation menus and the sidebar look right on C's screen.
 - [ ] C's vault opens and heads can be moved in and out.
 - [ ] C can trade with A using `/trade accept`. Items and heads move correctly and nothing can be taken from A's side.

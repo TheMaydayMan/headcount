@@ -2,7 +2,7 @@
 
 Headcount works fully with no other plugins installed. `integrations.yml` chooses who handles each job that another plugin could do. Every job has a `provider`:
 
-- `included` is Headcount's own version. It is the default wherever one exists.
+- `included` is Headcount's own version. It is the default wherever one exists, and `none` is the default everywhere else, so a fresh install uses no other plugin until you name one.
 - A plugin name hands the job to that plugin, which must be installed.
 - `none` turns the job off completely, Headcount's own version included.
 
@@ -64,7 +64,7 @@ The included jail needs `moderation.included-jail.location`. Jailed players are 
 
 Every Headcount menu is a normal chest menu, which Geyser shows on Bedrock, and clicks from Bedrock go through the same rules as clicks from Java. The sidebar uses team prefixes on unique entries, which Bedrock renders correctly.
 
-Bedrock players get trade requests that tell them to type `/trade accept` or `/trade deny`, since they can't click a chat link. Their heads are economy heads like anyone's. The economy goes by UUID, so it doesn't matter if a Bedrock skin doesn't load.
+With `bedrock.provider` set to `floodgate` or `geyser`, Bedrock players get trade requests that tell them to type `/trade accept` or `/trade deny`, since they can't click a chat link. Their heads are economy heads like anyone's. The economy goes by UUID, so it doesn't matter if a Bedrock skin doesn't load.
 
 ## CoreProtect
 

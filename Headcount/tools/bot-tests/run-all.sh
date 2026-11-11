@@ -18,7 +18,7 @@ run() {
 }
 run tests-vault
 run tests-play
-sed -i 's/confirm-at-price: 50/confirm-at-price: 2/' $S/botserver/plugins/Headcount/shop.yml; echo "hca reload" >> $S/bot-console.in; sleep 3
+sed -i 's/confirm-at-price: 10/confirm-at-price: 1/' $S/botserver/plugins/Headcount/shop.yml; echo "hca reload" >> $S/bot-console.in; sleep 3
 run tests-more
 run tests-final
 run tests-dupe

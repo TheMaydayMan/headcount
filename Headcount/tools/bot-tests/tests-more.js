@@ -78,9 +78,9 @@ const startTrade = async (a, b) => {
 
   // --- confirmation menu -------------------------------------------------------------------
   await consoleOut('hca points Alpha give 50');
-  w = await openWindow(a, '/hc shop');
+  w = await openWindow(a, '/hc shop common');   // Alpha's last score may open a higher tier
   let p = new Promise((r) => a.once('windowOpen', r));
-  await a.clickWindow(10, 0, 0);           // 16 Steak, price 2 (confirm-at-price set to 2 on this server)
+  await a.clickWindow(10, 0, 0);           // 16 Steak, price 1 (confirm-at-price set to 1 on this server)
   let cw = await Promise.race([p, sleep(3000).then(() => null)]);
   record('shop: a purchase at or above confirm-at-price opens a confirmation menu', !!cw && cw.type === 'minecraft:generic_9x3', cw ? cw.type : 'none');
   const pointsBefore = db(`SELECT points FROM players WHERE name='Alpha'`)[0][0];
@@ -101,7 +101,7 @@ const startTrade = async (a, b) => {
   await sleep(1200);
   const bought = await waitChat(a, /Bought 16 Steak/, ma, 2000);
   const ptsB = db(`SELECT points FROM players WHERE name='Alpha'`)[0][0];
-  record('shop: confirming buys it once', bought && ptsB === pointsBefore - 2, `bought=${bought} points ${pointsBefore}->${ptsB} chat=${a.chatLog.slice(ma).join(' | ')}`);
+  record('shop: confirming buys it once', bought && ptsB === pointsBefore - 1, `bought=${bought} points ${pointsBefore}->${ptsB} chat=${a.chatLog.slice(ma).join(' | ')}`);
   if (a.currentWindow) a.closeWindow(a.currentWindow);
   await sleep(500);
 

@@ -31,7 +31,7 @@ It copies the freshly built jar into the bot server, wipes Headcount's data and 
 
 To run one suite: `./reset-bot.sh`, then `node tests-<name>.js`. Several take a player name as an argument so they can be repeated with a fresh player. `restart-bot.sh` restarts the server without wiping anything, and `kill-bot.sh` kills it like a crash. Stop it with `echo stop >> work/bot-console.in`.
 
-`reset-bot.sh` starts from Headcount's default configs and adds only test settings: a peaceful world with no weather, the action lists in `test-lists.yml`, and messages in the two empty player hooks. Suites change other settings for their own checks (test statuses, lower limits, a provider) and put them back when they finish. They set PvP from the console (`pvp <player> on|off`, then `untag`), because a player's own `/pvp` is held to PvPManager's toggle cooldown and a combat tag blocks trades.
+`reset-bot.sh` starts from Headcount's default configs and adds only test settings: a peaceful world with no weather, the action lists in `test-lists.yml`, messages in the `became-active` and `join` hooks, a minimum playtime of 0 so every bot is scored, and `economy.provider: vault` for the money action. Suites change other settings for their own checks (test statuses, lower limits, a provider) and put them back when they finish. They set PvP from the console (`pvp <player> on|off`, then `untag`), because a player's own `/pvp` is held to PvPManager's toggle cooldown and a combat tag blocks trades.
 
 | Suite | What it covers |
 |---|---|
@@ -55,7 +55,7 @@ To run one suite: `./reset-bot.sh`, then `node tests-<name>.js`. Several take a 
 
 `bedrock/bedrock-test.js` joins the main test server through Geyser with [bedrock-protocol](https://github.com/PrismarineJS/bedrock-protocol) clients (`npm install` in `bedrock/`). Offline test clients can't sign in to Xbox, so for the test only, set in `TestServer/plugins/Geyser-Spigot/config.yml`: `auth-type: offline`, `validate-bedrock-login: false`, and `transport: both` with `webrtc-port: 19133` (the clients speak RakNet). Put the original file back afterwards. Run it with the server's console input file as the first argument:
 
-- `node bedrock-test.js <console-file> single`: one client, through Floodgate (`bedrock.provider: floodgate`). It checks that Headcount sees a Bedrock player, the vault opens as a chest menu, and the sidebar arrives as a Bedrock sidebar.
+- `node bedrock-test.js <console-file> single`: one client, through Floodgate. Set `bedrock.provider: floodgate` in integrations.yml first, since the default is `none`. It checks that Headcount sees a Bedrock player, the vault opens as a chest menu, and the sidebar arrives as a Bedrock sidebar.
 - `node bedrock-test.js <console-file> trade`: two clients, with Floodgate moved out of `plugins/` and `bedrock.provider: geyser` (offline clients all get the same Floodgate UUID). It checks Bedrock detection through Geyser and the typed `/trade accept` request text.
 
 Offline clients all have XUID 0. The script gives each client its own XUID; with bedrock-protocol 3.61.0 also change `XUID: '0'` to `XUID: String(client.profile.xuid || '0')` in `node_modules/bedrock-protocol/src/handshake/login.js`, or the second client is turned away as "already logged in". Delete the test players' files in `TestServer/world/players/data/` afterwards.

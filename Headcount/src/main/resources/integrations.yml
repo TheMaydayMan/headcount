@@ -156,8 +156,9 @@ placeholders:
 # --------------------------------------------------------------------------------------------
 economy:
   # Which economy the money action uses: vault | none
-  # vault uses the economy plugin behind Vault, like EssentialsX or CMI.
-  provider: vault
+  # Headcount has no money of its own, so the default content gives none out. With Vault and an economy plugin like
+  # EssentialsX or CMI installed, set vault to use the money action.
+  provider: none
 
 # --------------------------------------------------------------------------------------------
 #  Permissions: the permission, group, primary-group, track, prefix and suffix actions, and title prefixes
@@ -245,7 +246,8 @@ moderation:
 # --------------------------------------------------------------------------------------------
 discord:
   # Which plugin sends Discord messages: discordsrv | none
-  provider: discordsrv
+  # Set discordsrv once DiscordSRV is installed and connected to a bot.
+  provider: none
   # DiscordSRV game channel for actions that don't name one.
   default-channel: global
 
@@ -254,8 +256,8 @@ discord:
 # --------------------------------------------------------------------------------------------
 items:
   # Custom item plugins to use, out of itemsadder, oraxen and nexo. Ones that aren't installed are skipped, and []
-  # turns custom items off.
-  providers: [itemsadder, oraxen, nexo]
+  # turns custom items off. List the ones you install, like [itemsadder].
+  providers: []
 
 # --------------------------------------------------------------------------------------------
 #  Bedrock players, through Geyser. They get /trade accept instead of the chat link, and every menu and the
@@ -263,8 +265,8 @@ items:
 # --------------------------------------------------------------------------------------------
 bedrock:
   # How Bedrock players are recognized: floodgate | geyser | none
-  # floodgate also knows players who have no Java account.
-  provider: floodgate
+  # floodgate also knows players who have no Java account. Set it, or geyser, when Geyser is installed.
+  provider: none
 
 # --------------------------------------------------------------------------------------------
 #  Player states: afk, vanished, god, jailed and muted, for the player-state status source (the afk and vanished

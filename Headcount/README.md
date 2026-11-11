@@ -1,14 +1,14 @@
 # Headcount
 
-A Paper plugin where player heads are the currency. Every player starts each cycle (30 days by default) with a vault full of their own head. You collect other players' heads by trading and by killing, and at the end of the cycle the unique heads in your vault become your score. A good score earns points for the shop and a bad one brings punishments. Then everything resets.
+A Paper plugin where player heads are the currency. Every player starts each cycle (two weeks by default) with a vault of their own heads. You collect other players' heads by trading and by killing, and at the end of the cycle the unique heads in your vault become your score. A good score earns points for the shop and a bad one brings punishments. Then everything resets.
 
 Headcount is built for Paper 26.3 and Java 25, and is open source under the [MIT license](../LICENSE). Almost all of it can be configured, from the numbers and messages to the menus, statuses, score formula, rewards, punishments and shop.
 
 ## How a cycle works
 
-1. Every player who has ever joined gets a vault filled with copies of their own head (`starting-heads`, 27 by default). Each head is tagged with the cycle number and a hidden run ID. Players who join later get the same setup.
+1. Every player who has ever joined gets a 27-slot vault holding copies of their own head (`starting-heads`, 18 by default). Each trade costs one of them. Each head is tagged with the cycle number and a hidden run ID. Players who join later get the same setup.
 2. `/hc` opens your vault. You get other players' heads from trades (`/trade <player>`) and kills. Killing a player drops a fresh head of theirs, once per killer and victim each cycle. Heads can be stored anywhere, but only the ones in your vault count, and only current-cycle heads can go in.
-3. Each player's score comes from a formula over the unique heads in their vault (by default `unique - ceil(active / 4)`). Positive scores become points to spend in `/hc shop` during the next cycle. Negative scores trigger outcomes such as debuffs, dunce caps or bounties. Bans are included but turned off. `/hc history` keeps the results.
+3. Each player's score comes from a formula over the unique heads in their vault. The default rewards collecting heads from as many different players as you can, and it scales with the size of the server ([formula.md](docs/formula.md) has the details). Players who play less than 2 hours in a cycle aren't scored. Positive scores become points to spend in `/hc shop` during the next cycle, and half of unspent points carry over. Negative scores bring punishments that grow with repeat offences, from slowness to being Wanted. Bans are included but turned off. `/hc history` keeps the results.
 4. Every vault is emptied and the next cycle begins. Heads left outside vaults expire. They still work as normal heads, but they're worth nothing.
 
 Admins can also start the current cycle over with `/hca reset cycle`, or wipe everything back to cycle 1 with `/hca reset hard`, which asks for typed confirmation codes. Each reset either deletes the old heads wherever they turn up or leaves them as defunct heads.
