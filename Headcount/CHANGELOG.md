@@ -1,77 +1,49 @@
 # Changelog
 
-## 1.1.0 (in progress)
+## 1.1.0 (not released yet)
 
-Restart the server after installing it, rather than using `/reload`. The database upgrades itself on the first start. Every config file is now `config-version: 2`, and the start-up warning names the files that are older. See [installation.md](docs/installation.md#updating) for what to copy into existing configs.
+Restart the server after installing it instead of using `/reload`. The database upgrades itself on the first start. Every config file is now `config-version: 2`, and the start-up warning names any files that are older. [installation.md](docs/installation.md#updating) says what to copy into existing configs.
 
 ### Resets
-- `/hca reset cycle [delete-heads|keep-heads] confirm` starts the current cycle over from now with the same number:
-  - vaults are refilled from the current config;
-  - kills, activity, shop limits and stock, and warnings start again;
-  - cycle-start hooks run again.
-
-  Points, titles, streaks, history and effects are kept. Permission: `headcount.admin.reset.cycle`.
-- `/hca reset hard [delete-heads|keep-heads]` deletes all Headcount data and starts again at cycle 1, after a configurable number of typed 4-digit codes (default 3). Before it deletes anything it:
-  - reverts live effects, titles and prefixes;
-  - backs up the database and audit log to `backups/hard-reset-<time>/`.
-
-  It has its own permission, `headcount.admin.reset.hard`, which `headcount.admin` doesn't include.
-- Each cycle run has a hidden run ID stamped on its heads, so a reset makes every older head worthless:
-  - **deleted** wherever Headcount sees it: inventories, ender chests, containers, pickups, drops, deliveries and trade recovery, each one audited;
-  - or kept as a **defunct** head (`heads.item.defunct-name` / `defunct-lore`).
-
-  The default is `reset.delete-old-heads`, and the choice is stored with each reset.
-- `/hca cycle info` and `/hca inspect` show the run; inspect tells current, expired and defunct heads apart.
+- `/hca reset cycle [delete-heads|keep-heads] confirm` starts the current cycle over from now, keeping its number. Vaults are refilled from the current config, and kills, activity, shop limits and stock, and warnings start again. Cycle-start hooks run again. Points, titles, streaks, history and effects are kept. Permission: `headcount.admin.reset.cycle`.
+- `/hca reset hard [delete-heads|keep-heads]` deletes all Headcount data and starts again at cycle 1. It asks for a number of typed 4-digit codes first (3 by default). Before deleting anything, it reverts live effects, titles and prefixes, and backs up the database and audit log to `backups/hard-reset-<time>/`. Its permission, `headcount.admin.reset.hard`, is not part of `headcount.admin`.
+- Each cycle run stamps a hidden run ID on its heads, so a reset makes every older head worthless. Old heads are either deleted wherever Headcount sees them (inventories, ender chests, containers, pickups, drops, deliveries and trade recovery, each one audited) or kept as defunct heads, named by `heads.item.defunct-name` and `defunct-lore`. The default comes from `reset.delete-old-heads`, and each reset stores its own choice.
+- `/hca cycle info` and `/hca inspect` show the run. Inspect tells current, expired and defunct heads apart.
 
 ### Vault and heads
-- `<score>` in the vault title and info button: the owner's live score, colored by `vault.gui.score-colors`, or `<score:pos:neg:zero>` in place.
-- The vault title updates live while open (unique heads, score), for the owner and admins viewing it.
-- The bundled head lore shows the cycle number in gold on current heads and gray on expired and defunct ones.
+- The vault title and info button accept `<score>`, the owner's live score colored by `vault.gui.score-colors`. `<score:pos:neg:zero>` sets the colors in place.
+- The vault title updates while it's open, for the owner and for admins viewing it.
+- The bundled head lore shows the cycle number in gold on current heads and in gray on expired and defunct ones.
 
 ### Integrations
-- Every job is `included`, a plugin, or `none`. There is no `auto`. Old configs still load: `auto` picks the installed plugin, with a warning. A chosen plugin that's missing falls back with a warning.
-- **Included PvP** (the new default), with `/pvp [on|off|status]` and `/pvp <player> [on|off]`:
-  - toggle: off by default, with a cooldown, reset on join, and forced worlds;
-  - new-player and respawn protection;
-  - blocked hits, including projectiles, potions, fire, TNT and pets;
+- Every job is set to `included`, a plugin, or `none`. The `auto` setting is gone, but old configs still load: `auto` picks the installed plugin and logs a warning. If a chosen plugin is missing, Headcount falls back and logs a warning.
+- Headcount now has its own PvP, which is the new default. It adds `/pvp [on|off|status]` and `/pvp <player> [on|off]`, and includes:
+  - a toggle that's off by default, with a cooldown, a reset on join, and worlds where it's forced;
+  - protection for new players and after respawning;
+  - blocked hits while PvP is off, including projectiles, potions, fire, TNT and pets;
   - a combat tag that can block commands, teleports, flight, elytra, pearls and turning PvP off;
-  - combat-log kills crediting the last attacker, with extra actions and a broadcast;
-  - per-message channel and sound, and a live countdown in the action bar or a boss bar.
+  - combat-log kills that credit the last attacker, with extra actions and a broadcast;
+  - a channel and sound for each message, and a live countdown in the action bar or a boss bar.
 
   New permissions: `headcount.pvp`, `headcount.pvp.others`, `headcount.pvp.override`, `headcount.bypass.pvp.cooldown`, `headcount.bypass.combat-log`, `headcount.bypass.combat-commands`.
-- **Included permissions:** permission nodes saved and re-applied on join. Groups, tracks and prefixes still need LuckPerms or Vault.
-- **Moderation:** the old vanilla fallback is now `included`. `moderation.kinds` gives single kinds their own provider.
-- **Player states** (was `essentials`): Headcount's own AFK detection (with optional announcements), vanish metadata, god mode, and its own jail and mute. The `afk` status works without EssentialsX. The status source is now `player-state`; `essentials` is still accepted.
-- **Placeholders:** `included` / `placeholderapi` / `none`.
+- The included permissions provider saves permission nodes and applies them again on join. Groups, tracks and prefixes still need LuckPerms or Vault.
+- The old vanilla moderation fallback is now called `included`. `moderation.kinds` can give a single kind its own provider.
+- Player states (formerly `essentials`) now have Headcount's own AFK detection with optional announcements, vanish metadata, god mode, and its own jail and mute. The `afk` status works without EssentialsX. The status source is now called `player-state`, and `essentials` is still accepted.
+- Placeholders can be `included`, `placeholderapi` or `none`.
 
 ### Text
-- Everything players and admins see is in the language file or the configs; nothing is hardcoded:
-  - effect descriptions, durations and states;
-  - inspect words;
-  - the `/hca integrations` summary.
-- Every config file's header says which kind of text it holds.
-- Fixed raw MiniMessage tags in:
-  - boss bars (they now get every variable, such as `<cycle>`);
-  - `/hc score`'s active line, `<streak_text>`, shop tier names, outcome names and the shield message.
+- Everything players and admins see now comes from the language file or the configs, including effect descriptions, durations and states, the words `/hca inspect` uses, and the `/hca integrations` summary.
+- Each config file's header says what kind of text it holds.
+- Raw MiniMessage tags no longer show up in boss bars, `/hc score`'s active line, `<streak_text>`, shop tier names, outcome names or the shield message. Boss bars now get every variable, such as `<cycle>`.
 
 ### Config
-- `cycle.time-zone` accepts abbreviations (`MST`, `EST`, `CET`, ...), offsets (`GMT-7`, `UTC+5:30`, `-07:00`), region IDs in any case, and `system`.
-- New options:
-  - `reset:` (`delete-old-heads`, `hard.*`);
-  - `vault.gui.score-colors`;
-  - `heads.item.defunct-name` / `defunct-lore`;
-  - `sidebar.shown-for-new-players`.
-- A full pass over every file's comments:
-  - a quick start in config.yml, and references for item definitions and menus;
-  - options that existed but weren't documented.
+- `cycle.time-zone` accepts abbreviations (`MST`, `EST`, `CET`), offsets (`GMT-7`, `UTC+5:30`, `-07:00`), region IDs in any case, and `system`.
+- New options: `reset:` (`delete-old-heads` and `hard.*`), `vault.gui.score-colors`, `heads.item.defunct-name`, `heads.item.defunct-lore` and `sidebar.shown-for-new-players`.
+- Every file's comments were revised. config.yml has a quick start, there are references for item definitions and menus, and options that were missing from the comments are now documented.
 
 ### Tools
-- **Headcount Studio** (`tools/studio`; double-click a launcher in the repository's `Headcount Studio` folder): a local app for setting up, running and learning Headcount. It has:
-  - visual editors for every file;
-  - a live server view and an RCON console;
-  - guides, recipes and a full reference;
-  - review-before-save with backups.
-- The test server restarts in the same terminal after `restart`, and has RCON on for Studio.
+- Headcount Studio (`tools/studio`) is new. It's a local app for setting up, running and learning Headcount, opened from a launcher in the repository's `Headcount Studio` folder. It has visual editors for every file, a live server view with an RCON console, guides, recipes and a reference. Changes are shown for review before they're saved, with backups.
+- The test server restarts in the same terminal after `restart`, and has RCON turned on for Studio.
 
 ### API
 - `ActionHandler.describe()` may return MiniMessage.
