@@ -24,7 +24,7 @@ public final class DiscordSrvHook implements DiscordHook {
             TextChannel target = channel == null || channel.isBlank() ? srv.getMainTextChannel() : srv.getDestinationTextChannelForGameChannelName(channel);
             if (target == null) target = srv.getMainTextChannel();
             if (target == null) {
-                logger.warning("DiscordSRV has no channel '" + channel + "' and no main channel; Discord message skipped.");
+                logger.warning("DiscordSRV has no channel '" + channel + "' and no main channel, so the Discord message was skipped.");
                 return false;
             }
             DiscordUtil.sendMessage(target, message);

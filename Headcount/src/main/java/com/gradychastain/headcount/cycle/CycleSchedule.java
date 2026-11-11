@@ -28,7 +28,7 @@ public final class CycleSchedule {
         try {
             t = LocalTime.parse(cfg.getString("end-time", "00:00").trim());
         } catch (DateTimeParseException e) {
-            logger.warning("cycle.end-time '" + cfg.getString("end-time", "") + "' is not HH:MM; using 00:00.");
+            logger.warning("cycle.end-time '" + cfg.getString("end-time", "") + "' isn't HH:MM. Using 00:00.");
             t = LocalTime.MIDNIGHT;
         }
         this.endTime = t;
@@ -37,7 +37,7 @@ public final class CycleSchedule {
         try {
             z = com.gradychastain.headcount.util.Zones.parse(zs);
         } catch (RuntimeException e) {
-            logger.warning("cycle.time-zone '" + zs + "' is not a time zone (e.g. America/Denver, MST, GMT-7, UTC); using UTC.");
+            logger.warning("cycle.time-zone '" + zs + "' isn't a time zone, such as America/Denver, MST, GMT-7 or UTC. Using UTC.");
             z = ZoneId.of("UTC");
         }
         this.zone = z;
@@ -61,7 +61,7 @@ public final class CycleSchedule {
             try {
                 return LocalDate.parse(startDate).atTime(endTime).atZone(zone).toInstant().toEpochMilli();
             } catch (DateTimeParseException e) {
-                logger.warning("cycle.start-date '" + startDate + "' is not YYYY-MM-DD or auto; using auto.");
+                logger.warning("cycle.start-date '" + startDate + "' isn't YYYY-MM-DD or auto. Using auto.");
             }
         }
         ZonedDateTime n = Instant.ofEpochMilli(now).atZone(zone);

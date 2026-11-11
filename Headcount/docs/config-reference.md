@@ -475,9 +475,6 @@ The /hc shop menu. Players earn points from a positive score at the end of a cyc
 next one. Each tier has its own pages and unlocks when the player's score from the previous cycle reaches its
 threshold. Players can still browse a locked tier. Its entries show their locked look, and a banner shows the
 score needed.
-
-This file holds the shop's menu text, item names and lore, and purchase messages. Headcount's own messages
-(command replies, errors, help) are in lang/en_US.yml.
 ```
 
 Tiers and entries are explained in [shop.md](shop.md).
@@ -571,9 +568,6 @@ Tiers and entries are explained in [shop.md](shop.md).
 Titles players can own and equip with /hc titles. They get them from the shop, from outcomes or from an admin.
 Chat and tab plugins show the equipped title with %headcount_title%, and Headcount can also set it as a
 LuckPerms or Vault prefix or suffix. The force-title action puts a title on a player for a set time.
-
-This file holds the title names, descriptions and menu text. Headcount's own messages (command replies,
-errors, help) are in lang/en_US.yml.
 ```
 
 Defining titles is explained in [titles.md](titles.md).
@@ -695,9 +689,6 @@ Each rule has:
 
 Variables in outcome actions: <player> <score> <unique> <total> <own> <rank> <percentile> <streak>
 <points_earned> <points> <rolled_over> <cycle> <tier> <playtime> <kills> <deaths> <trades> <outcome>
-
-This file holds the rule names and messages you write. Headcount's own messages (command replies, errors,
-help) are in lang/en_US.yml.
 ```
 
 Writing rules is explained in [outcomes.md](outcomes.md).
@@ -810,9 +801,6 @@ duration such as cycle, 1d or permanent. /hca selftest warns about one without.
 Flow
   run           (list: <name>, or actions: [...])
   random        (choices: [{weight: 3, actions: [...]}, {weight: 1, list: other-list}])
-
-This file holds the messages you write into action lists. Headcount's own messages (command replies, errors,
-help) are in lang/en_US.yml.
 ```
 
 Every action type is in [actions.md](actions.md).

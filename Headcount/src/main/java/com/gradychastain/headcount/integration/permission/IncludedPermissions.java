@@ -43,8 +43,8 @@ public final class IncludedPermissions implements PermissionHook, Listener {
 
     private void unsupported(String what) {
         if (warned.add(what)) {
-            plugin.getLogger().warning(what + " needs LuckPerms or Vault (integrations.yml permissions.provider); the included "
-                    + "permissions only handle permission nodes. Skipped.");
+            plugin.getLogger().warning(what + " was skipped because it needs LuckPerms or Vault (integrations.yml permissions.provider). The included "
+                    + "permissions only handle permission nodes.");
         }
     }
 

@@ -178,7 +178,7 @@ public final class HeadcountPlugin extends JavaPlugin implements Listener {
         // Everything that parses statuses or actions waits one tick, until every plugin is enabled, so other plugins
         // can register status sources and action types from their own onEnable.
         getServer().getScheduler().runTask(this, this::finishLoading);
-        getLogger().info("Enabled in " + (System.currentTimeMillis() - started) + " ms; finishing setup on the first server tick.");
+        getLogger().info("Enabled in " + (System.currentTimeMillis() - started) + " ms. Setup finishes on the first server tick.");
     }
 
     private void register(String name, TabExecutor executor) {
@@ -227,11 +227,11 @@ public final class HeadcountPlugin extends JavaPlugin implements Listener {
             new com.gradychastain.headcount.command.SelfTest(this).runQuiet();
             var c = cycles.current();
             getLogger().info(c == null
-                    ? "Ready. No cycle is running yet; the first starts " + (cycles.pendingFirstStart() < 0 ? "when started by an admin" : Formats.date(cycles.pendingFirstStart())) + "."
+                    ? "Ready. No cycle is running yet. The first one starts " + (cycles.pendingFirstStart() < 0 ? "when an admin starts it" : Formats.date(cycles.pendingFirstStart())) + "."
                     : "Ready. Cycle " + c.id() + " ends " + Formats.date(c.endMs()) + " (" + Formats.duration(c.remainingMs()) + " left).");
             for (Map.Entry<String, String> e : integrations.summary().entrySet()) getLogger().info("  " + e.getKey() + ": " + e.getValue());
         } catch (RuntimeException e) {
-            getLogger().log(Level.SEVERE, "Headcount failed to finish loading; disabling to protect your data.", e);
+            getLogger().log(Level.SEVERE, "Headcount couldn't finish loading, so it is disabling itself to protect your data.", e);
             getServer().getPluginManager().disablePlugin(this);
         }
     }

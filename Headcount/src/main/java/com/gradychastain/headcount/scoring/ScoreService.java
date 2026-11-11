@@ -83,15 +83,15 @@ public final class ScoreService {
         try {
             formula = Expression.parse(src);
         } catch (IllegalArgumentException e) {
-            plugin.getLogger().severe("scoring.yml formula is invalid (" + e.getMessage() + "); using 'unique - ceil(active / 4)'.");
+            plugin.getLogger().severe("scoring.yml formula is invalid (" + e.getMessage() + "). Using the default, 'unique - ceil(active / 4)'.");
             formula = Expression.parse("unique - ceil(active / 4)");
         }
         for (String v : formula.variables()) {
-            if (!VARIABLES.containsKey(v)) plugin.getLogger().warning("scoring.yml formula uses unknown variable '" + v + "' (it will be 0).");
+            if (!VARIABLES.containsKey(v)) plugin.getLogger().warning("scoring.yml formula uses unknown variable '" + v + "', which counts as 0.");
         }
         rounding = scoring.getString("rounding", "floor").toLowerCase(Locale.ROOT);
         if (!Set.of("floor", "round", "ceil").contains(rounding)) {
-            plugin.getLogger().warning("scoring.yml rounding '" + rounding + "' is not floor, round or ceil; using floor.");
+            plugin.getLogger().warning("scoring.yml rounding '" + rounding + "' isn't floor, round or ceil. Using floor.");
             rounding = "floor";
         }
         addBonus = scoring.getBool("add-bonus-after-formula", true);
@@ -159,7 +159,7 @@ public final class ScoreService {
         return expr.evaluate(name -> {
             if (name.startsWith("%")) return placeholder(name, player);
             Double v = vars.get(name);
-            if (v == null && warned.add(name)) plugin.getLogger().warning("Unknown formula variable '" + name + "' (treated as 0).");
+            if (v == null && warned.add(name)) plugin.getLogger().warning("Unknown formula variable '" + name + "', which counts as 0.");
             return v;
         });
     }
@@ -170,13 +170,13 @@ public final class ScoreService {
         if (player == null) return 0.0;
         String out = plugin.text().resolveForNumber(ph, player);
         if (out.equals(ph)) {
-            if (warned.add(ph)) plugin.getLogger().warning("Placeholder " + ph + " in a formula did not resolve (is PlaceholderAPI and its expansion installed?); using 0.");
+            if (warned.add(ph)) plugin.getLogger().warning("Placeholder " + ph + " in a formula didn't resolve, so it counts as 0. Check that PlaceholderAPI and its expansion are installed.");
             return 0.0;
         }
         try {
             return Double.parseDouble(out.replace(",", "").trim());
         } catch (NumberFormatException e) {
-            if (warned.add(ph + "#nan")) plugin.getLogger().warning("Placeholder " + ph + " returned '" + out + "', which is not a number; using 0.");
+            if (warned.add(ph + "#nan")) plugin.getLogger().warning("Placeholder " + ph + " returned '" + out + "', which isn't a number, so it counts as 0.");
             return 0.0;
         }
     }
@@ -185,7 +185,7 @@ public final class ScoreService {
     public int score(Map<String, Double> vars, OfflinePlayer player) {
         double raw = evaluate(formula, vars, player);
         if (Double.isNaN(raw)) {
-            plugin.getLogger().warning("The score formula produced NaN for " + (player == null ? "?" : player.getName()) + "; using 0.");
+            plugin.getLogger().warning("The score formula produced NaN for " + (player == null ? "?" : player.getName()) + ", so it counts as 0.");
             raw = 0;
         }
         double r = switch (rounding) {

@@ -40,7 +40,7 @@ public final class Lang {
         }
         File file = new File(folder, language + ".yml");
         if (!file.exists()) {
-            plugin.getLogger().warning("Language file lang/" + language + ".yml not found; using en_US.");
+            plugin.getLogger().warning("Couldn't find lang/" + language + ".yml, so en_US is used instead.");
             file = new File(folder, "en_US.yml");
         }
         messages = YamlConfiguration.loadConfiguration(file);

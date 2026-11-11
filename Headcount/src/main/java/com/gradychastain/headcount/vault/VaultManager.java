@@ -127,7 +127,7 @@ public final class VaultManager {
                 try {
                     item = Items.fromBytes(r.item());
                 } catch (RuntimeException e) {
-                    plugin.getLogger().warning("Vault item for head " + r.head().id() + " could not be read; regenerating it.");
+                    plugin.getLogger().warning("Couldn't read the vault item for head " + r.head().id() + ", so a new one is made.");
                 }
             }
             if (item == null) item = plugin.heads().createItem(r.head());

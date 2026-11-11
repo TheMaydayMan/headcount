@@ -99,7 +99,7 @@ public final class SelfTest {
     public void runQuiet() {
         runChecks();
         for (String f : failures) plugin.getLogger().warning("Config check: " + f);
-        if (!failures.isEmpty()) plugin.getLogger().warning(failures.size() + " config check(s) failed; run /hca selftest for the full report.");
+        if (!failures.isEmpty()) plugin.getLogger().warning(failures.size() + " config check(s) failed. Run /hca selftest for the full report.");
     }
 
     private void runChecks() {
@@ -142,7 +142,7 @@ public final class SelfTest {
         ItemStack copy = Items.fromBytes(Items.toBytes(item));
         HeadData again = plugin.heads().read(copy);
         check(g, again != null && again.id().equals(d.id()), "economy data was lost in a byte round-trip (placed heads and vault storage use this)");
-        check(g, !plugin.heads().refresh(item), "a freshly made head was re-rendered (render fingerprint unstable)");
+        check(g, !plugin.heads().refresh(item), "a freshly made head was re-rendered, so its render fingerprint isn't stable");
         check(g, plugin.heads().readCurrent(item) != null, "a current-cycle head is not seen as current");
         check(g, plugin.heads().read(new ItemStack(Material.PLAYER_HEAD)) == null, "a vanilla head was read as an economy head");
         ItemStack other = plugin.heads().createItem(new HeadData(UUID.randomUUID(), d.owner(), "SelfTest", c.id(), d.created(), "selftest", c.token()));
@@ -154,7 +154,7 @@ public final class SelfTest {
         HeadData otherRun = new HeadData(UUID.randomUUID(), d.owner(), "SelfTest", c.id(), d.created(), "selftest", "selftest-run");
         check(g, !plugin.heads().isCurrent(otherRun), "a head from another run of this cycle (before a reset) counts as current");
         check(g, plugin.heads().read(plugin.heads().createItem(otherRun)).token().equals("selftest-run"), "a head's cycle token did not read back from the item");
-        check(g, plugin.heads().readCurrent(expired) == null && plugin.heads().read(expired) != null, "an older cycle's head is not treated as expired-but-intact");
+        check(g, plugin.heads().readCurrent(expired) == null && plugin.heads().read(expired) != null, "an older cycle's head isn't read as expired but still intact");
         String curName = item.getItemMeta().hasDisplayName() ? PlainTextComponentSerializer.plainText().serialize(item.getItemMeta().displayName()) : "";
         String oldName = expired.getItemMeta().hasDisplayName() ? PlainTextComponentSerializer.plainText().serialize(expired.getItemMeta().displayName()) : "";
         check(g, !curName.equals(oldName), "expired and current heads render the same name");
@@ -255,7 +255,7 @@ public final class SelfTest {
                 "countdown", List.of("idle", "running")));
         int tradeSize = new MenuLayout(trade).rows(6) * 9;
         List<Integer> own = trade.getIntList("own-slots"), other = trade.getIntList("other-slots");
-        check("trade menu", own.size() == other.size() && !own.isEmpty(), "own-slots and other-slots must be the same non-zero length");
+        check("trade menu", own.size() == other.size() && !own.isEmpty(), "own-slots and other-slots must be the same length and not empty");
         Set<Integer> all = new HashSet<>();
         for (int s : own) check("trade menu", all.add(s) && s < tradeSize, "own slot " + s + " repeats or is outside the menu");
         for (int s : other) check("trade menu", all.add(s) && s < tradeSize, "other slot " + s + " overlaps or is outside the menu");
@@ -322,7 +322,7 @@ public final class SelfTest {
         for (String n : named.keys()) {
             var parsed = plugin.actions().named(n);
             int raw = named.isList(n) ? named.getList(n).size() : 1;
-            check("action lists", parsed != null && parsed.actions().size() == raw, "list " + n + " has " + raw + " entries but " + (parsed == null ? 0 : parsed.actions().size()) + " parsed (see the log for why)");
+            check("action lists", parsed != null && parsed.actions().size() == raw, "list " + n + " has " + raw + " entries but " + (parsed == null ? 0 : parsed.actions().size()) + " parsed (the log says why)");
             if (parsed != null) durations("action lists", parsed, "list " + n);
         }
         Cfg rules = plugin.configs().outcomes().getSection("rules");
@@ -330,7 +330,7 @@ public final class SelfTest {
             Cfg r = rules.getSection(id);
             if (!r.getBool("enabled", true)) continue;
             var rule = plugin.outcomes().rules().get(id);
-            check("outcomes", rule != null, "rule " + id + " did not load (see the log)");
+            check("outcomes", rule != null, "rule " + id + " did not load (the log says why)");
             if (rule != null) {
                 int raw = r.isList("actions") ? r.getList("actions").size() : 1;
                 check("outcomes", rule.actions().actions().size() == raw, "rule " + id + " has " + raw + " action(s) but " + rule.actions().actions().size() + " parsed");
@@ -365,11 +365,11 @@ public final class SelfTest {
         for (var spec : list.actions()) {
             if (spec.type().equals("run") && !spec.raw().has("actions")) {
                 String name = spec.raw().getString("list", "");
-                check(group, plugin.actions().named(name) != null, where + ": no action list named '" + name + "' (a typo, or a list missing from actions.yml)");
+                check(group, plugin.actions().named(name) != null, where + ": no action list named '" + name + "' in actions.yml");
             }
             if (spec.type().equals("mute") || spec.type().equals("jail")) continue;
             check(group, !(spec.handler().stateful() && spec.common().duration().instant()),
-                    where + ": " + spec.type() + " only works while active but has no duration, so it does nothing. Add a duration (cycle, 1d, cycles:2, permanent...)");
+                    where + ": " + spec.type() + " only works while active, but it has no duration, so it does nothing. Give it one, like cycle, 1d, cycles:2 or permanent.");
         }
     }
 }

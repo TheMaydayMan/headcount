@@ -60,8 +60,8 @@ public final class ConfigFiles {
             int have = actual.getInt("config-version", 0);
             int want = def.getInt("config-version", 0);
             if (want > 0 && have < want) {
-                plugin.getLogger().warning(name + " is config-version " + have + " but this build expects " + want
-                        + ". Missing options use their defaults; compare with the bundled file to see what is new.");
+                plugin.getLogger().warning(name + " is config-version " + have + " but this version of Headcount expects " + want
+                        + ". Missing options use their defaults. Compare it with the bundled file to see what's new.");
             }
         }
     }

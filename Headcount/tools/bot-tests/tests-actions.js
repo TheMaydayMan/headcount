@@ -229,7 +229,7 @@ const LISTS = `
   if (!acts.includes('ta-message:')) fs.writeFileSync(HC + 'actions.yml', acts.replace('lists:\n', 'lists:' + LISTS));
   for (const c of ['lp creategroup hctest', 'lp createtrack hctrack', 'lp track hctrack append default', 'lp track hctrack append hctest']) serverConsole(c);
   const reloadOut = await consoleOut('hca reload', 3000);
-  record('setup: the test lists load with no warnings', !/WARN.*Headcount|\[Headcount\].*(could not|unknown|failed)/i.test(reloadOut), reloadOut.split('\n').filter((l) => /WARN/.test(l)).join(' | ').slice(0, 200));
+  record('setup: the test lists load with no warnings', !/WARN.*Headcount|\[Headcount\].*(could not|couldn.t|unknown|failed)/i.test(reloadOut), reloadOut.split('\n').filter((l) => /WARN/.test(l)).join(' | ').slice(0, 200));
   const a = await makeBot('Alpha');
   let j = await makeBot(N);
   await sleep(3000);

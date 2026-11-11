@@ -100,8 +100,8 @@ public final class Integrations {
                 break;
             }
         }
-        plugin.getLogger().warning("integrations.yml " + key + ": 'auto' is no longer an option; using '" + picked
-                + "'. Set it to one of the listed providers.");
+        plugin.getLogger().warning("integrations.yml " + key + ": 'auto' is no longer an option, so '" + picked
+                + "' is used. Set it to one of the listed providers.");
         return picked;
     }
 
@@ -128,7 +128,7 @@ public final class Integrations {
     /** A chosen plugin that isn't installed: say so once and use the fallback ("included" or "none"). */
     private String missing(String key, String chosen, String fallback) {
         plugin.getLogger().warning("integrations.yml " + key + " is '" + chosen + "', but " + pluginName(chosen)
-                + " is not installed (or failed to load); using '" + fallback + "'.");
+                + " isn't installed or failed to load. Using '" + fallback + "' instead.");
         return fallback;
     }
 
@@ -251,7 +251,7 @@ public final class Integrations {
         items.clear();
         List<String> wanted = cfg.getStringList("items.providers").stream().map(x -> x.trim().toLowerCase(Locale.ROOT)).toList();
         if (wanted.contains("auto")) {
-            plugin.getLogger().warning("integrations.yml items.providers: 'auto' is no longer an option; using every installed one. List them instead.");
+            plugin.getLogger().warning("integrations.yml items.providers: 'auto' is no longer an option, so every installed provider is used. List them instead.");
             wanted = List.of("itemsadder", "oraxen", "nexo");
         }
         for (String w : wanted) {
@@ -310,7 +310,7 @@ public final class Integrations {
     }
 
     private String unknown(String key, String value, String fallback) {
-        plugin.getLogger().warning("integrations.yml " + key + ": '" + value + "' is not an option; using '" + fallback + "'.");
+        plugin.getLogger().warning("integrations.yml " + key + ": '" + value + "' isn't an option. Using '" + fallback + "' instead.");
         return fallback;
     }
 

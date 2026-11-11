@@ -15,9 +15,6 @@
 #
 #  Variables in outcome actions: <player> <score> <unique> <total> <own> <rank> <percentile> <streak>
 #  <points_earned> <points> <rolled_over> <cycle> <tier> <playtime> <kills> <deaths> <trades> <outcome>
-#
-#  This file holds the rule names and messages you write. Headcount's own messages (command replies, errors,
-#  help) are in lang/en_US.yml.
 # ============================================================================================
 config-version: 1
 

@@ -93,7 +93,7 @@ public final class ActionManager implements Listener {
         Object raw = namedRaw.get(n);
         if (raw == null) return null;
         if (!resolving.add(n)) {
-            plugin.getLogger().warning("actions.yml: list '" + n + "' runs itself in a loop; that reference is ignored.");
+            plugin.getLogger().warning("actions.yml: list '" + n + "' ends up running itself, so that reference is ignored.");
             return ActionList.EMPTY;
         }
         try {
@@ -199,7 +199,7 @@ public final class ActionManager implements Listener {
     public void runOne(ActionSpec spec, UUID target, Vars vars, String source) {
         if (spec.handler().needsPlayer() && target == null) {
             if (warned.add("global:" + spec.path())) {
-                plugin.getLogger().warning("Action at " + spec.path() + " (" + spec.type() + ") needs a player but runs in a global hook; it is skipped there.");
+                plugin.getLogger().warning("Action at " + spec.path() + " (" + spec.type() + ") needs a player, so it is skipped in global hooks.");
             }
             return;
         }
@@ -721,7 +721,7 @@ public final class ActionManager implements Listener {
                     (Long) m.get("next_repeat_ms"), (Integer) m.get("cycle"));
             track(a);
         }
-        if (skipped > 0) plugin.getLogger().warning(skipped + " tracked action(s) could not be rebuilt (unknown type?); they stay stored and load once the type exists.");
+        if (skipped > 0) plugin.getLogger().warning(skipped + " tracked action(s) couldn't be rebuilt, usually because their action type is missing. They stay saved and load once the type exists.");
     }
 
     /** Applies maintenance to everyone online (after a reload). */

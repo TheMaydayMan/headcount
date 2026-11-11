@@ -110,7 +110,7 @@ public final class AuditLog {
         try {
             writer.execute(() -> append(now.toLocalDate(), line));
         } catch (RuntimeException rejected) {
-            logger.warning("Audit writer stopped; lost line: " + line);
+            logger.warning("The audit writer has stopped, so this line was lost: " + line);
         }
     }
 

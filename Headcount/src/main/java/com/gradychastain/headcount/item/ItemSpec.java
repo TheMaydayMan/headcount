@@ -79,8 +79,8 @@ public final class ItemSpec {
         if (custom != null) {
             item = plugin.integrations().customItem(custom);
             if (item == null) {
-                plugin.getLogger().warning("Custom item '" + custom + "' is unavailable (plugin missing or unknown ID); using "
-                        + (material == null ? "STONE" : material.name()) + " instead.");
+                plugin.getLogger().warning("Custom item '" + custom + "' isn't available (its plugin is missing or the ID is wrong), so "
+                        + (material == null ? "STONE" : material.name()) + " is used instead.");
             }
         }
         if (item == null) item = new ItemStack(material == null ? Material.STONE : material);

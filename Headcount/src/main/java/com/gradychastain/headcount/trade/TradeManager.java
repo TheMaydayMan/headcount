@@ -66,7 +66,7 @@ public final class TradeManager implements Listener {
         int[] t = cfg.getSection("gui").getIntList("other-slots").stream().mapToInt(Integer::intValue).toArray();
         if (o.length == 0 || o.length != t.length || java.util.Arrays.stream(o).anyMatch(s -> s < 0 || s >= size)
                 || java.util.Arrays.stream(t).anyMatch(s -> s < 0 || s >= size)) {
-            plugin.getLogger().warning("trade.yml gui.own-slots and gui.other-slots must be lists of the same length inside the menu; using the default layout.");
+            plugin.getLogger().warning("trade.yml gui.own-slots and gui.other-slots must be lists of the same length that fit in the menu. Using the default layout.");
             o = new int[]{0, 1, 2, 3, 9, 10, 11, 12, 18, 19, 20, 21, 27, 28, 29, 30, 36, 37, 38, 39, 45, 46, 47, 48};
             t = new int[]{5, 6, 7, 8, 14, 15, 16, 17, 23, 24, 25, 26, 32, 33, 34, 35, 41, 42, 43, 44, 50, 51, 52, 53};
         }

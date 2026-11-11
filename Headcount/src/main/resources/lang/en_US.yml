@@ -1,10 +1,9 @@
-# Headcount - English messages (MiniMessage). An empty string ("") disables a message.
-# <prefix> is available everywhere. Variables are listed where they differ from the obvious ones.
+# Headcount - English messages, written in MiniMessage. An empty string ("") turns a message off.
+# <prefix> works in every message. Variables are noted where they aren't obvious.
 #
-# Where text lives: this file holds everything Headcount itself says: command replies, errors, confirmations,
-# help, effect descriptions, admin output. Text you design (menu titles and items, head names, the sidebar, and the
-# messages inside hooks, outcomes and shop action lists) is in the other config files, next to what it belongs to.
-# Only console log lines are not translatable.
+# This file holds Headcount's own replies, errors and help. Text you design yourself, like menus, head names, the
+# sidebar and the messages in hooks, outcomes and shop actions, lives in the other config files next to the thing it
+# belongs to. Console log lines can't be translated.
 config-version: 2
 prefix: "<dark_gray>[<gold>Headcount</gold>]</dark_gray> "
 
@@ -18,11 +17,11 @@ general:
   no-permission: "<prefix><red>You don't have permission to do that."
   players-only: "<prefix><red>Only players can do that."
   loading: "<prefix><gray>Headcount is still starting up. Try again in a moment."
-  unknown-command: "<prefix><red>Unknown subcommand. <gray>See /<label> help."
+  unknown-command: "<prefix><red>Unknown subcommand. <gray>Try /<label> help."
 
 cycle:
   not-started: "<prefix><gray>No cycle is running yet."
-  processing: "<prefix><gray>The cycle is ending right now. Try again in a moment."
+  processing: "<prefix><gray>The cycle is ending. Try again in a moment."
 
 help:
   header: "<gold><bold>Headcount</bold> <gray>commands"
@@ -37,10 +36,11 @@ help:
     history: "<yellow>/<label> history</yellow> <gray>- your past cycles"
     sidebar: "<yellow>/<label> sidebar</yellow> <gray>- toggle the sidebar"
     effects: "<yellow>/<label> effects</yellow> <gray>- your active effects"
-    help: "<yellow>/<label> help</yellow> <gray>- this list"
+    help: "<yellow>/<label> help</yellow> <gray>- show this list"
     trade: "<yellow>/trade \\<player> | accept | deny | cancel</yellow> <gray>- trade heads and items"
 
-# Status gates: gates.<gate>.<status>, falling back to gates.<gate>.default. <status> is the status name.
+# Sent when a status blocks something. Headcount looks for gates.<gate>.<status> first, then gates.<gate>.default.
+# <status> is the status name.
 gates:
   vault-move:
     default: "<prefix><red>You can't move heads right now (<status>)."
@@ -75,17 +75,17 @@ gates:
 
 vault:
   view-only: "<prefix><gray>You can only look at this vault."
-  not-economy-head: "<prefix><red>Only economy heads of this cycle can go in your vault."
+  not-economy-head: "<prefix><red>Only economy heads from this cycle can go in your vault."
   expired-head: "<prefix><red>That head is from cycle <cycle> and has expired."
-  reset-head: "<prefix><red>That head is defunct: cycle <cycle> was reset after it was made."
-  # <score> in the vault title while the vault's owner is offline.
+  reset-head: "<prefix><red>That head no longer counts. Cycle <cycle> was reset after it was made."
+  # Shown as <score> in the vault title while its owner is offline.
   score-unknown: "?"
   duplicate-head: "<prefix><red>That head is a copy and can't be used."
   full: "<prefix><red>Your vault is full."
 
 items:
-  inventory-full: "<prefix><yellow>Your inventory was full: <count> stack(s) were dropped at your feet."
-  delivered: "<prefix><green>You received <count> item(s) that were waiting for you."
+  inventory-full: "<prefix><yellow>Your inventory was full, so <count> stack(s) dropped at your feet."
+  delivered: "<prefix><green>You got <count> item(s) that were waiting for you."
 
 duplicates:
   alert: "<prefix><red>Duplicate head (<kind>): <white><head></white> by <white><player></white>. <gray>/hca audit <head>"
@@ -102,7 +102,7 @@ bounty:
   claimed-broadcast: "<prefix><gold><killer> claimed the bounty on <victim>."
 
 points:
-  balance: "<prefix><gray>You have <gold><points></gold> points (<gold><points_next></gold> waiting for next cycle). <rollover>% of unspent points roll over."
+  balance: "<prefix><gray>You have <gold><points></gold> points (<gold><points_next></gold> waiting for next cycle). <rollover>% of unspent points carry over."
 
 score:
   preview: "<prefix><gray>If the cycle ended now: score <yellow><score></yellow> (<unique> unique, rank <rank> of <active>). <is_active> <dark_gray><time_left> left."
@@ -125,7 +125,7 @@ effects:
   none: "<prefix><gray>You have no active effects."
   header: "<prefix><gray>Active effects (<count>):"
   line: "<gray>- <white><description></white> <dark_gray>(<remaining>)"
-  # One line per effect type in /hc effects and /hca effects (<description>).
+  # How each effect type is named in /hc effects and /hca effects (<description>).
   describe:
     potion: "<effect> <level>"
     attribute: "<attribute> <amount>"
@@ -137,9 +137,9 @@ effects:
     teleport: "teleported (<to>)"
     points: "<amount> points"
     points-next: "<amount> points next cycle"
-    deny: "denied: <categories>"
-    head-protection: "your head will not drop when you are killed"
-    extra-heads: "<amount> extra head(s) drop when you are killed"
+    deny: "blocked: <categories>"
+    head-protection: "your head won't drop if you're killed"
+    extra-heads: "<amount> extra head(s) drop if you're killed"
     bounty: "bounty on your head"
     bounty-points: "bounty on your head (<points> points)"
     shield: "shield against the next punishment"
@@ -179,12 +179,12 @@ effects:
     time: "<time>"
     online-time: "<time> (online)"
     cycle: "until the cycle ends"
-    cycles: "<n> more cycle ends"
-    cycles-one: "1 more cycle end"
+    cycles: "<n> cycle ends left"
+    cycles-one: "1 cycle end left"
     death: "until you die"
     permanent: "permanent"
     manual: "until removed"
-  # <duration> in an action's start-message and end-message.
+  # Shown as <duration> in an action's start-message and end-message.
   duration:
     instant: "instant"
     time: "<time>"
@@ -193,11 +193,11 @@ effects:
     death: "until death"
     permanent: "permanent"
     manual: "until removed"
-  # <state> in /hca effects.
+  # Shown as <state> in /hca effects.
   state:
     active: "active"
     pending-apply: "waiting for the player"
-    pending-revert: "ending when the player joins"
+    pending-revert: "ends when the player joins"
 
 history:
   empty: "<prefix><gray><player> has no past cycles yet."
@@ -237,26 +237,26 @@ shop:
 
 pvp:
   locked: "<prefix><red>Your PvP is locked <state> right now."
-  # The included PvP system (integrations.yml pvp.provider: included). Which of these reach the player, and how
-  # (chat, action bar, title) and with which sound, is set in integrations.yml pvp.included.messages.
+  # The rest are for the included PvP system (integrations.yml pvp.provider: included).
+  # integrations.yml pvp.included.messages sets where each one shows up and which sound it plays.
   word-on: "on"
   word-off: "off"
   word-yes: "yes"
   word-no: "no"
-  not-included: "<prefix><gray>PvP is handled by another plugin here, not Headcount."
+  not-included: "<prefix><gray>PvP is handled by another plugin on this server."
   toggled-on: "<prefix><red>PvP is now <bold>on</bold>. <gray>Other players with PvP on can attack you."
-  toggled-off: "<prefix><green>PvP is now <bold>off</bold>. <gray>Nobody can attack you, and you can't attack."
+  toggled-off: "<prefix><green>PvP is now <bold>off</bold>. <gray>Players can't attack you, and you can't attack them."
   status: "<prefix><gray>Your PvP is <white><state></white>."
   other-status: "<prefix><gray><player>'s PvP is <white><state></white> (in combat: <tagged>)."
   cooldown: "<prefix><red>Wait <seconds>s before switching PvP again."
-  toggle-disabled: "<prefix><red>You can't switch PvP yourself here."
+  toggle-disabled: "<prefix><red>You can't change your own PvP on this server."
   forced-world: "<prefix><red>PvP is always <state> in this world."
   newbie-locked: "<prefix><red>You are protected as a new player and can't turn PvP on yet."
   newbie-ended: "<prefix><yellow>Your new-player protection has ended."
-  # <other> is who hit you or whom you hit, <seconds> how long the tag lasts.
+  # <other> is the player you hit or who hit you. <seconds> is how long the tag lasts.
   tag-start: "<red>⚔ In combat with <other>! <gray>Don't log out."
   tag-end: "<green>You are no longer in combat."
-  # The live countdown while in combat (action bar or boss bar, see integrations.yml).
+  # The countdown shown while in combat, on the action bar or a boss bar (see integrations.yml).
   countdown: "<red>⚔ In combat <white><seconds>s"
   blocked-hit:
     self-off: "<red>Your PvP is off. <gray>/pvp to turn it on."
@@ -270,10 +270,10 @@ pvp:
   blocked-elytra: "<prefix><red>You can't glide while in combat."
   blocked-pearl: "<prefix><red>You can't use ender pearls while in combat."
   blocked-toggle: "<prefix><red>You can't turn PvP off while in combat (<seconds>s left)."
-  # Sent to everyone else when someone leaves while in combat.
+  # Sent to everyone else when a player logs out in combat.
   combat-log-broadcast: "<prefix><red><player> logged out during a fight."
 
-# The included player states (integrations.yml player-state.provider: included). afk.announce chooses who is told.
+# The included player states (integrations.yml player-state.provider: included). afk.announce sets who is told.
 player-state:
   afk-on: "<prefix><gray>You are now AFK."
   afk-off: "<prefix><gray>You are no longer AFK."
@@ -318,13 +318,13 @@ trade:
   only-own-heads: "<prefix><red>You can only trade your own head."
   too-many-heads: "<prefix><red>At most <max> heads per trade."
   too-many-items: "<prefix><red>At most <max> item stacks per trade."
-  invalid: "<prefix><red>An offer breaks the trade limits."
+  invalid: "<prefix><red>One of the offers is over the trade limits."
   empty: "<prefix><red>Both sides are empty."
-  type-gift: "<prefix><red>Gifts (one empty side) are not allowed."
-  type-heads-for-heads: "<prefix><red>Heads for heads trades are not allowed."
-  type-items-for-heads: "<prefix><red>Items for heads trades are not allowed."
-  type-items-for-items: "<prefix><red>Items for items trades are not allowed."
-  changed: "<prefix><yellow>An offer changed; both confirmations were cleared."
+  type-gift: "<prefix><red>Gifts aren't allowed. Both sides need to offer something."
+  type-heads-for-heads: "<prefix><red>Heads-for-heads trades aren't allowed."
+  type-items-for-heads: "<prefix><red>Items-for-heads trades aren't allowed."
+  type-items-for-items: "<prefix><red>Items-for-items trades aren't allowed."
+  changed: "<prefix><yellow>An offer changed, so both sides need to confirm again."
   confirmed-other: "<prefix><green><other> confirmed."
   unconfirmed-other: "<prefix><yellow><other> took back their confirmation."
   countdown: "<gold>Trading in <seconds>..."
@@ -337,14 +337,14 @@ trade:
     offline: "<prefix><red><target> is not online."
     self: "<prefix><red>You can't trade with yourself."
     you-busy: "<prefix><red>You already have a trade or request open."
-    target-busy: "<prefix><red><target> is busy with another trade."
+    target-busy: "<prefix><red><target> is already in a trade."
     you-cooldown: "<prefix><red>You can trade again in <time>."
     target-cooldown: "<prefix><red><target> can trade again in <time>."
     other-world: "<prefix><red><target> is in another world."
     out-of-range: "<prefix><red><target> is too far away (max <range> blocks)."
     target-cannot: "<prefix><red><target> can't trade right now."
     none: "<prefix><gray>You have no trade or request open."
-    none-incoming: "<prefix><gray>You have no trade request."
+    none-incoming: "<prefix><gray>You have no trade request to answer."
     expired-sender: "<prefix><gray>Your trade request to <target> expired."
     expired-target: "<prefix><gray>The trade request from <player> expired."
     denied-target: "<prefix><gray>You denied <player>'s trade request."
@@ -352,29 +352,29 @@ trade:
     cancelled-self: "<prefix><gray>Trade request cancelled."
     cancelled-other: "<prefix><gray><player> cancelled the trade request."
   cancelled:
-    generic: "<prefix><red>The trade was cancelled (<reason>). Your items were returned."
-    status: "<prefix><red>The trade was cancelled: <player> is <status>. Your items were returned."
+    generic: "<prefix><red>Trade cancelled (<reason>). Your items were returned."
+    status: "<prefix><red>Trade cancelled because <player> is <status>. Your items were returned."
     cancelled-by: "<prefix><red><player> cancelled the trade. Your items were returned."
-    closed: "<prefix><red>The trade was cancelled because a screen was closed. Your items were returned."
-    disconnected: "<prefix><red>The trade was cancelled: someone disconnected. Your items were returned."
-    kicked: "<prefix><red>The trade was cancelled: someone was kicked. Your items were returned."
-    death: "<prefix><red>The trade was cancelled: someone died. Items were returned."
-    world: "<prefix><red>The trade was cancelled: someone changed worlds. Your items were returned."
-    range: "<prefix><red>The trade was cancelled: out of range. Your items were returned."
-    teleport: "<prefix><red>The trade was cancelled: someone teleported. Your items were returned."
-    gamemode: "<prefix><red>The trade was cancelled: a gamemode changed. Your items were returned."
-    changed: "<prefix><red>The trade was cancelled: an offer changed during the countdown."
-    shutdown: "<prefix><red>The trade was cancelled: the server is stopping. Your items were returned."
-    reload: "<prefix><red>The trade was cancelled: Headcount reloaded. Your items were returned."
-    cycle-end: "<prefix><red>The trade was cancelled: the cycle ended. Your items were returned."
+    closed: "<prefix><red>Trade cancelled because the trade screen was closed. Your items were returned."
+    disconnected: "<prefix><red>Trade cancelled because someone disconnected. Your items were returned."
+    kicked: "<prefix><red>Trade cancelled because someone was kicked. Your items were returned."
+    death: "<prefix><red>Trade cancelled because someone died. Your items were returned."
+    world: "<prefix><red>Trade cancelled because someone changed worlds. Your items were returned."
+    range: "<prefix><red>Trade cancelled because you were out of range. Your items were returned."
+    teleport: "<prefix><red>Trade cancelled because someone teleported. Your items were returned."
+    gamemode: "<prefix><red>Trade cancelled because someone's gamemode changed. Your items were returned."
+    changed: "<prefix><red>Trade cancelled because an offer changed during the countdown. Your items were returned."
+    shutdown: "<prefix><red>Trade cancelled because the server is stopping. Your items were returned."
+    reload: "<prefix><red>Trade cancelled because Headcount reloaded. Your items were returned."
+    cycle-end: "<prefix><red>Trade cancelled because the cycle ended. Your items were returned."
     admin: "<prefix><red>An admin cancelled the trade. Your items were returned."
-    denied: "<prefix><red>The trade was cancelled: someone can't trade right now. Your items were returned."
+    denied: "<prefix><red>Trade cancelled because someone can't trade right now. Your items were returned."
 
 admin:
-  unknown-player: "<prefix><red>No player named <player> has joined."
+  unknown-player: "<prefix><red>No player named <player> has ever joined."
   player-offline: "<prefix><red><player> is not online."
   unknown-subcommand: "<prefix><red>Unknown subcommand. <gray>/<label> help"
-  error: "<prefix><red>That failed: <error>"
+  error: "<prefix><red>Command failed: <error>"
   reloaded: "<prefix><green>Headcount reloaded."
   help:
     header: "<gold><bold>Headcount admin</bold>"
@@ -394,7 +394,7 @@ admin:
     inspect: "<yellow>/hca inspect <gray>(held head)"
     placeholders: "<yellow>/hca placeholders [player]"
     integrations: "<yellow>/hca integrations"
-    selftest: "<yellow>/hca selftest <gray>(check every item, menu and message)"
+    selftest: "<yellow>/hca selftest <gray>(check the configs for mistakes)"
     run: "<yellow>/hca run \\<player> \\<action-list>"
     hook: "<yellow>/hca hook \\<hook> [player]"
   usage:
@@ -417,15 +417,15 @@ admin:
     hook: "<prefix><gray>/hca hook <cycle-start|first-join|first-join-cycle|became-active|join|warning:\\<id>> [player]"
   cycle:
     none: "<prefix><gray>No cycle is running. The first starts <white><starts></white> (in <in>)."
-    info: "<prefix><gray>Cycle <white><cycle></white> <dark_gray>(run <run>)</dark_gray>: <start> → <end> (<time_left> left, <length> days, <zone>). Vault <vault_size>, starting heads <starting_heads>. Active <active> / <players>."
-    end-confirm: "<prefix><red>This ends the cycle now, scores everyone and resets every vault. <gray>Run /hca cycle end confirm"
+    info: "<prefix><gray>Cycle <white><cycle></white> <dark_gray>(run <run>)</dark_gray>: <start> to <end> (<time_left> left, <length> days, <zone>). Vault size <vault_size>, starting heads <starting_heads>. <active> of <players> players active."
+    end-confirm: "<prefix><red>This ends the cycle now, scores everyone and resets every vault. <gray>To go ahead, run /hca cycle end confirm"
     ended: "<prefix><green>Cycle ended and the next one started."
     started: "<prefix><green>Cycle started."
     already-running: "<prefix><red>A cycle is already running. End it with /hca cycle end confirm."
     cannot: "<prefix><red>That can't be done right now."
     end-changed: "<prefix><green>The cycle now ends <end>."
-    simulate-header: "<prefix><gold>Simulated end of cycle <cycle> (nothing applied): <active> active, average <average>, <rewarded> rewarded, <punished> punished."
-    simulate-line: "<gray><rank>. <white><name></white> <unique> unique → score <yellow><score></yellow>, points <points>, outcomes: <outcomes>"
+    simulate-header: "<prefix><gold>Simulated end of cycle <cycle>, nothing changed: <active> active, average <average>, <rewarded> rewarded, <punished> punished."
+    simulate-line: "<gray><rank>. <white><name></white> <unique> unique, score <yellow><score></yellow>, points <points>, outcomes: <outcomes>"
   heads:
     given: "<prefix><green>Gave <amount> of <owner>'s heads to <player> (<in_vault> into the vault)."
     queued: "<prefix><green>Queued <amount> of <owner>'s heads for <player>'s vault next cycle."
@@ -440,37 +440,37 @@ admin:
     line: "<gray>- <dark_gray>[<id>]</dark_gray> <white><description></white> <gray>(<remaining>, <state>, from <source>)"
     removed: "<prefix><green>Removed effect <id>."
     removed-all: "<prefix><green>Removed <count> effect(s) from <player>."
-    not-found: "<prefix><red>No effect starting with <id>."
+    not-found: "<prefix><red>No effect ID starts with <id>."
   reset:
     confirm: "<prefix><red>This resets <what> for <player>. <gray>Add 'confirm' to the command."
     done: "<prefix><green>Reset <what> for <player>."
-    cycle-confirm: "<prefix><red>This starts cycle <cycle> over from now: every vault is refilled, every head made so far stops counting (<old_heads>), and kills, activity, shop limits and warnings start again. Points, titles, streaks, history and effects are kept. <gray>Run /hca reset cycle <args> confirm"
-    old-heads-delete: "deleted wherever they are seen"
+    cycle-confirm: "<prefix><red>This restarts cycle <cycle> from now. Every vault is refilled and all heads made so far stop counting (<old_heads>). Kills, activity, shop limits and warnings reset, while points, titles, streaks, history and effects stay. <gray>To go ahead, run /hca reset cycle <args> confirm"
+    old-heads-delete: "deleted wherever they turn up"
     old-heads-keep: "kept as defunct heads"
     cycle-done: "<prefix><green>Cycle <cycle> started over. It now ends <end>."
     # Sent to every online player. Empty to send nothing.
-    cycle-broadcast: "<prefix><yellow>Cycle <cycle> was reset by an admin: your vault was refilled and older heads no longer count."
-    hard-disabled: "<prefix><red>Hard reset is switched off (reset.hard.enabled in config.yml)."
+    cycle-broadcast: "<prefix><yellow>An admin restarted cycle <cycle>. Your vault was refilled, and heads from before the restart no longer count."
+    hard-disabled: "<prefix><red>Hard reset is turned off (reset.hard.enabled in config.yml)."
     hard-warning: "<prefix><dark_red><bold>HARD RESET</bold></dark_red> <red>deletes ALL Headcount data and starts again from cycle 1: <players> players, <cycles> cycles, <heads> heads in vaults, <points> points, <titles> titles, <results> results and <effects> active effects. Old heads are <old_heads>. Config files are kept."
     hard-step: "<prefix><red>Confirmation <step>/<steps>: type <white>/hca reset hard <code></white> within <seconds>s."
     hard-final: "<prefix><dark_red><bold>Last confirmation</bold></dark_red> <red>(<step>/<steps>). This cannot be undone. Type <white>/hca reset hard <code></white> within <seconds>s."
-    hard-wrong-code: "<prefix><red>Wrong code. Hard reset cancelled; start again with /hca reset hard."
-    hard-expired: "<prefix><red>That code expired. Hard reset cancelled; start again with /hca reset hard."
+    hard-wrong-code: "<prefix><red>Wrong code, so the hard reset was cancelled. Start again with /hca reset hard."
+    hard-expired: "<prefix><red>That code expired, so the hard reset was cancelled. Start again with /hca reset hard."
     hard-done: "<prefix><green>Hard reset done. Backup: <backup>."
     # Sent to every online player. Empty to send nothing.
-    hard-broadcast: "<prefix><yellow>Headcount was reset by an admin. Everything starts over."
+    hard-broadcast: "<prefix><yellow>An admin reset Headcount. Everything starts over."
   trade:
     cancelled: "<prefix><green>Cancelled <player>'s trade."
     none: "<prefix><gray><player> has no trade or request."
   audit:
     searching: "<prefix><gray>Searching the audit log..."
-    none: "<prefix><gray>No matching audit lines."
+    none: "<prefix><gray>Nothing in the audit log matches."
     header: "<prefix><gray>Audit (<terms>, type <type>, page <page>):"
     line: "<gray><line>"
-    more: "<gray>More: add page:<next>"
+    more: "<gray>More results: add page:<next>"
     bad-type: "<prefix><red>Unknown type. Types: <types>"
   status:
-    header: "<prefix><gray>Statuses of <player>:"
+    header: "<prefix><gray><player>'s statuses:"
     line: "<gray>- <white><status></white>: <value> <dark_gray>(<source>)"
     one: "<prefix><gray><player> <status>: <white><value>"
     error: "<red>- <status> is disabled: <error>"
@@ -479,7 +479,7 @@ admin:
     cleared: "<prefix><green>Cleared flag <flag> on <player>."
   inspect:
     not-economy: "<prefix><gray>That is not an economy head."
-    # <current> and <in_vault> in the line below.
+    # Shown as <current> and <in_vault> in the head line below.
     current: "yes"
     expired: "no, expired"
     defunct: "no, defunct (cycle reset)"
@@ -491,7 +491,7 @@ admin:
   integrations:
     header: "<prefix><gray>Integrations:"
     line: "<gray>- <white><category></white>: <provider>"
-    # Category names, also used in the startup log.
+    # Category names. The startup log uses them too.
     category:
       pvp: "PvP"
       placeholders: "Placeholders"
@@ -504,20 +504,20 @@ admin:
       player-state: "Player states (afk, vanish, god, jail, mute)"
       moderation: "Moderation"
     none:
-      pvp: "none (no PvP handling; combat-tagged falls back to recent PvP damage)"
-      placeholders: "included (Headcount's own %headcount_...% only)"
+      pvp: "none (combat-tagged uses recent PvP damage instead)"
+      placeholders: "included (only Headcount's own %headcount_...%)"
       money: "none (money actions are skipped)"
       permissions: "none (permission, group, track and prefix actions are skipped)"
       discord: "none (discord actions are skipped)"
       custom-items: "none"
       bedrock: "none"
       essentials: "none"
-      player-state: "none (afk, vanished, god, jailed and muted statuses read false)"
-      placeholders-off: "none (every %...% placeholder is off, Headcount's own too)"
-    # How Headcount's own version of a feature is named in the summary.
+      player-state: "none (the afk, vanished, god, jailed and muted statuses are always false)"
+      placeholders-off: "none (all %...% placeholders are off, including Headcount's)"
+    # What the summary calls Headcount's own version of a feature.
     included: "included (Headcount)"
     papi-expansion: " (+ %headcount_*% expansion)"
-    pvp-toggle: " (every player may use /pvp; pvp.let-players-toggle)"
+    pvp-toggle: " (players can use /pvp, set by pvp.let-players-toggle)"
   run:
     done: "<prefix><green>Ran <list> on <player>."
     unknown: "<prefix><red>No action list named <list> in actions.yml."
@@ -526,7 +526,7 @@ admin:
     group: "<green>✔ <group></green> <gray>(<count> checks)"
     failure: "<red>✘ <detail>"
     ok: "<prefix><green>All <passed> checks passed."
-    failed: "<prefix><red><failed> check(s) failed</red><gray>, <passed> passed. Details are in the console too."
+    failed: "<prefix><red><failed> check(s) failed</red><gray>, <passed> passed. The console has the full list."
   hook:
     done: "<prefix><green>Ran hook <hook>."
-    unknown: "<prefix><red>Unknown hook <hook> (or no cycle running / no player)."
+    unknown: "<prefix><red>Couldn't run hook <hook>. Check the name, that a cycle is running, and that you gave a player if it needs one."

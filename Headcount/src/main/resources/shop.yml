@@ -4,9 +4,6 @@
 #  next one. Each tier has its own pages and unlocks when the player's score from the previous cycle reaches its
 #  threshold. Players can still browse a locked tier. Its entries show their locked look, and a banner shows the
 #  score needed.
-#
-#  This file holds the shop's menu text, item names and lore, and purchase messages. Headcount's own messages
-#  (command replies, errors, help) are in lang/en_US.yml.
 # ============================================================================================
 config-version: 2
 

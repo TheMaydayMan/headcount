@@ -92,7 +92,7 @@ public final class TitleManager {
     public boolean grant(UUID uuid, String id, String source) {
         String t = id.toLowerCase(Locale.ROOT);
         if (!titles.containsKey(t)) {
-            plugin.getLogger().warning("Cannot grant unknown title '" + id + "' (not in titles.yml).");
+            plugin.getLogger().warning("Can't grant title '" + id + "': it isn't in titles.yml.");
             return false;
         }
         PlayerData d = plugin.players().loaded(uuid);

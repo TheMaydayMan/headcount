@@ -100,9 +100,6 @@
 #  Flow
 #    run           (list: <name>, or actions: [...])
 #    random        (choices: [{weight: 3, actions: [...]}, {weight: 1, list: other-list}])
-#
-#  This file holds the messages you write into action lists. Headcount's own messages (command replies, errors,
-#  help) are in lang/en_US.yml.
 # ============================================================================================
 config-version: 2
 

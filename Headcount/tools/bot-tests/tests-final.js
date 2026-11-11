@@ -206,7 +206,7 @@ const N = process.argv[2] || 'Charlie';
   record('audit: the file rotates by size and the full file is gzipped', files.filter((f) => f.endsWith('.gz')).length > gzBefore && files.some((f) => /\.\d+\.log$/.test(f)), files.join(' '));
   const out = await consoleOut(`hca audit ${firstHead}`, 1500);
   const inPlain = !!firstHead && auditPlain().includes(firstHead);
-  record('audit: /hca audit still finds a line that is now only inside a .gz file', !!firstHead && !inPlain && out.includes(firstHead) && !/No matching audit lines/.test(out),
+  record('audit: /hca audit still finds a line that is now only inside a .gz file', !!firstHead && !inPlain && out.includes(firstHead) && !/Nothing in the audit log matches/.test(out),
     `${firstHead} ${firstLine.slice(0, 40)}`);
   fs.writeFileSync(HC + 'config.yml', fs.readFileSync(HC + 'config.yml', 'utf8').replace('max-file-size-mb: 0', 'max-file-size-mb: 10'));
   await consoleOut('hca reload', 2500);

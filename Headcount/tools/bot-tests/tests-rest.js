@@ -221,7 +221,7 @@ const closeAll = async (...bots) => { for (const b of bots) if (b.currentWindow)
   await sleep(400);
   await b.clickWindow(13, 0, 0);
   await sleep(1200);
-  record('trade: a disallowed trade type (items-for-items: false) cannot be confirmed', await waitChat(a, /Items for items trades are not allowed/, ma, 2000) &&
+  record('trade: a disallowed trade type (items-for-items: false) cannot be confirmed', await waitChat(a, /Items-for-items trades aren't allowed/, ma, 2000) &&
     count(b, 'cobblestone') === 0, a.chatLog.slice(ma).join(' | ').slice(0, 160));
   await closeAll(a, b);
   edit('trade.yml', [['  only-own-heads: true', '  only-own-heads: false'], ['  items-for-items: false', '  items-for-items: true'],
@@ -332,7 +332,7 @@ const closeAll = async (...bots) => { for (const b of bots) if (b.currentWindow)
   await closeAll(a, b);
   await sleep(800);
   const groundCob = Object.values(a.entities).filter((e) => e.name === 'item' && e.getDroppedItem && (e.getDroppedItem() || {}).name === 'cobblestone').length;
-  record('trade: a returned item that no longer fits is dropped at the player\'s feet, with a message', await waitChat(a, /inventory was full: 1 stack/, ma, 2000) && groundCob === 1,
+  record('trade: a returned item that no longer fits is dropped at the player\'s feet, with a message', await waitChat(a, /inventory was full, so 1 stack/, ma, 2000) && groundCob === 1,
     `free slots before=${free} cobble on ground=${groundCob}`);
   serverConsole('minecraft:clear Alpha stone');
   serverConsole('minecraft:kill @e[type=item]');

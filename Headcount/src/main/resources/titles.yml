@@ -3,9 +3,6 @@
 #  Titles players can own and equip with /hc titles. They get them from the shop, from outcomes or from an admin.
 #  Chat and tab plugins show the equipped title with %headcount_title%, and Headcount can also set it as a
 #  LuckPerms or Vault prefix or suffix. The force-title action puts a title on a player for a set time.
-#
-#  This file holds the title names, descriptions and menu text. Headcount's own messages (command replies,
-#  errors, help) are in lang/en_US.yml.
 # ============================================================================================
 config-version: 2
 

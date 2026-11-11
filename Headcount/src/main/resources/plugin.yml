@@ -2,9 +2,9 @@ name: Headcount
 version: '${version}'
 main: com.gradychastain.headcount.HeadcountPlugin
 api-version: '26.3'
-description: Collect player heads each cycle, score them, then spend points or take punishments.
+description: Collect player heads each cycle. A good score earns points to spend, and a bad one earns a punishment.
 author: Grady Chastain
-website: https://github.com/gradychastain/Headcount
+website: https://github.com/TheMaydayMan/headcount
 load: POSTWORLD
 libraries:
   - org.xerial:sqlite-jdbc:3.50.3.0
@@ -26,7 +26,7 @@ softdepend:
 
 commands:
   headcount:
-    description: Open your head vault, or use a Headcount subcommand.
+    description: Open your head vault, or run a Headcount subcommand.
     aliases: [hc]
     usage: /<command> [shop|titles|points|score|top|history|sidebar|effects|help]
   trade:
@@ -34,24 +34,24 @@ commands:
     usage: /<command> <player>|accept|deny|cancel
     permission: headcount.trade
   pvp:
-    description: Turn your PvP on or off (Headcount's included PvP; integrations.yml pvp.provider).
+    description: Turn your PvP on or off. Only works when integrations.yml pvp.provider is included.
     usage: /<command> [on|off|status] | /<command> <player> [on|off]
     permission: headcount.pvp
   hcadmin:
-    description: Headcount administration.
+    description: Headcount admin commands.
     aliases: [hca]
     usage: /<command> help
     permission: headcount.admin
 
 permissions:
   headcount.*:
-    description: Every Headcount permission, including admin and bypasses.
+    description: All player and admin permissions. Bypasses and hard reset are separate.
     default: op
     children:
       headcount.player: true
       headcount.admin: true
   headcount.player:
-    description: Every regular player command.
+    description: All player commands.
     default: true
     children:
       headcount.vault: true
@@ -97,13 +97,13 @@ permissions:
     description: Show help with /hc help.
     default: true
   headcount.trade:
-    description: Use /trade.
+    description: Trade with other players using /trade.
     default: true
   headcount.pvp:
-    description: Use /pvp to turn your own PvP on or off (included PvP).
+    description: Turn your own PvP on or off with /pvp (included PvP).
     default: true
   headcount.admin:
-    description: Every admin command.
+    description: All admin commands except /hca reset hard.
     default: op
     children:
       headcount.admin.cycle: true
@@ -124,7 +124,7 @@ permissions:
       headcount.admin.notify: true
       headcount.pvp.others: true
   headcount.admin.cycle:
-    description: Cycle info, force end/start, simulate, change end time.
+    description: View, end, start and simulate the cycle, and change when it ends.
     default: op
   headcount.admin.vault:
     description: View any player's vault.
@@ -145,16 +145,16 @@ permissions:
     description: View any player's history.
     default: op
   headcount.admin.effects:
-    description: List or remove any player's active actions.
+    description: List or remove any player's active effects.
     default: op
   headcount.admin.reset:
     description: Reset a player's Headcount data.
     default: op
   headcount.admin.reset.cycle:
-    description: Start the current cycle over with /hca reset cycle (also needs headcount.admin.reset).
+    description: Restart the current cycle with /hca reset cycle. Also needs headcount.admin.reset.
     default: op
   headcount.admin.reset.hard:
-    description: Delete all Headcount data with /hca reset hard (also needs headcount.admin.reset). Not part of headcount.admin; the console always has it.
+    description: Delete all Headcount data with /hca reset hard. Also needs headcount.admin.reset. It isn't part of headcount.admin, and the console always has it.
     default: op
   headcount.admin.trade:
     description: Cancel any trade.
@@ -163,22 +163,22 @@ permissions:
     description: Search the audit log.
     default: op
   headcount.admin.reload:
-    description: Reload configuration.
+    description: Reload the config files.
     default: op
   headcount.admin.debug:
     description: Inspect statuses, flags, held heads and placeholders.
     default: op
   headcount.admin.run:
-    description: Run action lists and hooks on players (testing).
+    description: Run action lists and hooks on players, for testing.
     default: op
   headcount.admin.notify:
-    description: Receive admin alerts (duplicate heads, errors).
+    description: Get admin alerts, such as duplicate heads and errors.
     default: op
   headcount.pvp.others:
     description: See and set other players' PvP with /pvp <player> [on|off] (included PvP).
     default: op
   headcount.pvp.override:
-    description: Attack anyone regardless of PvP toggles and protection (included PvP).
+    description: Attack anyone, whatever their PvP setting or protection (included PvP).
     default: false
   headcount.bypass.pvp.cooldown:
     description: Toggle PvP without waiting for the cooldown (included PvP).
@@ -190,7 +190,7 @@ permissions:
     description: Use blocked commands and teleports while in combat (included PvP).
     default: false
   headcount.bypass.*:
-    description: Bypass every status gate, trade restriction and combat restriction.
+    description: Skip every status gate and every trade and combat restriction.
     default: false
     children:
       headcount.bypass.pvp.cooldown: true

@@ -195,8 +195,8 @@ final class BuffActions {
             }
 
             @Override public boolean revertible() { return true; }
-            @Override public String stackKey() { return Types.describe("glowing"); }
-            @Override public String describe(ActionContext ctx) { return "glowing"; }
+            @Override public String stackKey() { return "glowing"; }
+            @Override public String describe(ActionContext ctx) { return Types.describe("glowing"); }
         }));
 
         m.registerType(Types.type("fire", "ticks", c -> {

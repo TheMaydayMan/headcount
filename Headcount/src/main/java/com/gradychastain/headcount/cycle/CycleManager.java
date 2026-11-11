@@ -101,7 +101,7 @@ public final class CycleManager {
             return;
         }
         if (now >= current.endMs()) {
-            plugin.getLogger().info("Cycle " + current.id() + " ended at " + Formats.date(current.endMs()) + " while the server was offline; processing it now.");
+            plugin.getLogger().info("Cycle " + current.id() + " ended at " + Formats.date(current.endMs()) + " while the server was offline. Ending it now.");
             rollover("catch-up");
         }
     }

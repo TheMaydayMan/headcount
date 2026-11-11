@@ -226,7 +226,7 @@ class Handler(BaseHTTPRequestHandler):
     def _file_param(self):
         name = self._q("name")
         if name not in FILES:
-            self._json(400, {"error": f"unknown file {name!r}"})
+            self._json(400, {"error": f"Unknown file {name!r}."})
             return None
         return name
 
@@ -315,7 +315,7 @@ class Handler(BaseHTTPRequestHandler):
     def catalog(self):
         p = os.path.join(HERE, "catalog.json")
         if not os.path.exists(p):
-            return self._json(404, {"error": "catalog.json missing: run build-catalog.py"})
+            return self._json(404, {"error": "catalog.json is missing. Run build-catalog.py to make it."})
         with open(p, "rb") as f:
             self._send(200, f.read())
 
@@ -338,10 +338,10 @@ class Handler(BaseHTTPRequestHandler):
         text = body.get("text", "")
         problem = check_yaml(text)
         if problem:
-            return self._json(422, {"error": f"Not saved: {name} would not be valid YAML: {problem}"})
+            return self._json(422, {"error": f"Not saved, because {name} wouldn't be valid YAML: {problem}"})
         target = os.path.join(self.srv.data_dir, name)
         if os.path.exists(target) and body.get("mtime") and abs(os.path.getmtime(target) - body["mtime"]) > 0.001 and not body.get("force"):
-            return self._json(409, {"error": f"{name} was changed on disk since Studio loaded it (by the server, you, or another editor)."})
+            return self._json(409, {"error": f"{name} changed on disk after Studio loaded it."})
         os.makedirs(os.path.dirname(target), exist_ok=True)
         backup = None
         if os.path.exists(target):
@@ -362,7 +362,7 @@ class Handler(BaseHTTPRequestHandler):
         out = {}
         for n, text in texts.items():
             if yaml is None:
-                out[n] = {"error": "PyYAML is not installed"}
+                out[n] = {"error": "PyYAML isn't installed."}
                 continue
             try:
                 out[n] = {"data": json.loads(json.dumps(yaml.safe_load(text), default=str))}
@@ -394,7 +394,7 @@ class Handler(BaseHTTPRequestHandler):
         full = os.path.abspath(os.path.join(self.srv.data_dir, rel))
         root = os.path.abspath(os.path.join(self.srv.data_dir, "backups"))
         if not full.startswith(root + os.sep) or not os.path.isfile(full):
-            return self._json(404, {"error": "no such backup"})
+            return self._json(404, {"error": "No such backup."})
         with open(full, encoding="utf-8", errors="replace") as f:
             self._json(200, {"path": rel, "text": f.read()})
 
@@ -476,7 +476,7 @@ class Handler(BaseHTTPRequestHandler):
         with self.srv.db() as con:
             p = con.execute("SELECT * FROM players WHERE uuid=?", (uuid,)).fetchone()
             if not p:
-                return self._json(404, {"error": "no such player"})
+                return self._json(404, {"error": "No such player."})
             c = self._cycle(con)
             cid = c["id"] if c else -1
             vault = [dict(r) for r in con.execute("SELECT slot, head_id, head_owner, head_owner_name, source, created_ms FROM vault_items WHERE uuid=? ORDER BY slot", (uuid,))]
@@ -555,7 +555,7 @@ class Handler(BaseHTTPRequestHandler):
     def audit_head(self):
         hid = self._q("id").strip().lower()
         if not re.match(r"^[0-9a-f-]{8,}$", hid):
-            return self._json(400, {"error": "not a head ID"})
+            return self._json(400, {"error": "That isn't a head ID."})
         found = []
         for f in reversed(audit_files(os.path.join(self.srv.data_dir, "audit"))):
             for line in read_lines(f):
@@ -570,14 +570,14 @@ class Handler(BaseHTTPRequestHandler):
     def rcon(self):
         conf = self.srv.rcon_conf()
         if not conf:
-            return self._json(400, {"error": "RCON is off for this server (enable-rcon and rcon.password in server.properties)."})
+            return self._json(400, {"error": "RCON is off. Set enable-rcon and rcon.password in server.properties."})
         cmd = json.loads(self._body().decode("utf-8")).get("command", "").strip().lstrip("/")
         if not cmd:
-            return self._json(400, {"error": "no command"})
+            return self._json(400, {"error": "No command given."})
         try:
             self._json(200, {"reply": rcon(conf, cmd)})
         except (ConnectionRefusedError, socket.timeout, OSError) as e:
-            self._json(503, {"error": f"Couldn't reach the server's RCON on port {conf[1]}: is the server running (and restarted since RCON was turned on)? ({e})"})
+            self._json(503, {"error": f"Couldn't reach RCON on port {conf[1]}. Check that the server is running and was restarted after RCON was turned on. ({e})"})
         except PermissionError as e:
             self._json(403, {"error": str(e)})
 
@@ -620,7 +620,7 @@ def main():
     ap.add_argument("--dir", default=DEFAULT_DIR, help="the server's plugins/Headcount folder (default: the repository's test server)")
     ap.add_argument("--port", type=int, default=8765)
     ap.add_argument("--no-browser", action="store_true", help="don't open a browser tab")
-    ap.add_argument("--exit-when-idle", action="store_true", help="stop when no Studio page has been open for 2 minutes (used by the launchers)")
+    ap.add_argument("--exit-when-idle", action="store_true", help="stop when no Studio page has been open for 2 minutes (the launchers use this)")
     args = ap.parse_args()
     data_dir = os.path.abspath(args.dir)
     if not os.path.isdir(data_dir):
@@ -657,7 +657,7 @@ def main():
     print(f"Headcount Studio: {url}")
     print(f"Server folder: {data_dir}")
     if yaml is None:
-        print("PyYAML is not installed, so saves are not checked as YAML first (pip install pyyaml).")
+        print("PyYAML isn't installed, so saves aren't checked as YAML first. Install it with pip install pyyaml.")
     if args.exit_when_idle:
         def watchdog():
             while True:

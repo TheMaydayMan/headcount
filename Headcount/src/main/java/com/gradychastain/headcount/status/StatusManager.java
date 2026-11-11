@@ -189,14 +189,14 @@ public final class StatusManager {
         Definition def = definitions.get(name);
         if (def == null) {
             if (warnedUnknown.add(name) && !errors.containsKey(name)) {
-                plugin.getLogger().warning("Unknown status '" + name + "' is referenced in a config; it is treated as never active.");
+                plugin.getLogger().warning("A config refers to unknown status '" + name + "'. It counts as never active.");
             }
             return false;
         }
         Deque<String> stack = evaluating.get();
         if (stack.contains(name)) {
             if (warnedUnknown.add("cycle:" + name)) {
-                plugin.getLogger().warning("Status '" + name + "' refers back to itself through " + stack + "; that loop is treated as false.");
+                plugin.getLogger().warning("Status '" + name + "' refers back to itself through " + stack + ", so that loop counts as false.");
             }
             return false;
         }
