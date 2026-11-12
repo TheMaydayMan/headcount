@@ -225,7 +225,9 @@ const STATUSES = `
   serverConsole(`untag ${N}`);             // the hit combat-tagged both: that blocks trades and teleports
   serverConsole('untag Alpha');
   await consoleOut(`hca run ${N} ta-heal`);
-  // trade
+  // trade (PvP on, or a punishment from an earlier cycle end, would block it)
+  await L.setPvp(N, false);
+  await L.setPvp('Alpha', false);
   const tb = await st('t-trade');
   const mb = a.chatLog.length;
   w.chat('/trade Alpha');

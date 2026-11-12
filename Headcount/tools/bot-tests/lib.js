@@ -23,15 +23,18 @@ function serverConsole(cmd) {
 
 /**
  * Sets a player's PvP from the console and checks it took. PvPManager's console /pvp <player> on|off flips the state
- * instead of setting it, so a player an earlier suite left in that state would end up the wrong way round.
+ * instead of setting it, so a player an earlier suite left in that state would end up the wrong way round. And by the
+ * later suites, cycle ends have given the regular bots punishments like Wanted, which locks PvP on; if a toggle
+ * doesn't take, the player's effects are cleared first.
  */
 async function setPvp(name, on) {
-  for (let i = 0; i < 3; i++) {
+  for (let i = 0; i < 4; i++) {
     const m = logSize();
     serverConsole(`hca status ${name} in-pvp`);
     await sleep(500);
     const now = /in-pvp: true/.test(logSince(m));
     if (now === on) return true;
+    if (i === 1) { serverConsole(`hca effects ${name} remove all`); await sleep(600); }
     serverConsole(`pvp ${name} ${on ? 'on' : 'off'}`);
     await sleep(500);
   }

@@ -99,10 +99,14 @@ const slotsWith = (w, id) => w.slots.map((s, i) => [s, i]).filter(([s, i]) => i 
   serverConsole(`minecraft:item replace block ${pos.x} ${pos.y} ${pos.z} container.1 with shulker_box[container=[{slot:0,item:${forgedNbt(ids[1], uuid, old)}}]]`);
   serverConsole(`minecraft:item replace block ${pos.x} ${pos.y} ${pos.z} container.2 with bundle[bundle_contents=[${forgedNbt(ids[2], uuid, old)}]]`);
   await sleep(800);
-  const chest = g.blockAt(pos);
-  const p = new Promise((r) => g.once('windowOpen', r));
-  try { g.activateBlock(chest); } catch (e) { /* the window event decides */ }
-  const cw = await Promise.race([p, sleep(4000).then(() => null)]);
+  // The chest has to reach the bot first, and a click can be missed: try a few times.
+  let cw = null;
+  for (let i = 0; i < 3 && !cw; i++) {
+    for (let t = 0; t < 10 && !(g.blockAt(pos) && g.blockAt(pos).name === 'chest'); t++) await sleep(200);
+    const p = new Promise((r) => g.once('windowOpen', r));
+    try { g.activateBlock(g.blockAt(pos)); } catch (e) { /* the window event decides */ }
+    cw = await Promise.race([p, sleep(3000).then(() => null)]);
+  }
   await sleep(1000);
   const show = (i) => (cw && cw.slots[i] ? JSON.stringify(cw.slots[i].components || '') : '');
   record('expiry: an old-cycle head in a chest shows as expired when the chest is opened', /expired/i.test(show(0)), show(0).slice(0, 100));
