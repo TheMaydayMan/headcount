@@ -37,7 +37,13 @@ repositories {
 
 dependencies {
     compileOnly("io.papermc.paper:paper-api:$paperVersion")
+    // Paper's own SnakeYAML, named first so it wins over the old copy bundled inside the DiscordSRV jar below.
+    compileOnly("org.yaml:snakeyaml:2.2") { isTransitive = false }
     compileOnly("org.xerial:sqlite-jdbc:3.50.3.0")
+    // Netty ships inside Paper; Studio uses it to share the Minecraft port (studio/SamePortBridge).
+    compileOnly("io.netty:netty-transport:4.2.16.Final") { isTransitive = false }
+    compileOnly("io.netty:netty-buffer:4.2.16.Final") { isTransitive = false }
+    compileOnly("io.netty:netty-common:4.2.16.Final") { isTransitive = false }
 
     // Soft dependencies: compiled against, never shaded. Transitive dependencies are
     // disabled so third-party APIs cannot drag conflicting libraries onto the classpath.
@@ -83,6 +89,10 @@ tasks.processResources {
     val props = mapOf("version" to project.version)
     inputs.properties(props)
     filesMatching("plugin.yml") { expand(props) }
+    // Headcount Studio, served by the plugin: the web app, its reference catalog, and the docs its Help pages show.
+    into("studio/web") { from("tools/studio/web") }
+    into("studio") { from("tools/studio/catalog.json") }
+    into("studio/docs") { from("docs") { include("*.md") }; from("README.md") }
 }
 
 tasks.jar {
@@ -107,7 +117,8 @@ val deployToTestServer = tasks.register<Copy>("deployToTestServer") {
 tasks.build { finalizedBy(deployToTestServer) }
 
 // Regenerates Headcount Studio's reference catalog (tools/studio/catalog.json) from plugin.yml, the docs and the code,
-// so the app always matches the jar. Skipped with a note if python3 is not installed (the committed catalog is used).
+// before the jar is packed, so the Studio inside the jar always matches it. Skipped with a note if python3 is not
+// installed (the committed catalog is used).
 val studioCatalog = tasks.register("studioCatalog") {
     description = "Rebuilds tools/studio/catalog.json for Headcount Studio"
     group = "build"
@@ -123,4 +134,4 @@ val studioCatalog = tasks.register("studioCatalog") {
         }
     }
 }
-tasks.build { finalizedBy(studioCatalog) }
+tasks.processResources { dependsOn(studioCatalog) }

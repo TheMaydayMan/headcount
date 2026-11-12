@@ -6,7 +6,7 @@ import * as S from "./store.js";
 import { pageHead, zoneInfo } from "./pages-setup.js";
 import { types as actionTypes, listNames, normalize } from "./actions.js";
 import { menuSlots } from "./pages-setup2.js";
-import { rcon, rconReady, showReply } from "./pages-live.js";
+import { runCommand, showReply } from "./pages-live.js";
 
 const go = (h, key) => window.studio.go(h, key);
 export const FILE_SPRITE = { "config.yml": "crafting_table", "integrations.yml": "comparator", "statuses.yml": "redstone_torch", "trade.yml": "bundle", "scoring.yml": "experience_bottle",
@@ -69,7 +69,7 @@ export function runChecks() {
     }
   };
   for (const [id, r] of Object.entries(S.get("outcomes.yml", "rules") || {})) { if (!isObj(r)) continue; checkList(r.actions, "The outcome " + id, "#/outcomes/" + id); if (!parseRange(r.score).ok) add("error", `The outcome ${id} has a score range Studio can't read: ${r.score}.`, "#/outcomes/" + id); }
-  for (const [n, v] of Object.entries(S.get("actions.yml", "lists") || {})) checkList(v, "The list " + n, "#/hooks/list/" + n);
+  for (const [n, v] of Object.entries(S.get("actions.yml", "lists") || {})) checkList(v, "The list " + n, "#/lists/" + n);
   const hooks = S.get("config.yml", "hooks") || {};
   for (const [h, v] of Object.entries(hooks.player || {})) checkList(v, "The " + h + " hook", "#/hooks");
   for (const h of ["cycle-start", "cycle-end"]) { checkList(hooks[h]?.global, "The " + h + " hook", "#/hooks"); checkList(hooks[h]?.["per-player"]?.actions, "The " + h + " hook (each player)", "#/hooks"); }
@@ -110,7 +110,7 @@ export function runChecks() {
 }
 function problemsPage(root) {
   const list = runChecks();
-  root.append(pageHead("Problems", null, rconReady() ? btn("Run selftest", async () => { const r = await rcon("hca selftest", { quiet: true }); if (r !== null) showReply("Selftest", r); }, "ghost") : null));
+  root.append(pageHead("Problems", null, btn("Run selftest", async () => { const r = await runCommand("hca selftest", { quiet: true }); if (r !== null) showReply("Selftest", r); }, "ghost")));
   if (!list.length) { root.append(emptyBox("lime_dye", "Nothing wrong that Studio can see", "Studio checks the files as you edit them. The server's own /hca selftest also checks items, menus and messages against the game.")); return; }
   const errs = list.filter((p) => p.level === "error"), warns = list.filter((p) => p.level !== "error");
   const rows = (ps) => el("div", { class: "items" }, ps.map((p) => el("div", { class: "item" + (p.go || p.key ? "" : " static"), onclick: () => (p.go ? go(p.go, p.key) : p.key && window.studio.goToOption(...p.key.split("#"))) },

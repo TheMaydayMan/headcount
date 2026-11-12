@@ -39,7 +39,8 @@ public final class AdminCommand implements TabExecutor {
             new String[]{"flag", "headcount.admin.debug"}, new String[]{"inspect", "headcount.admin.debug"},
             new String[]{"placeholders", "headcount.admin.debug"}, new String[]{"integrations", "headcount.admin.debug"},
             new String[]{"selftest", "headcount.admin.debug"},
-            new String[]{"run", "headcount.admin.run"}, new String[]{"hook", "headcount.admin.run"});
+            new String[]{"run", "headcount.admin.run"}, new String[]{"hook", "headcount.admin.run"},
+            new String[]{"studio", "headcount.admin.studio"});
 
     private final HeadcountPlugin plugin;
 
@@ -112,6 +113,7 @@ public final class AdminCommand implements TabExecutor {
                 case "selftest" -> new SelfTest(plugin).run(sender);
                 case "run" -> run(sender, a);
                 case "hook" -> hook(sender, a);
+                case "studio" -> studio(sender, a);
                 default -> plugin.lang().send(sender, "admin.unknown-subcommand", "label", label);
             }
         } catch (RuntimeException e) {
@@ -119,6 +121,30 @@ public final class AdminCommand implements TabExecutor {
             plugin.lang().send(sender, "admin.error", "error", String.valueOf(e.getMessage()));
         }
         return true;
+    }
+
+    // ---------------------------------------------------------------- studio
+
+    private void studio(CommandSender s, String[] a) {
+        var studio = plugin.studio();
+        if (a.length > 0 && a[0].equalsIgnoreCase("reset")) {
+            String pw = studio.auth().newPassword();
+            plugin.audit().log(AuditType.ADMIN, "action", "studio-new-password", "actor", actor(s));
+            plugin.lang().sendTemplate(s, plugin.lang().fill("admin.studio.reset", "password", pw), null);
+            return;
+        }
+        if (a.length > 0) {
+            usage(s, "studio");
+            return;
+        }
+        if (!studio.isRunning()) {
+            if (studio.problem() == null) plugin.lang().send(s, "admin.studio.off");
+            else plugin.lang().send(s, "admin.studio.failed", "error", studio.problem());
+            return;
+        }
+        plugin.lang().sendTemplate(s, plugin.lang().fill("admin.studio.link", "url", studio.link(s)), null);
+        plugin.lang().sendTemplate(s, plugin.lang().fill("admin.studio.password", "password", studio.auth().password()), null);
+        plugin.lang().send(s, "admin.studio.signed-in", "count", studio.auth().signedIn());
     }
 
     // ---------------------------------------------------------------- cycle
@@ -658,6 +684,7 @@ public final class AdminCommand implements TabExecutor {
             }
             case "trade" -> i == 1 ? HeadcountCommand.filter(List.of("cancel"), last) : i == 2 ? plugin.players().complete(last, false) : List.of();
             case "flag" -> i == 1 ? plugin.players().complete(last, true) : i == 2 ? HeadcountCommand.filter(List.of("set", "clear"), last) : List.of();
+            case "studio" -> i == 1 ? HeadcountCommand.filter(List.of("reset"), last) : List.of();
             case "run" -> i == 1 ? plugin.players().complete(last, true) : i == 2 ? HeadcountCommand.filter(new ArrayList<>(plugin.actions().namedLists()), last) : List.of();
             case "hook" -> {
                 if (i == 1) {

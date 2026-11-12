@@ -45,7 +45,7 @@ commands:
 
 permissions:
   headcount.*:
-    description: All player and admin permissions. Bypasses and hard reset are separate.
+    description: All player and admin permissions. Bypasses, hard reset and Studio are separate.
     default: op
     children:
       headcount.player: true
@@ -103,7 +103,7 @@ permissions:
     description: Turn your own PvP on or off with /pvp (included PvP).
     default: true
   headcount.admin:
-    description: All admin commands except /hca reset hard.
+    description: All admin commands except /hca reset hard and /hca studio.
     default: op
     children:
       headcount.admin.cycle: true
@@ -155,6 +155,9 @@ permissions:
     default: op
   headcount.admin.reset.hard:
     description: Delete all Headcount data with /hca reset hard. Also needs headcount.admin.reset. It isn't part of headcount.admin, and the console always has it.
+    default: op
+  headcount.admin.studio:
+    description: See Headcount Studio's link and password with /hca studio, and make a new password. Studio can edit every config file and run any command as the console, so it isn't part of headcount.admin.
     default: op
   headcount.admin.trade:
     description: Cancel any trade.

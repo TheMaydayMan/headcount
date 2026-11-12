@@ -415,7 +415,19 @@
     "headcount.admin.run"
    ],
    "permissionText": "`headcount.admin.run`",
-   "does": "Runs a hook (`cycle-start`, `first-join`, `first-join-cycle`, `became-active`, `join`, `warning:<id>`)."
+   "does": "Runs a hook (`cycle-start`, `first-join`, `first-join-cycle`, `became-active`, `join`, `hurt-pet`, `kill-pet`, `open-trapped-chest`, `warning:<id>`)."
+  },
+  {
+   "group": "admin",
+   "syntax": [
+    "/hca studio [reset]"
+   ],
+   "permission": [
+    "headcount.admin.studio",
+    "headcount.admin"
+   ],
+   "permissionText": "`headcount.admin.studio` (op only and not part of `headcount.admin`)",
+   "does": "Shows Headcount Studio's link and password, and how many browsers are signed in. `reset` makes a new password and signs them all out. See studio.md."
   },
   {
    "group": "player",
@@ -525,7 +537,7 @@
  "permissions": [
   {
    "name": "headcount.*",
-   "description": "All player and admin permissions. Bypasses and hard reset are separate.",
+   "description": "All player and admin permissions. Bypasses, hard reset and Studio are separate.",
    "default": "op",
    "children": [
     "headcount.player",
@@ -625,7 +637,7 @@
   },
   {
    "name": "headcount.admin",
-   "description": "All admin commands except /hca reset hard.",
+   "description": "All admin commands except /hca reset hard and /hca studio.",
    "default": "op",
    "children": [
     "headcount.admin.cycle",
@@ -710,6 +722,12 @@
   {
    "name": "headcount.admin.reset.hard",
    "description": "Delete all Headcount data with /hca reset hard. Also needs headcount.admin.reset. It isn't part of headcount.admin, and the console always has it.",
+   "default": "op",
+   "children": []
+  },
+  {
+   "name": "headcount.admin.studio",
+   "description": "See Headcount Studio's link and password with /hca studio, and make a new password. Studio can edit every config file and run any command as the console, so it isn't part of headcount.admin.",
    "default": "op",
    "children": []
   },
@@ -2364,6 +2382,48 @@
   },
   {
    "file": "config.yml",
+   "path": "studio",
+   "default": "(section)",
+   "help": "Headcount Studio: a web app for editing these files with in-game previews, watching the cycle live and running commands, served by the server itself. Open the link that /hca studio shows and sign in with the password it gives (it needs headcount.admin.studio, which ops have). /hca studio reset makes a new password and signs every browser out. Studio can change every config file and run any command as the console, so share the password only with people you'd give the console to. Changes here apply after /hca reload."
+  },
+  {
+   "file": "config.yml",
+   "path": "studio.enabled",
+   "default": "true",
+   "help": ""
+  },
+  {
+   "file": "config.yml",
+   "path": "studio.port",
+   "default": "same",
+   "help": "Where Studio listens: same   the Minecraft port. Browsers and Minecraft share it, so Studio works on hosts that give you only one port: open http://<the address you join with> in a browser, like http://play.example.com:25565. It doesn't work behind a proxy that only passes Minecraft traffic (TCPShield, or a BungeeCord or Velocity backend players can't reach directly); give Studio its own port there. <port> a port of its own, like 8765. Your host or firewall has to let it through."
+  },
+  {
+   "file": "config.yml",
+   "path": "studio.bind",
+   "default": "0.0.0.0",
+   "help": "The network address to listen on when port is a number. 0.0.0.0 means all of them; 127.0.0.1 keeps Studio to this machine (for a reverse proxy on the same machine)."
+  },
+  {
+   "file": "config.yml",
+   "path": "studio.public-url",
+   "default": "\"\"",
+   "help": "The link /hca studio shows. Leave it empty to build it from the address you joined with. Set it when Studio sits behind a subdomain or reverse proxy, like https://studio.example.com"
+  },
+  {
+   "file": "config.yml",
+   "path": "studio.session-length",
+   "default": "7d",
+   "help": "How long a browser stays signed in."
+  },
+  {
+   "file": "config.yml",
+   "path": "studio.textures",
+   "default": "true",
+   "help": "Download Minecraft's textures, font and sounds from Mojang the first time Studio is opened, so previews look like the game. They're kept in plugins/Headcount/studio/cache/. Without them, previews use flat colours."
+  },
+  {
+   "file": "config.yml",
    "path": "cycle",
    "default": "(section)",
    "help": "Cycle"
@@ -3372,6 +3432,30 @@
   },
   {
    "file": "config.yml",
+   "path": "hooks.cooldowns",
+   "default": "(section)",
+   "help": "Shortest time between two runs of a player hook for the same player, for the hooks that follow something the player did (hurt-pet, kill-pet, open-trapped-chest below). Every hit on a pet and every opening of a trapped chest counts, so without a wait a player could get the same message many times a second. 0 runs it every time. A hook skipped by its cooldown runs none of its actions, so give timed actions like pvp a longer duration than this. /hca hook ignores it."
+  },
+  {
+   "file": "config.yml",
+   "path": "hooks.cooldowns.hurt-pet",
+   "default": "10s",
+   "help": ""
+  },
+  {
+   "file": "config.yml",
+   "path": "hooks.cooldowns.kill-pet",
+   "default": "0s",
+   "help": ""
+  },
+  {
+   "file": "config.yml",
+   "path": "hooks.cooldowns.open-trapped-chest",
+   "default": "10s",
+   "help": ""
+  },
+  {
+   "file": "config.yml",
    "path": "hooks.cycle-start",
    "default": "(section)",
    "help": ""
@@ -3645,6 +3729,30 @@
    "path": "hooks.player.join",
    "default": "[]",
    "help": ""
+  },
+  {
+   "file": "config.yml",
+   "path": "hooks.player.hurt-pet",
+   "default": "[]",
+   "help": "The hooks below run on a player who did something to someone else. Players in creative or spectator are left out, and so is anything another plugin blocked, like a protected claim or pet-protection in integrations.yml. They also have <world> <x> <y> <z>, where it happened. hooks.cooldowns above sets how often each can run. hurt-pet: the player hurt another player's tamed animal (a wolf, cat, parrot, horse, donkey, llama...) with a hit, a projectile, TNT, a potion or their own pet. A pet's owner hurting it doesn't count. Variables: <owner> (the pet's owner) <owner_uuid> <pet> (its name, or its kind in each player's language) <pet_type> (like wolf) <damage> Pet vengeance: the attacker's PvP is turned on and locked for 10 minutes, so the owner can fight back. Each new hit after the cooldown restarts the 10 minutes. hurt-pet: - type: pvp state: \"on\" lock: true duration: 10m start-message: \"<red>You hurt <owner>'s <pet>, so your PvP is on for <duration>.\""
+  },
+  {
+   "file": "config.yml",
+   "path": "hooks.player.kill-pet",
+   "default": "[]",
+   "help": "kill-pet: the player killed another player's tamed animal. Same variables as hurt-pet, without <damage>. The killing hit also runs hurt-pet."
+  },
+  {
+   "file": "config.yml",
+   "path": "hooks.player.open-trapped-chest",
+   "default": "[]",
+   "help": "open-trapped-chest: the player opened a trapped chest. Minecraft doesn't record who placed a chest, so this runs for every trapped chest, the player's own included. Use it for traps, like PvP for anyone who opens one: open-trapped-chest: - type: pvp state: \"on\" lock: true duration: 5m start-message: \"<red>That chest was trapped. Your PvP is on for <duration>.\""
+  },
+  {
+   "file": "integrations.yml",
+   "path": "auto-switch",
+   "default": "true",
+   "help": "Switch providers here automatically when plugins are added or removed, checked at each server start: - a plugin that wasn't installed at the last start takes the jobs it can do, unless a job already belongs to another plugin that is still installed. On the first start with a new integrations.yml, every installed plugin counts as new. - a plugin that is gone hands its jobs to another installed plugin that can do them, or back to 'included' ('none' where there is no built-in version). Each change is written into this file, comments kept, with a line in the console saying what changed and how to undo it. A change you undo stays undone until that plugin is removed and added again. A few plugins are never picked on their own: Vault for permissions, EssentialsX for moderation, and Vault for money unless an economy plugin is registered with it. The full rules are in docs/integrations.md. false: providers only change when you change them."
   },
   {
    "file": "integrations.yml",
@@ -3960,6 +4068,24 @@
   },
   {
    "file": "integrations.yml",
+   "path": "pvp.pet-protection",
+   "default": "(section)",
+   "help": "---- Pet protection (provider: included or pvpmanager) ---- Tamed animals (wolves, cats, parrots, horses, donkeys, llamas...) share their owner's PvP: a player can only hurt someone else's pet if the two players could fight. That means the attacker's and the owner's PvP are on and neither is protected as a new player, and the owner didn't just respawn. Hits, projectiles, fire, harmful potions and the player's own pets all count. Owners can always hurt their own pets, and players with headcount.pvp.override (or PvPManager's override) can hurt any. It uses the rules of whichever provider is chosen above, and does nothing with provider: none. Hurting a pet doesn't put anyone in combat. The message goes through messages.blocked-hit above, also with PvPManager. Texts: pvp.blocked-pet in the lang file, and pvp.blocked-hit.self-* when the attacker is the one who can't fight. For pet vengeance instead (PvP on for whoever hurts a pet), see hooks.player.hurt-pet in config.yml."
+  },
+  {
+   "file": "integrations.yml",
+   "path": "pvp.pet-protection.enabled",
+   "default": "false",
+   "help": ""
+  },
+  {
+   "file": "integrations.yml",
+   "path": "pvp.pet-protection.offline-owners",
+   "default": "protect",
+   "help": "Pets whose owner is offline: protect | allow An offline player can't be fought, so protect keeps their pets safe until they're back."
+  },
+  {
+   "file": "integrations.yml",
    "path": "pvp.pvpmanager",
    "default": "(section)",
    "help": "---- PvPManager (provider: pvpmanager) ----"
@@ -4010,7 +4136,7 @@
    "file": "integrations.yml",
    "path": "economy.provider",
    "default": "none",
-   "help": "Which economy the money action uses: vault | none Headcount has no money of its own, so the default content gives none out. With Vault and an economy plugin like EssentialsX or CMI installed, set vault to use the money action."
+   "help": "Which economy the money action uses: vault | none Headcount has no money of its own, so the default content gives none out. With Vault and an economy plugin like EssentialsX or CMI installed, set vault to use the money action. auto-switch sets it when Vault is added and an economy plugin has registered with it by the time Headcount starts."
   },
   {
    "file": "integrations.yml",
@@ -4058,7 +4184,7 @@
    "file": "integrations.yml",
    "path": "moderation.kinds",
    "default": "{}",
-   "help": "A different provider for single kinds, with the same choices. For example, bans by LibertyBans but jail by EssentialsX: kinds: jail: essentials The kinds are ban, mute, kick, warn and jail. Kinds left out use 'provider'."
+   "help": "A different provider for single kinds, with the same choices. For example, bans by LibertyBans but jail by EssentialsX: kinds: jail: essentials The kinds are ban, mute, kick, warn and jail. Kinds left out, or set to default, use 'provider'. auto-switch sets a kind back to default when its plugin is removed."
   },
   {
    "file": "integrations.yml",
@@ -4250,7 +4376,7 @@
    "file": "integrations.yml",
    "path": "discord.provider",
    "default": "none",
-   "help": "Which plugin sends Discord messages: discordsrv | none Set discordsrv once DiscordSRV is installed and connected to a bot."
+   "help": "Which plugin sends Discord messages: discordsrv | none discordsrv needs DiscordSRV installed and connected to a bot. auto-switch sets it when DiscordSRV is added."
   },
   {
    "file": "integrations.yml",
@@ -4268,7 +4394,7 @@
    "file": "integrations.yml",
    "path": "items.providers",
    "default": "[]",
-   "help": "Custom item plugins to use, out of itemsadder, oraxen and nexo. Ones that aren't installed are skipped, and [] turns custom items off. List the ones you install, like [itemsadder]."
+   "help": "Custom item plugins to use, out of itemsadder, oraxen and nexo. Ones that aren't installed are skipped, and [] turns custom items off. List the ones you install, like [itemsadder]. auto-switch adds a plugin here when it's added to the server and takes it out when it's removed."
   },
   {
    "file": "integrations.yml",
@@ -4280,7 +4406,7 @@
    "file": "integrations.yml",
    "path": "bedrock.provider",
    "default": "none",
-   "help": "How Bedrock players are recognized: floodgate | geyser | none floodgate also knows players who have no Java account. Set it, or geyser, when Geyser is installed."
+   "help": "How Bedrock players are recognized: floodgate | geyser | none floodgate also knows players who have no Java account. Set it, or geyser, when Geyser is installed. auto-switch picks floodgate if both are added at once."
   },
   {
    "file": "integrations.yml",
@@ -8185,6 +8311,10 @@
   {
    "name": "statuses.md",
    "title": "Statuses"
+  },
+  {
+   "name": "studio.md",
+   "title": "Headcount Studio"
   },
   {
    "name": "text.md",

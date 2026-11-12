@@ -2,8 +2,8 @@
 // with controls that fit each setting. It can sit inside another editor (actionList) or open in a drawer
 // (editActions). Also the conditions editor and the score-range control that rules and actions share.
 import { plain, el, btn, icon, iconBtn, drawer, closeDrawer, seg, select, switchCtl, chips, statusPicker, materialCtl, soundCtl, colorCtl, miniCtl, durationCtl,
-  numberCtl, toast, promptDialog, toYamlText, fromYamlText, sprite, humanize } from "./ui.js";
-import { isObj, clone, parseDuration, formatDuration, stripMini, prettyMaterial } from "./core.js";
+  numberCtl, toast, promptDialog, toYamlText, fromYamlText, sprite, humanize, rowTools } from "./ui.js";
+import { isObj, clone, parseDuration, formatDuration, stripMini, prettyMaterial, setValue, renamePath } from "./core.js";
 import * as S from "./store.js";
 
 const COMMON = ["duration", "time", "stacking", "key", "chance", "delay", "repeat", "conditions", "start-message", "end-message"];
@@ -324,11 +324,18 @@ const LABEL = { "start-message": "When it starts", "end-message": "When it ends"
 
 function typePicker(onPick, onCancel) {
   const T = types();
-  const q = el("input", { type: "search", placeholder: "Search actions", spellcheck: "false" });
+  const q = el("input", { type: "search", placeholder: "Search actions and action lists", "aria-label": "Search actions and action lists", spellcheck: "false" });
   const list = el("div");
   const draw = () => {
     list.innerHTML = "";
     const s = q.value.trim().toLowerCase();
+    // Your own lists come first: they're what a server reuses most.
+    const names = listNames().filter((n) => !s || n.toLowerCase().includes(s) || "action list group".includes(s));
+    if (names.length) list.append(el("div", { class: "typegroup" }, "Your action lists"), el("div", { class: "typegrid" }, names.map((n) => {
+      const v = listValue(n);
+      return el("button", { type: "button", class: "typebtn", onclick: () => onPick("@" + n) }, sprite(v[0] !== undefined ? actionSprite(v[0]) : "repeater", 24),
+        el("span", {}, el("b", {}, n), el("small", {}, countWord(v.length, "action") + (v.length ? ": " + v.slice(0, 2).map(summarize).join(", ") : ""))));
+    })));
     const groups = {};
     for (const a of Object.values(T)) {
       if (s && !(a.type + " " + (DESC[a.type] || "") + " " + a.group).toLowerCase().includes(s)) continue;
@@ -336,38 +343,110 @@ function typePicker(onPick, onCancel) {
     }
     for (const [g, as] of Object.entries(groups)) list.append(el("div", { class: "typegroup" }, g), el("div", { class: "typegrid" }, as.map((a) => el("button", { type: "button", class: "typebtn", onclick: () => onPick(a.type) },
       sprite(SPRITE[a.type] || "paper", 24), el("span", {}, el("b", {}, humanize(a.type)), el("small", {}, DESC[a.type] || a.settingsText.slice(0, 50)))))));
-    const names = listNames().filter((n) => !s || n.includes(s));
-    if (names.length) list.append(el("div", { class: "typegroup" }, "Your action lists"), el("div", { class: "typegrid" }, names.map((n) => el("button", { type: "button", class: "typebtn", onclick: () => onPick("@" + n) },
-      sprite("repeater", 24), el("span", {}, el("b", {}, n), el("small", {}, "From actions.yml"))))));
     if (!list.children.length) list.append(el("div", { class: "empty" }, "No action matches."));
   };
   q.addEventListener("input", draw);
   draw();
   setTimeout(() => q.focus(), 30);
-  return el("div", { class: "sheet", style: { padding: "12px 14px" } }, el("div", { class: "row", style: { flexWrap: "nowrap" } }, q, btn("Cancel", onCancel, "ghost")), list);
+  return el("div", { class: "sheet typepicker" }, el("div", { class: "row", style: { flexWrap: "nowrap" } }, q, btn("Cancel", onCancel, "ghost")), list);
+}
+
+const countWord = (n, one, many = one + "s") => n + " " + (n === 1 ? one : many);
+/** A named list's actions as an array (a list can also be one action, or the name of another list). */
+const listValue = (name) => { const v = S.get("actions.yml", "lists." + name); return Array.isArray(v) ? v : v === undefined || v === null ? [] : [v]; };
+const listPath = (name) => "lists." + name;
+const nameCheck = (taken) => (v) => !/^[a-z0-9][a-z0-9_-]*$/i.test(v) ? "Use letters, numbers, dashes and underscores." : taken(v) ? "There's a list with that name." : null;
+/** A free name like celebrate-2. */
+export function freeListName(base) {
+  const names = new Set(listNames());
+  if (!names.has(base)) return base;
+  let n = 2;
+  while (names.has(base.replace(/-\d+$/, "") + "-" + n)) n++;
+  return base.replace(/-\d+$/, "") + "-" + n;
+}
+
+/** Links to the places that use a list: "the outcome Minor penalty, the cycle end and 2 more". */
+function placeLinks(places, { max = 6 } = {}) {
+  const out = [];
+  places.slice(0, max).forEach((p, i) => {
+    if (i) out.push(i === Math.min(places.length, max) - 1 && places.length <= max ? " and " : ", ");
+    out.push(el("a", { href: p.hash, onclick: (e) => { e.preventDefault(); closeDrawer(); window.studio.go(p.hash); } }, p.label));
+  });
+  if (places.length > max) out.push(" and " + (places.length - max) + " more");
+  return out;
+}
+
+/**
+ * A named list edited where it's used. The note says the change reaches every place that runs it. onInline swaps
+ * the reference for a copy of the list's actions. chain holds the lists already open around this one, so a list
+ * that runs itself doesn't open forever.
+ */
+function listInPlace(name, { chain, vars, onInline }) {
+  const box = el("div", { class: "listref" });
+  if (!listNames().includes(name)) {
+    box.append(el("div", { class: "note warn" }, "There's no action list called ", el("b", {}, name), ", so this does nothing. ",
+      el("button", { type: "button", class: "linkbtn", onclick: () => { S.set("actions.yml", listPath(name), [{ message: "<green>Hello <player>!" }]); box.replaceWith(listInPlace(name, { chain, vars, onInline })); } }, "Create it")));
+    return box;
+  }
+  if (chain.has(name)) {
+    box.append(el("div", { class: "note warn" }, "The list ", el("b", {}, name), " runs itself here, so it would never stop. Pick another list."));
+    return box;
+  }
+  const places = usagePlaces(name);
+  box.append(el("div", { class: "note" }, el("b", {}, "Shared list. "), "Changes here apply everywhere ", el("b", {}, name), " runs",
+    places.length ? [": ", placeLinks(places), "."] : "."),
+  actionEditor(S.get("actions.yml", listPath(name)), (v) => S.set("actions.yml", listPath(name), v, "actions.yml#" + listPath(name) + "#actions"),
+    { nested: true, vars, chain: new Set([...chain, name]), bind: { file: "actions.yml", path: listPath(name) } }),
+  el("div", { class: "row" }, onInline ? btn("Use a copy of its actions here instead", onInline, "ghost small") : null, el("span", { class: "grow" }),
+    btn(["Open in Action lists", icon("right")], () => { closeDrawer(); window.studio.go("#/lists/" + name); }, "ghost small")));
+  return box;
 }
 
 /**
  * An action list editor bound to a value. raw is the list (or a list name); onChange gets the new list. Used for
- * hooks, rules, shop items, named lists and nested lists (bounty actions).
+ * hooks, rules, shop items, named lists and nested lists (bounty actions). bind ({file, path}) is where onChange
+ * writes, so making a list from a selection is one undo step.
  */
-export function actionEditor(raw, onChange, { vars, nested } = {}) {
+export function actionEditor(raw, onChange, { vars, nested, chain = new Set(), bind } = {}) {
   const box = el("div", { class: "acts-list" });
   if (typeof raw === "string" && raw && !raw.includes(":")) {
+    // The whole thing is one list's name ("actions: punish-mild").
     const draw = () => {
       box.innerHTML = "";
-      box.append(el("div", { class: "sheet", style: { padding: "14px 16px" } }, el("div", { class: "row" }, sprite("repeater", 28), el("div", { class: "grow" }, "Runs the action list ", el("b", {}, raw)),
-        select(listNames(), raw, (v) => { raw = v; onChange(v); draw(); })),
-        el("div", { class: "row", style: { marginTop: "12px" } }, btn("Edit " + raw, () => editActions("actions.yml", "lists." + raw, { title: "Action list " + raw })),
-          btn("Use its actions here instead", () => { const copy = clone(S.get("actions.yml", "lists." + raw)) || []; onChange(Array.isArray(copy) ? copy : [copy]); box.replaceWith(actionEditor(Array.isArray(copy) ? copy : [copy], onChange, { vars, nested })); }, "ghost"))));
+      const inline = () => { const copy = listValue(raw).map(clone); onChange(copy); box.replaceWith(actionEditor(copy, onChange, { vars, nested, chain, bind })); };
+      box.append(el("div", { class: "row reflist" }, sprite("repeater", 28), el("div", { class: "grow" }, "Runs the action list ", el("b", {}, raw)),
+        select(listNames(), raw, (v) => { raw = v; onChange(v); draw(); }, { placeholder: undefined })),
+      listInPlace(raw, { chain, vars, onInline: inline }));
     };
     draw();
     return box;
   }
   let cards = (Array.isArray(raw) ? raw : raw === undefined || raw === null ? [] : [raw]).map(normalize);
   const openSet = new Set();
-  let yamlMode = false, picking = false;
+  let yamlMode = false, picking = false, selecting = false;
+  const chosen = new Set();
   const commit = () => onChange(cards.map(denormalize));
+  /** Makes a named list from the chosen cards and puts a reference to it where the first one was. */
+  const makeList = async () => {
+    const idx = [...chosen].sort((a, b) => a - b);
+    if (!idx.length) return;
+    const name = await promptDialog("New action list", `Name it. The ${idx.length === 1 ? "action moves" : idx.length + " actions move"} into the list, and this spot runs the list instead, so other places can run it too.`,
+      freeListName("my-list"), { ok: "Make the list", check: nameCheck((v) => listNames().includes(v)) });
+    if (!name) return;
+    const acts = idx.map((i) => denormalize(cards[i]));
+    cards = cards.filter((_, i) => !chosen.has(i));
+    cards.splice(idx[0], 0, { form: "ref", type: "run", data: { list: name } });
+    const value = cards.map(denormalize);
+    if (bind) {
+      const texts = {};
+      texts["actions.yml"] = setValue(S.doc("actions.yml").text, listPath(name), acts);
+      texts[bind.file] = setValue(texts[bind.file] ?? S.doc(bind.file).text, bind.path, value);
+      S.setTexts(texts);
+    } else { S.set("actions.yml", listPath(name), acts); onChange(value); }
+    selecting = false; chosen.clear(); openSet.clear(); openSet.add(idx[0]);
+    toast("Made the list " + name + ". It's under Action lists.");
+    draw();
+  };
   const draw = () => {
     box.innerHTML = "";
     if (yamlMode) {
@@ -379,38 +458,51 @@ export function actionEditor(raw, onChange, { vars, nested } = {}) {
       return;
     }
     let dragIdx = null;
+    const move = (from, to) => { if (to < 0 || to >= cards.length) return; const [m] = cards.splice(from, 1); cards.splice(to, 0, m); openSet.clear(); commit(); draw(); };
     cards.forEach((c, idx) => {
       const T = types()[c.type];
-      const isOpen = openSet.has(idx);
-      const card = el("div", { class: "actioncard" + (isOpen ? " open" : "") });
+      const isOpen = openSet.has(idx) && !selecting;
+      const isRef = c.form === "ref" || (c.type === "run" && typeof c.data.list === "string" && !c.data.actions);
+      const card = el("div", { class: "actioncard" + (isOpen ? " open" : "") + (isRef ? " ref" : "") + (selecting && chosen.has(idx) ? " chosen" : "") });
       const grip = el("span", { class: "grip", title: "Drag to reorder", draggable: "true" }, icon("grip"));
       grip.addEventListener("dragstart", (e) => { dragIdx = idx; card.classList.add("drag"); e.dataTransfer.setData("text/plain", String(idx)); e.dataTransfer.setDragImage(card, 20, 20); });
       grip.addEventListener("dragend", () => { card.classList.remove("drag"); dragIdx = null; });
       // The line shows where it lands: above this card when moving up, below it when moving down.
-      card.addEventListener("dragover", (e) => { if (dragIdx !== null && dragIdx !== idx) { e.preventDefault(); card.classList.add(dragIdx < idx ? "over-after" : "over"); } });
+      card.addEventListener("dragover", (e) => { if (dragIdx !== null && dragIdx !== idx) { e.preventDefault(); e.stopPropagation(); card.classList.add(dragIdx < idx ? "over-after" : "over"); } });
       card.addEventListener("dragleave", () => card.classList.remove("over", "over-after"));
-      card.addEventListener("drop", (e) => { e.preventDefault(); card.classList.remove("over", "over-after"); if (dragIdx !== null && dragIdx !== idx) { const [m] = cards.splice(dragIdx, 1); cards.splice(idx, 0, m); openSet.clear(); commit(); draw(); } dragIdx = null; });
+      card.addEventListener("drop", (e) => { e.preventDefault(); e.stopPropagation(); card.classList.remove("over", "over-after"); if (dragIdx !== null && dragIdx !== idx) move(dragIdx, idx); dragIdx = null; });
       const spr = actionSprite(denormalize(c));
+      const refMeta = () => { const n = c.data.list; if (!listNames().includes(n)) return "No list by that name"; const u = usagePlaces(n).length; return "Shared list, " + countWord(listValue(n).length, "action") + (u > 1 ? ", used in " + u + " places" : ""); };
       const t1 = el("div", { class: "t1" }, summarize(denormalize(c)));
-      const t2 = el("div", { class: "t2" }, meta(c));
-      const head = el("div", { class: "ah", onclick: (e) => { if (e.target.closest("button,.grip")) return; isOpen ? openSet.delete(idx) : openSet.add(idx); draw(); } },
-        grip, sprite(spr, 28), el("div", { class: "sum" }, t1, t2),
-        iconBtn("up", "Move up", () => { if (idx > 0) { [cards[idx - 1], cards[idx]] = [cards[idx], cards[idx - 1]]; openSet.clear(); commit(); draw(); } }, "sm"),
-        iconBtn("copy", "Duplicate", () => { cards.splice(idx + 1, 0, clone(c)); openSet.clear(); commit(); draw(); }, "sm"),
-        iconBtn("trash", "Delete", () => { cards.splice(idx, 1); openSet.clear(); commit(); draw(); }, "sm"),
-        el("span", { style: { color: "var(--ink-3)", display: "grid" } }, icon(isOpen ? "down" : "right")));
+      const t2 = el("div", { class: "t2" }, isRef ? refMeta() : meta(c));
+      const check = el("input", { type: "checkbox", "aria-label": "Choose " + summarize(denormalize(c)), tabindex: "-1" });
+      check.checked = chosen.has(idx);
+      const toggle = () => { chosen.has(idx) ? chosen.delete(idx) : chosen.add(idx); draw(); };
+      const head = el("div", { class: "ah", onclick: (e) => {
+        if (selecting) { toggle(); return; }
+        if (e.target.closest("button,.grip")) return; isOpen ? openSet.delete(idx) : openSet.add(idx); draw();
+      } },
+      selecting ? el("span", { class: "pick" }, check) : grip, sprite(spr, 28), el("div", { class: "sum" }, t1, t2),
+      selecting ? null : rowTools(idx, cards.length, { move,
+        duplicate: () => { cards.splice(idx + 1, 0, clone(c)); openSet.clear(); commit(); draw(); },
+        remove: () => { cards.splice(idx, 1); openSet.clear(); commit(); draw(); } }),
+      selecting ? null : el("span", { class: "chev" }, icon(isOpen ? "down" : "right")));
       card.append(head);
-      const refresh = () => { t1.textContent = summarize(denormalize(c)); t2.textContent = meta(c); };
+      const refresh = () => { t1.textContent = summarize(denormalize(c)); t2.textContent = isRef ? refMeta() : meta(c); };
+      const inline = () => { const copy = listValue(c.data.list).map((x) => normalize(clone(x))); cards.splice(idx, 1, ...copy); openSet.clear(); commit(); draw(); };
       if (isOpen) {
         const ab = el("div", { class: "ab" });
         const upd = (k) => (v) => { if (v === undefined) delete c.data[k]; else c.data[k] = v; commit(); refresh(); };
-        if (c.form === "ref") ab.append(settingRow("run", "list", c.data.list, (v) => { c.data.list = v; commit(); refresh(); }));
-        else {
+        if (c.form === "ref") {
+          ab.append(settingRow("run", "list", c.data.list, (v) => { c.data.list = v; commit(); draw(); }));
+          ab.append(listInPlace(c.data.list, { chain, vars, onInline: inline }));
+        } else {
           ab.append(el("div", { class: "field" }, el("div", { class: "lab" }, el("span", { class: "name" }, "Action")), el("div", { class: "ctl" },
             select(Object.values(types()).reduce((gs, a) => { let g = gs.find((x) => x.group === a.group); if (!g) gs.push(g = { group: a.group, items: [] }); g.items.push([a.type, humanize(a.type)]); return gs; }, []), c.type, (v) => { c.type = v; c.form = "typed"; commit(); draw(); }),
             T ? null : el("div", { class: "err" }, "Headcount has no action called " + c.type + "."))));
           const keys = [...new Set([T?.main, ...(T?.settings || []), ...(EXTRA[c.type] || []), ...Object.keys(c.data)].filter(Boolean))].filter((k) => !COMMON.includes(k));
-          for (const k of keys) ab.append(settingRow(c.type, k, c.data[k], upd(k), { main: k === T?.main, vars }));
+          for (const k of keys) ab.append(settingRow(c.type, k, c.data[k], k === "list" && c.type === "run" ? (v) => { upd(k)(v); draw(); } : upd(k), { main: k === T?.main, vars }));
+          if (isRef) ab.append(listInPlace(c.data.list, { chain, vars, onInline: Object.keys(c.data).length === 1 ? inline : null }));
           const opt = el("details", { class: "more" }, el("summary", {}, "Timing, chance and conditions"));
           for (const k of COMMON) {
             if (["time", "stacking", "key", "repeat", "start-message", "end-message"].includes(k) && (c.data.duration === undefined || c.data.duration === "instant") && c.data[k] === undefined) continue;
@@ -423,6 +515,12 @@ export function actionEditor(raw, onChange, { vars, nested } = {}) {
       }
       box.append(card);
     });
+    if (selecting) {
+      box.append(el("div", { class: "row selbar" }, el("span", { class: "grow muted" }, chosen.size ? countWord(chosen.size, "action") + " chosen" : "Click actions to choose them"),
+        btn("Cancel", () => { selecting = false; chosen.clear(); draw(); }, "ghost small"),
+        el("button", { class: "btn small primary", disabled: !chosen.size, onclick: makeList }, "Make an action list")));
+      return;
+    }
     if (picking) box.append(typePicker((t) => {
       picking = false;
       if (t.startsWith("@")) cards.push({ form: "ref", type: "run", data: { list: t.slice(1) } });
@@ -436,6 +534,7 @@ export function actionEditor(raw, onChange, { vars, nested } = {}) {
       commit(); draw();
     }, () => { picking = false; draw(); }));
     else box.append(el("div", { class: "row" }, btn([icon("plus"), cards.length ? "Add an action" : "Add the first action"], () => { picking = true; draw(); }, nested ? "small" : ""), el("span", { class: "grow" }),
+      cards.length ? el("button", { class: "btn ghost small", title: "Choose actions to make a shared action list from", onclick: () => { selecting = true; chosen.clear(); draw(); } }, "Make a list from these") : null,
       btn("Edit as YAML", () => { yamlMode = true; draw(); }, "ghost small")));
   };
   draw();
@@ -444,42 +543,96 @@ export function actionEditor(raw, onChange, { vars, nested } = {}) {
 
 /** An action list editor for a config path. */
 export function actionList(file, path, opts = {}) {
-  return el("div", { "data-key": file + "#" + path }, actionEditor(S.get(file, path), (v) => S.set(file, path, v, file + "#" + path + "#actions"), opts));
+  return el("div", { "data-key": file + "#" + path }, actionEditor(S.get(file, path), (v) => S.set(file, path, v, file + "#" + path + "#actions"), { ...opts, bind: { file, path } }));
 }
 
-/** Opens the action builder for the list at file/path in a drawer. */
-export function editActions(file, path, { title, subtitle, onClose, hash } = {}) {
-  drawer(title || "Actions", actionList(file, path), { wide: true, subtitle, onClose, hash,
-    footer: el("div", { class: "row", style: { width: "100%" } }, el("span", { class: "grow" }), btn("Done", () => closeDrawer(), "primary")) });
+/** Opens the action builder for the list at file/path in a drawer. footer is extra buttons on the left. */
+export function editActions(file, path, { title, subtitle, onClose, hash, footer, before, opts } = {}) {
+  drawer(title || "Actions", el("div", {}, before || null, actionList(file, path, opts)), { wide: true, subtitle, onClose, hash,
+    footer: el("div", { class: "row", style: { width: "100%" } }, footer || null, el("span", { class: "grow" }), btn("Done", () => closeDrawer(), "primary")) });
 }
 
-/** Every place an action list name is used (string items, run actions, outcome/shop "actions: name"). */
+// ---------------------------------------------------------------- where named lists are used
+const ACTION_KEYS = new Set(["actions", "global"]);
+/** True when the value at file/path is an action list (or one list's name in place of one). */
+function isActionPath(file, path) {
+  if (ACTION_KEYS.has(path.split(".").pop())) return true;
+  if (file === "config.yml" && /^hooks\.player\.[^.]+$/.test(path)) return true;
+  return file === "actions.yml" && /^lists\.[^.]+$/.test(path);
+}
+const refersTo = (x, name) => x === name || x === "run: " + name;
+/** Every place an action list name is used: list items, run actions, random choices and "actions: name". */
 export function listUsages(name) {
   const out = [];
   const scan = (file, v, path) => {
-    if (typeof v === "string") { if (v === name && /actions$|\.\d+$|lists\./.test(path)) out.push({ file, path }); return; }
-    if (Array.isArray(v)) v.forEach((x, i) => scan(file, x, path + "." + i));
-    else if (isObj(v)) for (const [k, x] of Object.entries(v)) { if (k === "list" && x === name) out.push({ file, path }); scan(file, x, path ? path + "." + k : k); }
+    if (Array.isArray(v)) {
+      const acts = isActionPath(file, path);
+      v.forEach((x, i) => { if (acts && refersTo(x, name)) out.push({ file, path: path + "." + i }); else scan(file, x, path + "." + i); });
+    } else if (isObj(v)) for (const [k, x] of Object.entries(v)) {
+      const p = path ? path + "." + k : k;
+      if (x === name && (k === "list" || k === "run" || isActionPath(file, p))) out.push({ file, path: p });
+      else scan(file, x, p);
+    }
   };
-  for (const f of ["config.yml", "outcomes.yml", "shop.yml", "actions.yml", "integrations.yml"]) scan(f, S.doc(f)?.data, "");
-  return out.filter((u) => !(u.file === "actions.yml" && u.path === "lists." + name));
+  for (const f of S.store.names.filter((n) => !n.startsWith("lang/"))) scan(f, S.doc(f)?.data, "");
+  return out.filter((u) => !(u.file === "actions.yml" && u.path === listPath(name)));
+}
+/** A place that uses a list, as words and the Studio address that edits it. */
+export function placeOf({ file, path }) {
+  const p = path.split(".");
+  if (file === "outcomes.yml" && p[0] === "rules") return { label: "the outcome " + stripMini(S.get(file, "rules." + p[1] + ".display") || p[1]), hash: "#/outcomes/" + p[1] };
+  if (file === "shop.yml" && p[0] === "tiers") return { label: "the shop item " + stripMini(S.get(file, `tiers.${p[1]}.entries.${p[3]}.display.name`) || p[3]), hash: `#/shop/${p[1]}/${p[3]}` };
+  if (file === "actions.yml" && p[0] === "lists") return { label: "the list " + p[1], hash: "#/lists/" + p[1] };
+  if (file === "integrations.yml") return { label: "combat logging", hash: "#/integrations" };
+  if (file === "config.yml" && p[0] === "hooks") {
+    if (p[1] === "player") return { label: "the " + humanize(p[2]).toLowerCase() + " hook", hash: "#/hooks/hook/hooks.player." + p[2] };
+    if (p[1] === "warnings") return { label: "the " + formatDuration(parseDuration(S.get(file, "hooks.warnings." + p[2] + ".before") ?? p[2])) + " warning", hash: "#/hooks/hook/hooks.warnings." + p[2] };
+    if (p[1] === "cycle-start") return { label: "the cycle start", hash: "#/hooks/hook/hooks.cycle-start" };
+    if (p[1] === "cycle-end") return { label: "the cycle end", hash: "#/hooks/hook/hooks.cycle-end" };
+  }
+  return { label: file, hash: "#/files/" + file };
+}
+/** The places that use a list, one per thing (an outcome that runs it twice counts once). */
+export function usagePlaces(name) {
+  const seen = new Map();
+  for (const u of listUsages(name)) { const p = placeOf(u); if (!seen.has(p.hash + p.label)) seen.set(p.hash + p.label, p); }
+  return [...seen.values()];
 }
 /** Where a list is used, in words: "Used by the cycle end and the shop item Steak". */
 export function usageText(uses) {
-  const name = ({ file, path }) => {
-    const p = path.split(".");
-    if (file === "outcomes.yml") return "the outcome " + stripMini(S.get(file, "rules." + p[1] + ".display") || p[1]);
-    if (file === "shop.yml" && p[0] === "tiers") return "the shop item " + stripMini(S.get(file, `tiers.${p[1]}.entries.${p[3]}.display.name`) || p[3]);
-    if (file === "actions.yml") return "the list " + p[1];
-    if (file === "integrations.yml") return "combat logging";
-    if (p[1] === "player") return "the " + humanize(p[2]).toLowerCase() + " hook";
-    if (p[1] === "warnings") return "the " + formatDuration(parseDuration(S.get(file, "hooks.warnings." + p[2] + ".before") ?? p[2])) + " warning";
-    if (p[1] === "cycle-start") return "the cycle start";
-    if (p[1] === "cycle-end") return "the cycle end";
-    return file;
-  };
-  const names = [...new Set(uses.map(name))];
+  const names = [...new Set(uses.map((u) => placeOf(u).label))];
   if (!names.length) return "Not used yet";
   return "Used by " + (names.length <= 2 ? names.join(" and ") : names.slice(0, 2).join(", ") + " and " + (names.length - 2) + " more");
+}
+
+/**
+ * Renames a list and every place that runs it, as one undo step. A place is rewritten from the nearest setting that
+ * holds the action list, so comments inside that one list don't survive; the rest of each file is untouched.
+ */
+export function renameList(from, to) {
+  const swapAction = (a) => {
+    if (refersTo(a, from)) return a === from ? to : "run: " + to;
+    if (!isObj(a)) return a;
+    const o = {};
+    for (const [k, x] of Object.entries(a)) o[k] = (k === "list" || k === "run") && x === from ? to : k === "actions" ? swapList(x) : k === "choices" && Array.isArray(x) ? x.map(swapAction) : x;
+    return o;
+  };
+  const swapList = (v) => (Array.isArray(v) ? v.map(swapAction) : isObj(v) ? swapAction(v) : v === from ? to : v);
+  const texts = {};
+  const done = new Set();
+  for (const u of listUsages(from)) {
+    // The setting that holds the list: the path up to its first list index.
+    const parts = u.path.split(".");
+    const cut = parts.findIndex((x) => /^\d+$/.test(x));
+    let holder = (cut < 0 ? parts : parts.slice(0, cut)).join(".");
+    if (cut < 0 && !isActionPath(u.file, holder)) holder = parts.slice(0, -1).join(".");
+    if (done.has(u.file + "#" + holder)) continue;
+    done.add(u.file + "#" + holder);
+    const value = S.get(u.file, holder);
+    const next = isActionPath(u.file, holder) ? swapList(value) : swapAction(value);
+    texts[u.file] = setValue(texts[u.file] ?? S.doc(u.file).text, holder, next);
+  }
+  texts["actions.yml"] = renamePath(texts["actions.yml"] ?? S.doc("actions.yml").text, listPath(from), to);
+  S.setTexts(texts);
 }
 export { SPRITE as ACTION_SPRITES, DESC as ACTION_DESC };

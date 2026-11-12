@@ -1,13 +1,16 @@
 // The app's state: every config file's text (the source of truth), its parsed lines and data, the bundled defaults,
 // undo/redo across files, and saving. Pages read with get()/def() and write with set()/remove()/rename().
 import { parseDoc, readYaml, setValue, removePath, renamePath, moveEntry, getIn } from "./core.js";
+import { signIn, ensureSignedIn } from "./login.js";
 
 export const store = {
   dir: "", names: [], docs: {}, catalog: null, info: {}, live: null, history: [], future: [], listeners: new Set(),
 };
 
 export async function api(path, opts) {
-  const r = await fetch(path, opts);
+  let r = await fetch(path, opts);
+  // Signed out (the session ran out, or someone made a new password): sign in again, then try once more.
+  if (r.status === 401) { await signIn("You've been signed out. Enter the password that <code>/hca studio</code> shows to carry on. Your unsaved changes are still here."); r = await fetch(path, opts); }
   const ct = r.headers.get("Content-Type") || "";
   const j = ct.includes("json") ? await r.json().catch(() => ({})) : await r.text();
   if (!r.ok) throw Object.assign(new Error((j && j.error) || r.statusText), { status: r.status, body: j });
@@ -22,6 +25,7 @@ function build(d, text) {
 }
 
 export async function loadAll() {
+  await ensureSignedIn();
   const [all, catalog] = await Promise.all([api("/api/all"), api("/api/catalog").catch(() => null)]);
   store.dir = all.dir;
   store.info = all;

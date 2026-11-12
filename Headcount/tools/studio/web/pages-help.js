@@ -5,7 +5,7 @@ import * as S from "./store.js";
 import { pageHead, C, layout, preview, mcName, outcomesFor, num } from "./pages-setup.js";
 import { types as actionTypes, ACTION_SPRITES, ACTION_DESC } from "./actions.js";
 import { SRC_SPRITE, statusSummary } from "./pages-setup2.js";
-import { rcon, rconReady, showReply, players as knownPlayers } from "./pages-live.js";
+import { runCommand, showReply, players as knownPlayers } from "./pages-live.js";
 import { diffView } from "./pages-files.js";
 
 const go = (h, key) => window.studio.go(h, key);
@@ -314,7 +314,7 @@ function refCommands(root) {
         t.append(el("tr", {}, el("td", { style: { width: "36%" } }, c.syntax.map((x) => el("div", { class: "cmd" }, x))),
           el("td", {}, el("div", {}, rich(c.does)), el("div", { class: "small faint", style: { marginTop: "2px" } }, c.permission.map((p) => el("code", { style: { marginRight: "8px" } }, p)),
             odd.map((p) => el("span", { class: "badge warn" }, perms[p].default === "false" ? "Nobody has it by default" : perms[p].default === "true" ? "Everyone has it" : "Ops only")))),
-          el("td", { class: "n", style: { width: "84px" } }, iconBtn("copy", "Copy", () => copyText(c.syntax[0]), "sm"), g === "admin" && rconReady() ? iconBtn("terminal", "Open in the console", () => go("#/console/" + encodeURIComponent(consoleCmd(c.syntax[0]))), "sm") : null)));
+          el("td", { class: "n", style: { width: "84px" } }, iconBtn("copy", "Copy", () => copyText(c.syntax[0]), "sm"), g === "admin" ? iconBtn("terminal", "Open in the console", () => go("#/console/" + encodeURIComponent(consoleCmd(c.syntax[0]))), "sm") : null)));
       }
       if (cmds.length) body.append(el("section", { class: "group" }, el("header", {}, el("h2", {}, title), el("div", { class: "side faint small" }, usual === "true" ? "Everyone has these by default" : "Ops have these by default")), el("div", { class: "sheet" }, t)));
     }
@@ -344,8 +344,7 @@ function builder() {
   const ctls = el("div", { class: "row", style: { padding: "12px 18px" } });
   const upd = () => { out.textContent = FORMS[which][2](); };
   const drawForm = () => { ctls.innerHTML = ""; ctls.append(...FORMS[which][1]()); upd(); };
-  const run = btn("Run", () => rcon(out.textContent, { confirm: "It runs as the console.", danger: which === "reset" }), "small primary");
-  if (!rconReady()) { run.disabled = true; run.title = "Needs RCON"; }
+  const run = btn("Run", () => runCommand(out.textContent, { confirm: "It runs as the console.", danger: which === "reset" }), "small primary");
   drawForm();
   return el("section", { class: "group" }, el("header", {}, el("h2", {}, "Build a command"), el("div", { class: "side" }, seg(Object.entries(FORMS).map(([k, f]) => [k, f[0]]), which, (v) => { which = v; drawForm(); }))),
     el("div", { class: "sheet" }, ctls, el("div", { style: { padding: "0 18px 14px" } }, el("div", { class: "cmdline" }, out, iconBtn("copy", "Copy", () => copyText(out.textContent), "sm"), run))));
@@ -369,8 +368,7 @@ function refPlaceholders(root) {
   const names = knownPlayers().map((p) => p.name);
   let who = names[0] || "";
   const pick = names.length ? select(names, who, (v) => { who = v; }) : el("input", { type: "text", placeholder: "Player name", spellcheck: "false", style: { maxWidth: "200px" }, oninput: (e) => { who = e.target.value; } });
-  const show = btn("Show their values", async () => { if (!who) return; const r = await rcon("hca placeholders " + who, { quiet: true }); if (r !== null) showReply("Placeholders for " + who, r); }, "ghost");
-  if (!rconReady()) { show.disabled = true; show.title = "Needs RCON"; }
+  const show = btn("Show their values", async () => { if (!who) return; const r = await runCommand("hca placeholders " + who, { quiet: true }); if (r !== null) showReply("Placeholders for " + who, r); }, "ghost");
   const body = el("div");
   const q = searchBox("Find a placeholder", () => draw());
   root.append(el("div", { class: "toolbar" }, q, el("span", { class: "grow" }), pick, show), body);

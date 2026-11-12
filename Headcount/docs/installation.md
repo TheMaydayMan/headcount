@@ -5,24 +5,18 @@
 - Paper 26.3 or a newer 26.x
 - Java 25
 
-Headcount needs no other plugins. It has its own PvP, permission nodes, moderation and AFK. It can also hand those jobs to a plugin you already run, or get extra features from one: PvPManager, PlaceholderAPI, Vault or VaultUnlocked with an economy (for money), LuckPerms (for groups, tracks and prefixes), a moderation plugin (LiteBans, LibertyBans, AdvancedBan or EssentialsX), EssentialsX for AFK and vanish, DiscordSRV, ItemsAdder, Oraxen or Nexo, and Geyser with Floodgate. See [integrations.md](integrations.md).
+Headcount needs no other plugins. It has its own PvP, permission nodes, moderation and AFK. It can also hand those jobs to a plugin you already run, or get extra features from one: PvPManager, PlaceholderAPI, Vault or VaultUnlocked with an economy (for money), LuckPerms (for groups, tracks and prefixes), a moderation plugin (LiteBans, LibertyBans, AdvancedBan or EssentialsX), EssentialsX for AFK and vanish, DiscordSRV, ItemsAdder, Oraxen or Nexo, and Geyser with Floodgate. On the first start, Headcount hands each job to an installed plugin that can do it, and later starts follow plugins you add or remove ([auto-switch](integrations.md#auto-switch)). See [integrations.md](integrations.md).
 
 ## Install
 
 1. Download `Headcount-<version>.jar` from the [releases page](https://github.com/TheMaydayMan/headcount/releases/latest), or [build it yourself](#building-from-source), and put it in `plugins/`.
 2. Start the server. Headcount downloads its SQLite driver through Paper's library loader and writes its config files to `plugins/Headcount/`. The first cycle starts right away with the default `cycle.start-date: auto`. Set a date there to start later.
 3. Check the console. It lists who handles each integration (`included`, a plugin, or `none`) and any config problems found at start-up.
-4. Edit the files, then run `/hca reload` and `/hca selftest`. Every option is commented in the files and listed in [config-reference.md](config-reference.md). You can also edit them in Headcount Studio.
+4. Edit the files, then run `/hca reload` and `/hca selftest`. Every option is commented in the files and listed in [config-reference.md](config-reference.md). You can also edit them in Headcount Studio: `/hca studio` shows its link and password.
 
 ## Headcount Studio
 
-Headcount Studio is a separate app for editing the configs and watching the server. It runs locally and opens in your browser. It has an editor for each config file, a live view of the server (players, vaults, the leaderboard and the audit log), a console, and guides with a full reference. To start it, double-click a launcher in the repository's `Headcount Studio` folder (`.desktop`, `.command` or `.bat`), or run:
-
-```bash
-python3 Headcount/tools/studio/server.py --dir /path/to/server/plugins/Headcount
-```
-
-It needs Python 3, and PyYAML to check files when you save them. The live pages read the database directly. Sending commands needs RCON: set `enable-rcon=true` and an `rcon.password` in `server.properties`, then restart the server. See [tools/studio/README.md](../tools/studio/README.md).
+Headcount Studio is a web app for editing the configs and watching the server, served by the plugin itself. It has an editor for each config file, a live view of the server (players, vaults, the leaderboard and the audit log), a console, and guides with a full reference. Run `/hca studio` for the link and password. By default it shares the Minecraft port, so it works on hosts that give you one port. [studio.md](studio.md) covers the rest.
 
 ## Updating
 

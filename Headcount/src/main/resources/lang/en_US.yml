@@ -405,7 +405,9 @@ admin:
     selftest: "<yellow>/hca selftest <gray>(check the configs for mistakes)"
     run: "<yellow>/hca run \\<player> \\<action-list>"
     hook: "<yellow>/hca hook \\<hook> [player]"
+    studio: "<yellow>/hca studio [reset] <gray>(Studio's link and password; reset makes a new password)"
   usage:
+    studio: "<prefix><gray>/hca studio, or /hca studio reset for a new password"
     cycle: "<prefix><gray>/hca cycle info|end confirm|start|simulate|setend|extend"
     cycle-setend: "<prefix><gray>/hca cycle setend 2026-12-01T00:00"
     cycle-extend: "<prefix><gray>/hca cycle extend 1d (or -1d)"
@@ -422,7 +424,15 @@ admin:
     flag: "<prefix><gray>/hca flag \\<player> set|clear \\<flag>"
     placeholders: "<prefix><gray>/hca placeholders \\<player>"
     run: "<prefix><gray>/hca run \\<player> \\<action-list>"
-    hook: "<prefix><gray>/hca hook <cycle-start|first-join|first-join-cycle|became-active|join|warning:\\<id>> [player]"
+    hook: "<prefix><gray>/hca hook <cycle-start|first-join|first-join-cycle|became-active|join|hurt-pet|kill-pet|open-trapped-chest|warning:\\<id>> [player]"
+  # /hca studio. <url> and <password> can be used inside click tags.
+  studio:
+    link: "<prefix><gray>Headcount Studio: <click:open_url:'<url>'><aqua><u><url></u></aqua></click>"
+    password: "<prefix><gray>Password: <click:copy_to_clipboard:'<password>'><hover:show_text:'Click to copy'><white><password></white></hover></click>"
+    signed-in: "<prefix><gray>Browsers signed in: <white><count></white>. <yellow>/hca studio reset</yellow> makes a new password and signs them all out."
+    reset: "<prefix><green>New Studio password: <click:copy_to_clipboard:'<password>'><white><password></white></click>. Every browser was signed out."
+    off: "<prefix><gray>Headcount Studio is off. Set <white>studio.enabled: true</white> in config.yml and run <yellow>/hca reload</yellow>."
+    failed: "<prefix><red>Headcount Studio couldn't start: <error>. The console has more."
   cycle:
     none: "<prefix><gray>No cycle is running. The first starts <white><starts></white> (in <in>)."
     info: "<prefix><gray>Cycle <white><cycle></white> <dark_gray>(run <run>)</dark_gray>: <start> to <end> (<time_left> left, <length> days, <zone>). Vault size <vault_size>, starting heads <starting_heads>. <active> of <players> players active."

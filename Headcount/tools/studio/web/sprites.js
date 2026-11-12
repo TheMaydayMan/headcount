@@ -1,19 +1,25 @@
-// Minecraft item sprites and player faces, drawn from the textures Studio downloads into its cache (see mcassets.py).
-// Each material is drawn once on a canvas (a flat item, a block cube, a head or a chest) and kept as a data URL.
-// Without textures every sprite is a flat square in the material's colour.
+// Minecraft item sprites and player faces, drawn from the textures Studio downloads into its cache (StudioAssets.java).
+// Each material is drawn once on a canvas and kept as a data URL: a flat item is its layers stacked; anything 3D (blocks,
+// chests, banners, heads...) is a shape from shapes.json, quads already projected the way the inventory shows them,
+// painted back to front. Without textures every sprite is a flat square in the material's colour.
 import { materialLook, isObj } from "./core.js";
 
 let INDEX = null;
+let SHAPES = {};
 const images = new Map();
 const drawn = new Map();
+const shaded = new Map();
 
 export async function loadSprites(status) {
   INDEX = null;
+  SHAPES = {};
   drawn.clear();
+  shaded.clear();
   if (!status?.ready) return false;
   try {
-    const r = await fetch("/mc/index.json");
+    const [r, s] = await Promise.all([fetch("/mc/index.json"), fetch("/mc/shapes.json")]);
     if (r.ok) INDEX = await r.json();
+    if (s.ok) SHAPES = await s.json();
   } catch (e) { INDEX = null; }
   if (status.font) document.documentElement.classList.add("mcfont");
   return !!INDEX;
@@ -29,14 +35,14 @@ const tex = (p) => image("/mc/" + p + ".png");
 
 function canvas(w, h) { const c = document.createElement("canvas"); c.width = w; c.height = h; const g = c.getContext("2d"); g.imageSmoothingEnabled = false; return [c, g]; }
 
-/** The first square frame of a texture (animated textures are tall strips), tinted when asked. */
+/** A texture's first frame (animated textures are tall strips; entity textures keep their size), tinted when asked. */
 function frame(img, tint) {
-  const s = img.width;
-  const [c, g] = canvas(s, s);
-  g.drawImage(img, 0, 0, s, s, 0, 0, s, s);
+  const w = img.width, h = img.height > img.width ? img.width : img.height;
+  const [c, g] = canvas(w, h);
+  g.drawImage(img, 0, 0, w, h, 0, 0, w, h);
   if (tint) {
-    g.globalCompositeOperation = "multiply"; g.fillStyle = tint; g.fillRect(0, 0, s, s);
-    g.globalCompositeOperation = "destination-in"; g.drawImage(img, 0, 0, s, s, 0, 0, s, s);
+    g.globalCompositeOperation = "multiply"; g.fillStyle = tint; g.fillRect(0, 0, w, h);
+    g.globalCompositeOperation = "destination-in"; g.drawImage(img, 0, 0, w, h, 0, 0, w, h);
   }
   return c;
 }
@@ -46,35 +52,43 @@ function crop(img, x, y, w, h, scale = 1) {
   g.drawImage(img, x * f, y * f, w * f, h * f, 0, 0, w * f, h * f);
   return c;
 }
-function stack(...parts) { // canvases of the same width, top to bottom
-  const w = parts[0].width, h = parts.reduce((n, p) => n + p.height, 0);
-  const [c, g] = canvas(w, h);
-  let y = 0;
-  for (const p of parts) { g.drawImage(p, 0, y); y += p.height; }
-  return c;
+
+/** A frame tinted and darkened by Minecraft's inventory lighting, kept per texture, tint and brightness. */
+function lit(key, img, tint, light) {
+  const k = key + "|" + (tint || "") + "|" + light;
+  if (!shaded.has(k)) {
+    const c = frame(img, tint);
+    if (light < 1) {
+      const g = c.getContext("2d");
+      g.globalCompositeOperation = "source-atop"; g.fillStyle = `rgba(0,0,0,${1 - light})`; g.fillRect(0, 0, c.width, c.height);
+    }
+    shaded.set(k, c);
+  }
+  return shaded.get(k);
 }
 
-// The inventory view of a block: a cube seen from above, top lit, left a little darker, right darker still.
+// A shape is painted into an N x N canvas standing for the 16 x 16 inventory slot.
 const N = 64;
-const P = (x, y) => [x * N / 16, y * N / 16];
-function cube(top, left, right, { y0 = 0, y1 = 16 } = {}) {
+const S = N / 16;
+function paint(quads, imgs, keys, colours) {
   const [c, g] = canvas(N, N);
-  const drop = (16 - y1) / 16 * 7.5, hgt = (y1 - y0) / 16;
-  const T = P(8, 0.5 + drop), L = P(1.5, 4.25 + drop), R = P(14.5, 4.25 + drop), C = P(8, 8 + drop);
-  const face = (img, o, a, b, shade, srcRows) => {
-    if (!img) return;
-    const sw = img.width, sh = img.height;
-    const [sy, sH] = srcRows ? [sh * (1 - srcRows[1]), sh * (srcRows[1] - srcRows[0])] : [0, sh];
-    g.save();
-    g.setTransform((a[0] - o[0]) / sw, (a[1] - o[1]) / sw, (b[0] - o[0]) / sH, (b[1] - o[1]) / sH, o[0], o[1]);
-    g.drawImage(img, 0, sy, sw, sH, 0, 0, sw, sH);
-    if (shade) { g.globalCompositeOperation = "source-atop"; g.fillStyle = `rgba(0,0,0,${shade})`; g.fillRect(0, 0, sw, sH); }
-    g.restore();
-  };
-  const down = (p) => [p[0], p[1] + 7.5 * hgt * N / 16];
-  face(top, L, T, C, 0);
-  face(left, L, C, down(L), 0.22, [y0 / 16, y1 / 16]);
-  face(right, C, R, down(C), 0.42, [y0 / 16, y1 / 16]);
+  for (const [v, tint, light, u0, v0, u1, v1, a, b, cc, d, e, f] of quads) {
+    const img = imgs[v];
+    if (!img) continue;
+    const src = lit(keys[v], img, tint >= 0 ? colours?.[tint] : null, light);
+    const fw = src.width, fh = src.height;
+    const sx = u0 * fw, sy = v0 * fh, sw = (u1 - u0) * fw, sh = (v1 - v0) * fh;
+    if (sw <= 0 || sh <= 0) continue;
+    // Grow each quad by about half a pixel around its middle so neighbouring faces meet without hairline gaps.
+    const ex = Math.hypot(a, b) * (u1 - u0) * S, ey = Math.hypot(cc, d) * (v1 - v0) * S;
+    if (ex < 0.01 || ey < 0.01) continue;
+    const kx = 1 + 0.6 / ex, ky = 1 + 0.6 / ey;
+    const um = (u0 + u1) / 2, vm = (v0 + v1) / 2;
+    const A = a * kx, B = b * kx, C = cc * ky, D = d * ky;
+    const E = (a * um + cc * vm + e) - (A * um + C * vm), F = (b * um + d * vm + f) - (B * um + D * vm);
+    g.setTransform(S * A / fw, S * B / fw, S * C / fh, S * D / fh, S * E, S * F);
+    g.drawImage(src, sx, sy, sw, sh, sx, sy, sw, sh);
+  }
   return c;
 }
 
@@ -89,28 +103,18 @@ async function render(key, spec) {
     layers.forEach((img, i) => g.drawImage(frame(img, e.c?.[i]), 0, 0, s, s));
     return c.toDataURL();
   }
-  if (e.t === "cube") {
-    const tint = (n, img) => (e.tint && img && (e.tf || []).length && !/grass_block_side/.test(n) ? frame(img, e.tint) : img && frame(img));
-    const [t, l, r] = await Promise.all([tex(e.top), tex(e.left), tex(e.right)]);
-    if (!t && !l) return null;
-    const y0 = e.box ? e.box[0][1] : 0, y1 = e.box ? e.box[1][1] : 16;
-    return cube(tint(e.top, t), tint(e.left, l), tint(e.right, r), { y0, y1 }).toDataURL();
-  }
-  if (e.t === "head") {
-    let skin = null;
-    if (spec && spec.owner && spec.owner !== "viewer") skin = await image("/skin/" + encodeURIComponent(spec.owner) + ".png");
-    skin ||= await tex(e.skin);
-    if (!skin) return null;
-    const hat = skin.height >= 64 || e.skin.includes("player");
-    const part = (x, y, hx, hy) => { const base = crop(skin, x, y, 8, 8); if (hat) base.getContext("2d").drawImage(crop(skin, hx, hy, 8, 8), 0, 0); return base; };
-    return cube(part(8, 0, 40, 0), part(8, 8, 40, 8), part(0, 8, 32, 8)).toDataURL();
-  }
-  if (e.t === "chest") {
-    const img = await tex(e.tex);
-    if (!img) return null;
-    const front = stack(crop(img, 42, 14, 14, 5), crop(img, 42, 33, 14, 10));
-    front.getContext("2d").drawImage(crop(img, 1, 1, 2, 4), 6 * front.width / 14, 2 * front.width / 14);
-    return cube(crop(img, 28, 0, 14, 14), front, stack(crop(img, 0, 14, 14, 5), crop(img, 0, 33, 14, 10))).toDataURL();
+  if (e.t === "model") {
+    const quads = SHAPES[e.g];
+    if (!quads) return null;
+    const vars = Object.keys(e.x || {});
+    const keys = Object.fromEntries(vars.map((v) => [v, e.x[v]]));
+    const imgs = Object.fromEntries(await Promise.all(vars.map(async (v) => [v, await tex(e.x[v])])));
+    if (e.o && spec && spec.owner && spec.owner !== "viewer") {
+      const skin = await image("/skin/" + encodeURIComponent(spec.owner) + ".png");
+      if (skin && skin.height >= 64) { imgs[e.o] = skin; keys[e.o] = "skin:" + spec.owner; }
+    }
+    if (!Object.values(imgs).some(Boolean)) return null;
+    return paint(quads, imgs, keys, e.c).toDataURL();
   }
   return null;
 }

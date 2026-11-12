@@ -1,15 +1,39 @@
-// Set up pages, part 2: Shop, Titles, Trading, Statuses, Integrations, Hooks, Sidebar, Menus, Messages and General.
+// Set up pages, part 2: Shop, Titles, Trading, Statuses, Integrations, Hooks, Action lists, Sidebar, Menus, Messages and General.
 import { plain, el, btn, icon, iconBtn, field, group, subhead, allFields, mcText, miniInline, tooltip, chest, seg, select, switchCtl, chips, drawer, closeDrawer, toast,
-  promptDialog, confirmDialog, hoverTip, sprite, SAMPLE, ICONS, humanize, toYamlText, fromYamlText, miniCtl, numberCtl, materialCtl, statusPicker, highlight } from "./ui.js";
-import { isObj, clone, expandSlots, compressSlots, renderMini, stripMini, parseDuration, formatDuration, prettyMaterial } from "./core.js";
+  promptDialog, confirmDialog, hoverTip, sprite, SAMPLE, ICONS, humanize, toYamlText, fromYamlText, miniCtl, numberCtl, materialCtl, statusPicker, highlight, rowTools, emptyBox } from "./ui.js";
+import { isObj, clone, expandSlots, compressSlots, renderMini, stripMini, parseDuration, formatDuration, prettyMaterial, setValue, moveEntry } from "./core.js";
 import * as S from "./store.js";
-import { actionList, editActions, summarize, listUsages, listNames, conditionsCtl, actionSprite, usageText } from "./actions.js";
+import { actionList, editActions, summarize, listUsages, listNames, conditionsCtl, actionSprite, usageText, usagePlaces, renameList, freeListName } from "./actions.js";
 import { pageHead, C, layout, preview, mcName } from "./pages-setup.js";
 import { playSound } from "./sprites.js";
 
 const go = (h, key) => window.studio.go(h, key);
 const idCheck = (exists) => (v) => !/^[a-z0-9][a-z0-9_-]*$/i.test(v) ? "Use letters, numbers, dashes and underscores." : exists(v) ? "That ID is taken." : null;
 const doneFooter = (...left) => el("div", { class: "row", style: { width: "100%" } }, ...left, el("span", { class: "grow" }), btn("Done", () => closeDrawer(), "primary"));
+/** A free ID next to an existing one: steak-2 beside steak. */
+export function freeId(base, taken) {
+  if (!taken(base)) return base;
+  const stem = base.replace(/-\d+$/, "");
+  let n = 2;
+  while (taken(stem + "-" + n)) n++;
+  return stem + "-" + n;
+}
+/** Copies a map entry to a new key right after the original, as one undo step. */
+export function duplicateEntry(file, path, newKey, change) {
+  const parent = path.split(".").slice(0, -1).join(".");
+  const to = (parent ? parent + "." : "") + newKey;
+  const value = clone(S.get(file, path));
+  change?.(value);
+  S.setText(file, moveEntry(setValue(S.doc(file).text, to, value), to, path, false), null);
+  return to;
+}
+/** Moves a map entry one place up or down among its siblings (order matters for tiers, titles and outcome rules). */
+export function moveSibling(file, path, keys, from, to) {
+  if (to < 0 || to >= keys.length || from === to) return;
+  const parent = path.split(".").slice(0, -1).join(".");
+  S.move(file, path, (parent ? parent + "." : "") + keys[to], to < from);
+}
+const dupBtn = (fn) => btn([icon("copy"), "Duplicate"], fn, "ghost");
 
 // ============================================================================================
 //  Menus: shared by the menu editor and every page that previews a menu
@@ -243,7 +267,7 @@ function shopPage(root, params) {
     list.append(el("button", { class: "addrow", onclick: () => { const free = [...Array(size).keys()].find((i) => !at[i] && !menuSlots("shop.yml", "gui").buttons[i] && !isFiller(menuSlots("shop.yml", "gui").fill, menuSlots("shop.yml", "gui").rows, i)); addEntry(free ?? 0); } }, icon("plus"), "New item"));
     left.append(el("section", { class: "group", style: { marginTop: "26px" } }, el("header", {}, el("h2", {}, "Items in " + stripMini(T.name || tier))), list));
     const aside = el("div", { style: { display: "grid", gap: "4px" } },
-      group(["Tier", iconBtn("trash", "Delete this tier", async () => { if (await confirmDialog("Delete the " + stripMini(T.name || tier) + " tier?", entries.length ? `Its ${entries.length === 1 ? "item goes" : entries.length + " items go"} with it.` : null, { ok: "Delete", danger: true })) { S.remove("shop.yml", base); tier = tiers()[0]; draw(); } }, "sm")],
+      group(["Tier", rowTools(tiers().indexOf(tier), tiers().length, { horizontal: true, what: "this tier", move: (from, to) => { moveSibling("shop.yml", base, tiers(), from, to); draw(); } }), iconBtn("trash", "Delete this tier", async () => { if (await confirmDialog("Delete the " + stripMini(T.name || tier) + " tier?", entries.length ? `Its ${entries.length === 1 ? "item goes" : entries.length + " items go"} with it.` : null, { ok: "Delete", danger: true })) { S.remove("shop.yml", base); tier = tiers()[0]; draw(); } }, "sm")],
         field("shop.yml", base + ".name", { label: "Name", onChange: draw }), thresholdRow(base, draw), field("shop.yml", base + ".enabled", { label: "Open", type: "bool" })),
       group("Shop", field("shop.yml", "settings.confirm-at-price"), field("shop.yml", "settings.new-player-score"), field("shop.yml", "settings.stock-reset")),
       statesEditor());
@@ -316,7 +340,18 @@ function entryEditor(tier, id, redraw) {
   if (rest.children.length) body.append(el("section", { class: "group" }, el("header", {}, el("h2", {}, "Other settings")), rest));
   drawer(stripMini(e0.display?.name || id), body, { subtitle: stripMini(S.get("shop.yml", "tiers." + tier + ".name") || humanize(tier)) + " tier", wide: true, onClose: redraw, hash: "#/shop/" + tier + "/" + id,
     footer: doneFooter(
-      btn("Rename", async () => { const n = await promptDialog("Rename", "New ID:", id, { check: idCheck(() => false) }); if (n && n !== id) { S.rename("shop.yml", base, n); entryEditor(tier, n, redraw); } }, "ghost"),
+      btn([icon("edit"), "Rename"], async () => { const n = await promptDialog("Rename", "New ID:", id, { check: idCheck(() => false) }); if (n && n !== id) { S.rename("shop.yml", base, n); entryEditor(tier, n, redraw); } }, "ghost"),
+      dupBtn(() => {
+        // The copy goes in the next free slot on the same page, so it doesn't sit on top of the original.
+        const T = S.get("shop.yml", "tiers." + tier) || {};
+        const taken = new Set(Object.values(T.entries || {}).filter((x) => (+x?.page || 1) === (+e0.page || 1)).map((x) => +x?.slot || 0));
+        const { size, buttons, fill, rows } = menuSlots("shop.yml", "gui");
+        const slot = [...Array(size).keys()].find((i) => !taken.has(i) && !buttons[i] && !isFiller(fill, rows, i));
+        const nid = freeId(id, (v) => allEntries.includes(v));
+        duplicateEntry("shop.yml", base, nid, (v) => { if (slot !== undefined && isObj(v)) v.slot = slot; });
+        toast("Made a copy, " + nid + (slot === undefined ? ". This page has no free slot, so it shares one with the original." : "."));
+        entryEditor(tier, nid, redraw);
+      }),
       btn([icon("trash"), "Delete"], async () => { if (await confirmDialog("Delete " + stripMini(e0.display?.name || id) + "?", null, { ok: "Delete", danger: true })) { S.remove("shop.yml", base); closeDrawer(); } }, "ghost danger")) });
 }
 
@@ -344,8 +379,11 @@ function titlesPage(root, params) {
   const draw = () => {
     listBox.innerHTML = "";
     const items = el("div", { class: "items" });
-    for (const [id, t] of Object.entries(S.get("titles.yml", "titles") || {})) items.append(el("div", { class: "item" + (t?.enabled === false ? " off" : ""), onclick: () => edit(id) }, sprite(t?.icon || "NAME_TAG", 28),
-      el("div", { class: "main" }, el("div", { class: "t1" }, mcName(t?.display || id)), el("div", { class: "t2" }, [].concat(t?.description || []).map(stripMini).join(" "))), t?.enabled === false ? el("div", { class: "end" }, "Not in use") : null));
+    // The titles menu lists them in this order, so they can be moved.
+    const ids = Object.keys(S.get("titles.yml", "titles") || {});
+    ids.forEach((id, i) => { const t = S.get("titles.yml", "titles." + id); items.append(el("div", { class: "item" + (t?.enabled === false ? " off" : ""), onclick: () => edit(id) }, sprite(t?.icon || "NAME_TAG", 28),
+      el("div", { class: "main" }, el("div", { class: "t1" }, mcName(t?.display || id)), el("div", { class: "t2" }, [].concat(t?.description || []).map(stripMini).join(" "))), t?.enabled === false ? el("div", { class: "end" }, "Not in use") : null,
+      rowTools(i, ids.length, { what: "title", move: (from, to) => { moveSibling("titles.yml", "titles." + id, ids, from, to); draw(); } }))); });
     items.append(el("button", { class: "addrow", onclick: add }, icon("plus"), "New title"));
     listBox.append(items);
     drawChat();
@@ -357,7 +395,7 @@ function titlesPage(root, params) {
     drawPrev();
     drawer(stripMini(S.get("titles.yml", base + ".display") || id), el("div", {}, prev, group(null, field("titles.yml", base + ".display", { onChange: () => { drawPrev(); draw(); } }), field("titles.yml", base + ".description", { label: "Description", onChange: drawPrev }),
       field("titles.yml", base + ".icon.material", { label: "Menu item", onChange: drawPrev }), field("titles.yml", base + ".icon.glint", { onChange: drawPrev }), field("titles.yml", base + ".enabled", { label: "In use", type: "bool" }))),
-    { onClose: draw, hash: "#/titles/" + id, footer: doneFooter(btn([icon("trash"), "Delete"], async () => { if (await confirmDialog("Delete " + id + "?", "Players who have it keep it in the database, but it stops showing anywhere.", { ok: "Delete", danger: true })) { S.remove("titles.yml", base); closeDrawer(); } }, "ghost danger")) });
+    { onClose: draw, hash: "#/titles/" + id, footer: doneFooter(dupBtn(() => { const n = freeId(id, (v) => S.get("titles.yml", "titles." + v) !== undefined); duplicateEntry("titles.yml", base, n); toast("Made a copy, " + n + "."); edit(n); }), btn([icon("trash"), "Delete"], async () => { if (await confirmDialog("Delete " + id + "?", "Players who have it keep it in the database, but it stops showing anywhere.", { ok: "Delete", danger: true })) { S.remove("titles.yml", base); closeDrawer(); } }, "ghost danger")) });
   };
   draw();
   root.append(layout([el("section", { class: "group" }, listBox),
@@ -498,7 +536,7 @@ function statusesPage(root, params) {
         el("p", { class: "muted" }, "Used by: " + (statusUses(name).join(", ") || "nothing yet") + ". Placeholder: ", el("code", {}, "%headcount_status_" + name + "%")));
     };
     drawE();
-    drawer(name, body, { subtitle: statusSummary(S.get("statuses.yml", base)), onClose: draw, hash: "#/statuses/" + name, footer: doneFooter(btn([icon("trash"), "Delete"], async () => { if (await confirmDialog("Delete " + name + "?", statusUses(name).length ? "It's used by " + statusUses(name).join(", ") + ", which would then name a status that doesn't exist." : null, { ok: "Delete", danger: true })) { S.remove("statuses.yml", base); closeDrawer(); } }, "ghost danger")) });
+    drawer(name, body, { subtitle: statusSummary(S.get("statuses.yml", base)), onClose: draw, hash: "#/statuses/" + name, footer: doneFooter(dupBtn(() => { const n = freeId(name, (v) => S.get("statuses.yml", "statuses." + v) !== undefined); duplicateEntry("statuses.yml", base, n); toast("Made a copy, " + n + "."); edit(n); }), btn([icon("trash"), "Delete"], async () => { if (await confirmDialog("Delete " + name + "?", statusUses(name).length ? "It's used by " + statusUses(name).join(", ") + ", which would then name a status that doesn't exist." : null, { ok: "Delete", danger: true })) { S.remove("statuses.yml", base); closeDrawer(); } }, "ghost danger")) });
   };
   draw();
   root.append(el("section", { class: "group" }, listBox), group("Placeholder text", field("statuses.yml", "settings.placeholder-true"), field("statuses.yml", "settings.placeholder-false")));
@@ -521,7 +559,7 @@ const INTEG = [
 const MSG_EVENTS = [["toggled", "Switching PvP", ["pvp.toggled-on", "pvp.toggled-off"]], ["tag-start", "Entering combat", ["pvp.tag-start"]], ["tag-end", "Leaving combat", ["pvp.tag-end"]],
   ["blocked-hit", "A hit is stopped", ["pvp.blocked-hit.target-off", "pvp.blocked-hit.self-off"]], ["blocked-action", "Something is refused", ["pvp.blocked-command", "pvp.cooldown"]]];
 function integrationsPage(root) {
-  root.append(pageHead("Integrations"));
+  root.append(pageHead("Integrations"), group(null, field("integrations.yml", "auto-switch")));
   const installed = S.store.info.plugins || null;
   const has = (pl) => installed && installed.some((p) => p.toLowerCase().startsWith(pl.toLowerCase()));
   for (const [key, title, spr, options, names, pluginOf] of INTEG) {
@@ -534,6 +572,8 @@ function integrationsPage(root) {
       if (installed && pluginOf[v] && !has(pluginOf[v])) rows.push(el("div", { class: "pad", style: { padding: "12px 18px", color: "var(--warn)" } }, pluginOf[v] + " isn't in this server's plugins folder. Headcount would use its built-in version, or nothing if it has none."));
       if (key === "pvp" && v === "included") rows.push(...pvpIncluded());
       if (key === "pvp" && v === "pvpmanager") rows.push(field("integrations.yml", "pvp.pvpmanager.let-players-toggle"));
+      if (key === "pvp" && v !== "none") rows.push(subhead("Pets"), field("integrations.yml", "pvp.pet-protection.enabled", { hint: "For pet vengeance instead, see the Hurts a pet hook." }),
+        field("integrations.yml", "pvp.pet-protection.offline-owners"));
       if (key === "placeholders" && v === "placeholderapi") rows.push(field("integrations.yml", "placeholders.placeholderapi.register-expansion"), field("integrations.yml", "placeholders.placeholderapi.expansion-format"));
       if (key === "permissions" && v === "luckperms") rows.push(field("integrations.yml", "permissions.luckperms.use-expiry"), field("integrations.yml", "permissions.luckperms.server-context"));
       if (key === "moderation" && v !== "none") rows.push(...moderationRows(v));
@@ -616,6 +656,11 @@ function moderationRows(v) {
 // ============================================================================================
 const PLAYER_HOOKS = [["first-join", "First join", "The first time a player joins the server", "oak_door"], ["first-join-cycle", "First join this cycle", "A player's first join in each cycle", "clock"],
   ["became-active", "Becomes active", "When a player has played enough to count as active", "experience_bottle"], ["join", "Every join", "Each time a player joins", "player_head"]];
+/** Hooks for things a player does. They can fire many times a minute, so each has a cooldown under hooks.cooldowns. */
+const ACT_HOOKS = [["hurt-pet", "Hurts a pet", "A player hurts another player's tamed animal", "bone"], ["kill-pet", "Kills a pet", "A player kills another player's tamed animal", "lead"],
+  ["open-trapped-chest", "Opens a trapped chest", "A player opens any trapped chest, their own included", "trapped_chest"]];
+const PET_VARS = { owner: "Alex", owner_uuid: "853c80ef-3c37-49fd-aa49-938b674adae6", pet: "Rex", pet_type: "wolf", damage: 4, world: "world", x: 120, y: 64, z: -38 };
+const HOOK_VARS = { "hurt-pet": PET_VARS, "kill-pet": (({ damage, ...v }) => v)(PET_VARS), "open-trapped-chest": { world: "world", x: 120, y: 64, z: -38 } };
 function hooksPage(root, params) {
   root.append(pageHead("Hooks"));
   const warnings = Object.entries(C("hooks.warnings") || {}).sort((a, b) => parseDuration(b[1]?.before) - parseDuration(a[1]?.before));
@@ -634,34 +679,27 @@ function hooksPage(root, params) {
       stop("Ends", count(C("hooks.cycle-end.global")) + ", plus player reports", "red_dye", () => cycleHook("hooks.cycle-end", "When a cycle ends"), true)))));
   root.append(el("section", { class: "group" }, el("header", {}, el("h2", {}, "A player")), el("div", { class: "sheet" }, el("div", { class: "track" },
     PLAYER_HOOKS.map(([h, label, when, spr]) => stop(label, count(C("hooks.player." + h)), spr, () => playerHook(h)))))));
+  const every = (h) => { const ms = parseDuration(String(C("hooks.cooldowns." + h) ?? 0)); return ms > 0 ? ", at most every " + formatDuration(ms) : ""; };
+  root.append(el("section", { class: "group" }, el("header", {}, el("h2", {}, "Something a player does")), el("div", { class: "sheet" }, el("div", { class: "track" },
+    ACT_HOOKS.map(([h, label, when, spr]) => stop(label, count(C("hooks.player." + h)) + (C("hooks.player." + h)?.length ? every(h) : ""), spr, () => playerHook(h)))))));
   root.append(group("Timing", field("config.yml", "hooks.join-delay"), field("config.yml", "hooks.missed-warning-grace"), field("config.yml", "hooks.top-count")));
-  const names = listNames();
-  const addList = async () => {
-    const id = await promptDialog("New action list", "Name:", "my-list", { check: idCheck((v) => names.includes(v)) });
-    if (!id) return;
-    S.set("actions.yml", "lists." + id, [{ message: "<green>Hello <player>!" }]);
-    openList(id);
+  // Shared action lists have their own page; old links to a list here still open it.
+  if (params[0] === "list" && params[1]) { history.replaceState(null, "", "#/lists/" + params[1]); window.studio.refresh(); return; }
+  const playerHook = (h) => {
+    const [, label, when] = [...PLAYER_HOOKS, ...ACT_HOOKS].find((x) => x[0] === h);
+    const vars = HOOK_VARS[h];
+    // The doing hooks show their cooldown and the extra variables their text can use.
+    const before = vars ? el("div", {}, group(null, field("config.yml", "hooks.cooldowns." + h, { hint: "A run skipped by the cooldown does nothing, so a timed action here should last longer than this." })),
+      el("p", { class: "small muted", style: { margin: "-18px 0 18px" } }, "Text here can also use ", Object.keys(vars).map((k, i) => [i ? " " : "", el("code", {}, "<" + k + ">")]),
+        h === "open-trapped-chest" ? ". Minecraft doesn't record who placed a chest." : ". Not for creative or spectator players, or an owner hurting their own pet.")) : null;
+    editActions("config.yml", "hooks.player." + h, { title: label, subtitle: when, before, opts: vars ? { vars } : {}, onClose: () => window.studio.refresh(), hash: "#/hooks/hook/hooks.player." + h });
   };
-  const openList = (n) => editActions("actions.yml", "lists." + n, { title: n, subtitle: usageText(listUsages(n)), onClose: () => window.studio.refresh(), hash: "#/hooks/list/" + n });
-  const playerHook = (h) => { const [, label, when] = PLAYER_HOOKS.find((x) => x[0] === h); editActions("config.yml", "hooks.player." + h, { title: label, subtitle: when, onClose: () => window.studio.refresh(), hash: "#/hooks/hook/hooks.player." + h }); };
-  const items = el("div", { class: "items" });
-  for (const n of names) {
-    const v = S.get("actions.yml", "lists." + n);
-    const uses = listUsages(n);
-    const first = Array.isArray(v) ? v[0] : v;
-    items.append(el("div", { class: "item", onclick: () => openList(n) }, sprite(first ? actionSprite(first) : "repeater", 28),
-      el("div", { class: "main" }, el("div", { class: "t1" }, n), el("div", { class: "t2" }, (Array.isArray(v) ? v : [v]).slice(0, 3).map(summarize).join(", "))),
-      el("div", { class: "end hide-s" }, usageText(uses)),
-      iconBtn("edit", "Rename", async (e) => { e.stopPropagation(); const nn = await promptDialog("Rename " + n, "New name. Places that use it keep the old name.", n, { check: idCheck((x) => x !== n && names.includes(x)) }); if (nn && nn !== n) { S.rename("actions.yml", "lists." + n, nn); window.studio.refresh(); } }, "sm"),
-      iconBtn("trash", "Delete", async (e) => { e.stopPropagation(); if (await confirmDialog("Delete " + n + "?", uses.length ? `It's used in ${uses.length} place${uses.length === 1 ? "" : "s"}, which would then fail.` : "Nothing uses it.", { ok: "Delete", danger: true })) { S.remove("actions.yml", "lists." + n); window.studio.refresh(); } }, "sm")));
-  }
-  items.append(el("button", { class: "addrow", onclick: addList }, icon("plus"), "New action list"));
-  root.append(el("section", { class: "group" }, el("header", {}, el("h2", {}, "Action lists")), items));
-  const rest = allFields("actions.yml", "", { skip: ["lists", "config-version"] });
-  if (rest.children.length) root.append(el("section", { class: "group" }, el("header", {}, el("h2", {}, "Other")), rest));
-  if (params[0] === "list" && params[1] && names.includes(params[1])) openList(params[1]);
+  const names = listNames();
+  root.append(el("section", { class: "group" }, el("header", {}, el("h2", {}, "Action lists")), el("div", { class: "items" },
+    el("a", { class: "item", href: "#/lists" }, sprite("repeater", 28), el("div", { class: "main" }, el("div", { class: "t1" }, names.length ? names.length + " shared action list" + (names.length === 1 ? "" : "s") : "No shared action lists yet"),
+      el("div", { class: "t2" }, "Groups of actions any hook, outcome or shop item can run by name")), icon("right")))));
   const hp = params[0] === "hook" ? params[1] || "" : "";
-  if (hp.startsWith("hooks.player.") && PLAYER_HOOKS.some((x) => "hooks.player." + x[0] === hp)) playerHook(hp.slice(13));
+  if (hp.startsWith("hooks.player.") && [...PLAYER_HOOKS, ...ACT_HOOKS].some((x) => "hooks.player." + x[0] === hp)) playerHook(hp.slice(13));
   else if (hp === "hooks.cycle-start") cycleHook(hp, "When a cycle starts");
   else if (hp === "hooks.cycle-end") cycleHook(hp, "When a cycle ends");
   else if (hp.startsWith("hooks.warnings.") && S.get("config.yml", hp) !== undefined) cycleHook(hp, "Warning");
@@ -690,6 +728,52 @@ function cycleHook(path, title) {
 }
 
 // ============================================================================================
+//  Action lists (the named lists in actions.yml)
+// ============================================================================================
+const listCheck = (taken) => (v) => !/^[a-z0-9][a-z0-9_-]*$/i.test(v) ? "Use letters, numbers, dashes and underscores." : taken(v) ? "There's a list with that name." : null;
+function listsPage(root, params) {
+  const names = listNames();
+  const add = async () => {
+    const id = await promptDialog("New action list", "A short name, like celebrate:", freeListName("my-list"), { check: listCheck((v) => listNames().includes(v)) });
+    if (!id) return;
+    S.set("actions.yml", "lists." + id, [{ message: "<green>Hello <player>!" }]);
+    openList(id);
+  };
+  root.append(pageHead("Action lists", "A named group of actions. Outcomes, shop items, hooks and other lists run it by name, so one change here reaches all of them.", btn([icon("plus"), "New list"], add)));
+  const openList = (n) => {
+    const places = usagePlaces(n);
+    const usedBy = el("div", { class: "note", style: { marginBottom: "16px" } }, places.length ? ["Runs in ", places.map((p, i) => [i ? (i === places.length - 1 ? " and " : ", ") : "", el("a", { href: p.hash }, p.label)]), ". A change here applies to all of them."]
+      : "Nothing runs this list yet. Pick it under Add an action anywhere actions go.");
+    editActions("actions.yml", "lists." + n, { title: n, subtitle: usageText(listUsages(n)), onClose: () => window.studio.refresh(), hash: "#/lists/" + n, before: usedBy,
+      footer: [
+        btn([icon("edit"), "Rename"], async () => {
+          const nn = await promptDialog("Rename " + n, places.length ? "New name. The " + places.length + " place" + (places.length === 1 ? "" : "s") + " that run it change to the new name too." : "New name:", n, { check: listCheck((x) => x !== n && listNames().includes(x)) });
+          if (nn && nn !== n) { renameList(n, nn); toast("Renamed " + n + " to " + nn + (places.length ? " everywhere it's used." : ".")); openList(nn); }
+        }, "ghost"),
+        dupBtn(() => { const nn = freeListName(n + "-2"); duplicateEntry("actions.yml", "lists." + n, nn); toast("Made a copy, " + nn + "."); openList(nn); }),
+        btn([icon("trash"), "Delete"], async () => {
+          if (await confirmDialog("Delete " + n + "?", places.length ? "It runs in " + places.length + " place" + (places.length === 1 ? "" : "s") + " (" + places.map((p) => p.label).join(", ") + "), which would then do nothing there." : "Nothing runs it.", { ok: "Delete", danger: true })) { S.remove("actions.yml", "lists." + n); closeDrawer(); }
+        }, "ghost danger")] });
+  };
+  if (!names.length) root.append(emptyBox("repeater", "No action lists yet", "Make one here, or choose some actions anywhere actions go and pick Make a list from these.", btn([icon("plus"), "New list"], add, "primary")));
+  else {
+    const items = el("div", { class: "items" });
+    for (const n of names) {
+      const v = S.get("actions.yml", "lists." + n);
+      const arr = Array.isArray(v) ? v : v === undefined || v === null ? [] : [v];
+      items.append(el("div", { class: "item", onclick: () => openList(n) }, sprite(arr[0] !== undefined ? actionSprite(arr[0]) : "repeater", 28),
+        el("div", { class: "main" }, el("div", { class: "t1" }, n), el("div", { class: "t2" }, arr.slice(0, 3).map(summarize).join(", ") || "No actions")),
+        el("div", { class: "end" }, usageText(listUsages(n)))));
+    }
+    items.append(el("button", { class: "addrow", onclick: add }, icon("plus"), "New list"));
+    root.append(el("section", { class: "group" }, items));
+  }
+  const rest = allFields("actions.yml", "", { skip: ["lists", "config-version"] });
+  if (rest.children.length) root.append(el("section", { class: "group" }, el("header", {}, el("h2", {}, "Other")), rest));
+  if (params[0] && names.includes(params[0])) openList(params[0]);
+}
+
+// ============================================================================================
 //  Sidebar
 // ============================================================================================
 function sidebarPage(root) {
@@ -710,10 +794,11 @@ function sidebarPage(root) {
     const lines = [...(C("sidebar.lines") || [])];
     const write = () => { S.set("config.yml", "sidebar.lines", lines, "config.yml#sidebar.lines"); linesRow.classList.toggle("unsaved", JSON.stringify(lines) !== JSON.stringify(S.savedValue("config.yml", "sidebar.lines"))); drawPrev(); };
     lines.forEach((l, i) => {
-      linesBox.append(el("div", { class: "row", style: { flexWrap: "nowrap", alignItems: "flex-start" } }, el("div", { class: "grow" }, miniCtl(l, (v) => { lines[i] = v; write(); }, { preview: false })),
-        iconBtn("up", "Move up", () => { if (i) { [lines[i - 1], lines[i]] = [lines[i], lines[i - 1]]; write(); drawLines(); } }, "sm"),
-        iconBtn("dn", "Move down", () => { if (i < lines.length - 1) { [lines[i + 1], lines[i]] = [lines[i], lines[i + 1]]; write(); drawLines(); } }, "sm"),
-        iconBtn("trash", "Remove line", () => { lines.splice(i, 1); write(); drawLines(); }, "sm")));
+      linesBox.append(el("div", { class: "row lineedit" }, el("div", { class: "grow" }, miniCtl(l, (v) => { lines[i] = v; write(); }, { preview: false })),
+        rowTools(i, lines.length, { what: "line",
+          move: (from, to) => { const [m] = lines.splice(from, 1); lines.splice(to, 0, m); write(); drawLines(); },
+          duplicate: () => { lines.splice(i + 1, 0, lines[i]); write(); drawLines(); },
+          remove: () => { lines.splice(i, 1); write(); drawLines(); } })));
     });
     linesBox.append(el("div", { class: "row" }, btn([icon("plus"), "Line"], () => { lines.push("<gray>New line"); write(); drawLines(); }, "small", ),
       select((S.store.catalog?.placeholders || []).map((p) => [p.name, p.name + ": " + p.description]), "", (v) => { if (v) { lines.push("<gray>" + humanize(v) + ": <white>%headcount_" + v + "%"); write(); drawLines(); } }, { placeholder: "Add a line with a placeholder" })));
@@ -788,14 +873,15 @@ function generalPage(root) {
   ], []));
 }
 export const setupPages2 = [
-  { id: "shop", group: "Set up", title: "Shop", icon: ICONS.shop, render: shopPage, owns: ["shop.yml"] },
-  { id: "titles", group: "Set up", title: "Titles", icon: ICONS.title, render: titlesPage, owns: ["titles.yml"] },
-  { id: "trading", group: "Set up", title: "Trading", icon: ICONS.trade, render: tradingPage, owns: ["trade.yml"] },
-  { id: "statuses", group: "Set up", title: "Statuses", icon: ICONS.status, render: statusesPage, owns: ["statuses.yml"] },
-  { id: "integrations", group: "Set up", title: "Integrations", icon: ICONS.plug, render: integrationsPage, owns: ["integrations.yml"] },
-  { id: "hooks", group: "Set up", title: "Hooks", icon: ICONS.hook, render: hooksPage, owns: ["config.yml:hooks", "actions.yml"] },
-  { id: "sidebar", group: "Set up", title: "Sidebar", icon: ICONS.sidebar, render: sidebarPage, owns: ["config.yml:sidebar"] },
-  { id: "menus", group: "Set up", title: "Menus", icon: ICONS.menu, render: menusPage, owns: ["config.yml:vault.gui", "config.yml:history", "shop.yml:gui", "shop.yml:confirm-gui", "trade.yml:gui", "titles.yml:gui"] },
-  { id: "messages", group: "Set up", title: "Messages", icon: ICONS.lang, render: messagesPage, owns: ["lang/en_US.yml"] },
-  { id: "safety", group: "Set up", title: "General", icon: ICONS.reset, render: generalPage, owns: ["config.yml:general", "config.yml:reset", "config.yml:audit", "config.yml:storage", "config.yml:gates", "config.yml:gui", "config.yml:placeholders", "config.yml:top"] },
+  { id: "shop", group: "Game", title: "Shop", icon: ICONS.shop, render: shopPage, owns: ["shop.yml"] },
+  { id: "titles", group: "Game", title: "Titles", icon: ICONS.title, render: titlesPage, owns: ["titles.yml"] },
+  { id: "trading", group: "Game", title: "Trading", icon: ICONS.trade, render: tradingPage, owns: ["trade.yml"] },
+  { id: "statuses", group: "Game", title: "Statuses", icon: ICONS.status, render: statusesPage, owns: ["statuses.yml"] },
+  { id: "integrations", group: "Server", title: "Integrations", icon: ICONS.plug, render: integrationsPage, owns: ["integrations.yml"] },
+  { id: "hooks", group: "Server", title: "Hooks", icon: ICONS.hook, render: hooksPage, owns: ["config.yml:hooks"] },
+  { id: "lists", group: "Server", title: "Action lists", icon: "repeater", render: listsPage, owns: ["actions.yml"] },
+  { id: "sidebar", group: "Server", title: "Sidebar", icon: ICONS.sidebar, render: sidebarPage, owns: ["config.yml:sidebar"] },
+  { id: "menus", group: "Server", title: "Menus", icon: ICONS.menu, render: menusPage, owns: ["config.yml:vault.gui", "config.yml:history", "shop.yml:gui", "shop.yml:confirm-gui", "trade.yml:gui", "titles.yml:gui"] },
+  { id: "messages", group: "Server", title: "Messages", icon: ICONS.lang, render: messagesPage, owns: ["lang/en_US.yml"] },
+  { id: "safety", group: "Server", title: "General", icon: ICONS.reset, render: generalPage, owns: ["config.yml:general", "config.yml:reset", "config.yml:audit", "config.yml:storage", "config.yml:gates", "config.yml:gui", "config.yml:placeholders", "config.yml:top"] },
 ];

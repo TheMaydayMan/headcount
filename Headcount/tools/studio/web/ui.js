@@ -69,12 +69,28 @@ export function icon(name, cls = "") {
 }
 export const iconBtn = (name, title, onclick, cls = "") => el("button", { class: "iconbtn " + cls, title, "aria-label": title, onclick }, icon(name));
 
+/**
+ * The controls every row of an ordered list gets, in the same order everywhere: move up, move down, duplicate and
+ * remove. The ends can't move further. i is the row, n the number of rows; move(from, to), duplicate() and remove()
+ * do the work. Leave out duplicate or remove where a list has no use for them. what names the row in the tooltips.
+ */
+export function rowTools(i, n, { move, duplicate, remove, what = "", removeLabel = "Remove", horizontal } = {}) {
+  const w = what ? " " + what : "";
+  const stop = (fn) => (e) => { e.stopPropagation(); fn(); };
+  const up = iconBtn(horizontal ? "left" : "up", "Move" + w + (horizontal ? " left" : " up"), stop(() => move(i, i - 1)), "sm");
+  const down = iconBtn(horizontal ? "right" : "dn", "Move" + w + (horizontal ? " right" : " down"), stop(() => move(i, i + 1)), "sm");
+  up.disabled = i <= 0;
+  down.disabled = i >= n - 1;
+  return el("span", { class: "rowtools" }, move ? [up, down] : null, duplicate ? iconBtn("copy", "Duplicate" + w, stop(duplicate), "sm") : null,
+    remove ? iconBtn("trash", removeLabel + w, stop(remove), "sm") : null);
+}
+
 export const btn = (label, onclick, cls = "") => el("button", { class: "btn " + cls, onclick }, label);
 export const badge = (text, cls = "") => el("span", { class: "badge " + cls }, text);
 /** A titled group of settings: a heading and a sheet of rows. */
 export function group(title, ...rows) {
-  const [t, side] = Array.isArray(title) ? title : [title, null];
-  return el("section", { class: "group" }, t ? el("header", {}, el("h2", {}, t), side ? el("div", { class: "side" }, side) : null) : null, el("div", { class: "sheet" }, rows));
+  const [t, ...side] = Array.isArray(title) ? title : [title];
+  return el("section", { class: "group" }, t ? el("header", {}, el("h2", {}, t), side.some(Boolean) ? el("div", { class: "side" }, side) : null) : null, el("div", { class: "sheet" }, rows));
 }
 export const subhead = (t) => el("div", { class: "sub-h" }, t);
 
@@ -316,9 +332,20 @@ export function chips(items, onChange, { placeholder, suggestions, render } = {}
   const list = (items || []).map(String);
   const box = el("div", { class: "chips" });
   const dl = suggestions ? el("datalist", { id: "dl" + Math.random().toString(36).slice(2) }, suggestions.map((s) => el("option", { value: s }))) : null;
+  let dragFrom = null;
   const draw = () => {
     box.innerHTML = "";
-    list.forEach((it, idx) => box.append(el("span", { class: "chip" }, render ? render(it) : it, el("button", { type: "button", title: "Remove " + it, "aria-label": "Remove " + it, onclick: () => { list.splice(idx, 1); onChange(list.slice()); draw(); } }, icon("close")))));
+    // Order can matter (console commands run top to bottom), so chips can be dragged into place.
+    list.forEach((it, idx) => {
+      const chip = el("span", { class: "chip", draggable: list.length > 1 ? "true" : null, title: list.length > 1 ? "Drag to reorder" : null }, render ? render(it) : it,
+        el("button", { type: "button", title: "Remove " + it, "aria-label": "Remove " + it, onclick: () => { list.splice(idx, 1); onChange(list.slice()); draw(); } }, icon("close")));
+      chip.addEventListener("dragstart", (e) => { dragFrom = idx; e.dataTransfer.effectAllowed = "move"; e.dataTransfer.setData("text/plain", it); chip.classList.add("drag"); });
+      chip.addEventListener("dragend", () => { dragFrom = null; chip.classList.remove("drag"); });
+      chip.addEventListener("dragover", (e) => { if (dragFrom !== null && dragFrom !== idx) { e.preventDefault(); chip.classList.add("over"); } });
+      chip.addEventListener("dragleave", () => chip.classList.remove("over"));
+      chip.addEventListener("drop", (e) => { e.preventDefault(); if (dragFrom !== null && dragFrom !== idx) { const [m] = list.splice(dragFrom, 1); list.splice(idx, 0, m); onChange(list.slice()); } dragFrom = null; draw(); });
+      box.append(chip);
+    });
     const inp = el("input", { type: "text", placeholder: placeholder || (list.length ? "Add" : "Add one"), list: dl?.id, spellcheck: "false" });
     const add = () => { const v = inp.value.trim().replace(/,$/, ""); if (!v) return; list.push(v); onChange(list.slice()); draw(); box.querySelector("input").focus(); };
     inp.addEventListener("keydown", (ev) => {

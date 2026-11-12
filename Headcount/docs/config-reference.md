@@ -77,6 +77,13 @@ Hooks are explained in [hooks.md](hooks.md).
 | `general.time-units.shown` | `2` | How many units a duration shows: 2 gives "3d 4h" and 3 gives "3d 4h 12m". Unit names are in the lang file. |
 | `storage` | `(section)` |  |
 | `storage.file` | `headcount.db` | SQLite database file in plugins/Headcount/. Every change is saved as it happens. |
+| `studio` | `(section)` | Headcount Studio: a web app for editing these files with in-game previews, watching the cycle live and running commands, served by the server itself. Open the link that /hca studio shows and sign in with the password it gives (it needs headcount.admin.studio, which ops have). /hca studio reset... (the full comment is in the file) |
+| `studio.enabled` | `true` |  |
+| `studio.port` | `same` | Where Studio listens: same   the Minecraft port. Browsers and Minecraft share it, so Studio works on hosts that give you only one port: open http://&lt;the address you join with&gt; in a browser, like http://play.example.com:25565. It doesn't work behind a proxy that only passes Minecraft traffic... (the full comment is in the file) |
+| `studio.bind` | `0.0.0.0` | The network address to listen on when port is a number. 0.0.0.0 means all of them; 127.0.0.1 keeps Studio to this machine (for a reverse proxy on the same machine). |
+| `studio.public-url` | `""` | The link /hca studio shows. Leave it empty to build it from the address you joined with. Set it when Studio sits behind a subdomain or reverse proxy, like https://studio.example.com |
+| `studio.session-length` | `7d` | How long a browser stays signed in. |
+| `studio.textures` | `true` | Download Minecraft's textures, font and sounds from Mojang the first time Studio is opened, so previews look like the game. They're kept in plugins/Headcount/studio/cache/. Without them, previews use flat colours. |
 | `cycle` | `(section)` | Cycle |
 | `cycle.length-days` | `14` | Length of a cycle in days. A change takes effect at the next cycle or the next /hca reset cycle. The running cycle keeps its end. Two weeks gives a player who logs on twice a week four or five sessions to trade in, and still ends often enough that rewards and punishments feel tied to what they did. |
 | `cycle.start-date` | `auto` | The day the first cycle starts, as YYYY-MM-DD, or "auto" to start right away, lined up to end-time today. Until a future date arrives, no cycle runs. |
@@ -217,6 +224,10 @@ Hooks are explained in [hooks.md](hooks.md).
 | `hooks.join-delay` | `1s` | Delay before join hooks run, so their messages come after the join message. |
 | `hooks.missed-warning-grace` | `5m` | How late a warning can still fire if its moment passed while the server was offline. |
 | `hooks.top-count` | `3` | How many players &lt;top_list&gt; lists. |
+| `hooks.cooldowns` | `(section)` | Shortest time between two runs of a player hook for the same player, for the hooks that follow something the player did (hurt-pet, kill-pet, open-trapped-chest below). Every hit on a pet and every opening of a trapped chest counts, so without a wait a player could get the same message many times... (the full comment is in the file) |
+| `hooks.cooldowns.hurt-pet` | `10s` |  |
+| `hooks.cooldowns.kill-pet` | `0s` |  |
+| `hooks.cooldowns.open-trapped-chest` | `10s` |  |
 | `hooks.cycle-start` | `(section)` | (see the linked page) |
 | `hooks.cycle-end` | `(section)` | (see the linked page) |
 | `hooks.warnings` | `(section)` | Warnings before the end of a cycle. Each one needs 'before', how long before the end it fires. (see the linked page) |
@@ -345,6 +356,7 @@ Who handles each job that other plugins can do. Every job has a 'provider':
 If the chosen plugin is missing or fails to load, Headcount logs a warning and uses 'included', or 'none'
 where there is no built-in version. /hca integrations shows what is in use right now.
 Changes apply after /hca reload, except switching /pvp between plugins, which needs a restart.
+With auto-switch on (below), Headcount also changes providers here itself when plugins are added or removed.
 
 This file only holds settings. Player messages, like the PvP and AFK notices, are in lang/en_US.yml. How
 those messages reach the player (chat, action bar, title, sound) is set here.
@@ -354,6 +366,7 @@ What each integration does is in [integrations.md](integrations.md).
 
 | Option | Default | Description |
 |---|---|---|
+| `auto-switch` | `true` | Switch providers here automatically when plugins are added or removed, checked at each server start: - a plugin that wasn't installed at the last start takes the jobs it can do, unless a job already belongs to another plugin that is still installed. On the first start with a new... (the full comment is in the file) |
 | `pvp` | `(section)` | PvP: the PvP toggle, the combat tag and new-player protection. These feed the in-pvp, combat-tagged and newbie-protected statuses (statuses.yml) used by the default vault and trade rules, and the pvp action. |
 | `pvp.provider` | `included` | Which plugin handles PvP: included \| pvpmanager \| none included:   the built-in PvP, set up under 'included' below. It owns the /pvp command. pvpmanager: PvPManager does all of it, and the 'included' settings are ignored. none:       no PvP handling. Players can always fight, as in vanilla, and... (the full comment is in the file) |
 | `pvp.included` | `(section)` | ---- Built-in PvP (provider: included) ---- |
@@ -406,6 +419,9 @@ What each integration does is in [integrations.md](integrations.md).
 | `pvp.included.messages.blocked-action.pitch` | `0.7` |  |
 | `pvp.included.messages.countdown` | `actionbar` | The live countdown while in combat (pvp.countdown): actionbar \| bossbar \| none |
 | `pvp.included.messages.countdown-bossbar-color` | `red` | Boss bar color when countdown is bossbar: pink \| blue \| red \| green \| yellow \| purple \| white |
+| `pvp.pet-protection` | `(section)` | ---- Pet protection (provider: included or pvpmanager) ---- Tamed animals (wolves, cats, parrots, horses, donkeys, llamas...) share their owner's PvP: a player can only hurt someone else's pet if the two players could fight. That means the attacker's and the owner's PvP are on and neither is... (the full comment is in the file) |
+| `pvp.pet-protection.enabled` | `false` |  |
+| `pvp.pet-protection.offline-owners` | `protect` | Pets whose owner is offline: protect \| allow An offline player can't be fought, so protect keeps their pets safe until they're back. |
 | `pvp.pvpmanager` | `(section)` | ---- PvPManager (provider: pvpmanager) ---- |
 | `pvp.pvpmanager.let-players-toggle` | `true` | Let every player use PvPManager's /pvp. PvPManager keeps its pvpmanager.command.pvp permission from players by default, and they start with PvP on. Headcount's default rules block moving heads and trading while PvP is on, so players need a way to turn it off. This sets the permission's default... (the full comment is in the file) |
 | `placeholders` | `(section)` | Placeholders: %...% in Headcount's text, the score formula and statuses. |
@@ -414,7 +430,7 @@ What each integration does is in [integrations.md](integrations.md).
 | `placeholders.placeholderapi.register-expansion` | `true` | Register the %headcount_...% expansion, so other plugins like scoreboards, tab and chat can show Headcount's data. |
 | `placeholders.placeholderapi.expansion-format` | `legacy` | How formatted values like %headcount_title% are passed to other plugins: legacy \| minimessage \| plain |
 | `economy` | `(section)` | Money, for the money action. Points are Headcount's own currency and need nothing. |
-| `economy.provider` | `none` | Which economy the money action uses: vault \| none Headcount has no money of its own, so the default content gives none out. With Vault and an economy plugin like EssentialsX or CMI installed, set vault to use the money action. |
+| `economy.provider` | `none` | Which economy the money action uses: vault \| none Headcount has no money of its own, so the default content gives none out. With Vault and an economy plugin like EssentialsX or CMI installed, set vault to use the money action. auto-switch sets it when Vault is added and an economy plugin has... (the full comment is in the file) |
 | `permissions` | `(section)` | Permissions: the permission, group, primary-group, track, prefix and suffix actions, and title prefixes (titles.yml permission-prefix). |
 | `permissions.provider` | `included` | Which plugin handles permissions: included \| luckperms \| vault \| none included:  Headcount sets permission nodes itself, saves them and re-applies them on every join. It can't do groups, tracks, prefixes or suffixes, so those actions are skipped with a warning. luckperms: everything, with... (the full comment is in the file) |
 | `permissions.luckperms` | `(section)` |  |
@@ -422,7 +438,7 @@ What each integration does is in [integrations.md](integrations.md).
 | `permissions.luckperms.server-context` | `""` | "server" context for the nodes Headcount adds. Leave empty for global. |
 | `moderation` | `(section)` | Moderation: the ban, mute, kick, warn and jail actions. |
 | `moderation.provider` | `included` | Which plugin handles moderation: included \| litebans \| libertybans \| advancedban \| essentials \| commands \| none included:    vanilla bans (the server's ban list), kicks, warnings sent as a message, and the built-in mute and jail set up below. commands:    any moderation plugin, driven by the... (the full comment is in the file) |
-| `moderation.kinds` | `{}` | A different provider for single kinds, with the same choices. For example, bans by LibertyBans but jail by EssentialsX: kinds: jail: essentials The kinds are ban, mute, kick, warn and jail. Kinds left out use 'provider'. |
+| `moderation.kinds` | `{}` | A different provider for single kinds, with the same choices. For example, bans by LibertyBans but jail by EssentialsX: kinds: jail: essentials The kinds are ban, mute, kick, warn and jail. Kinds left out, or set to default, use 'provider'. auto-switch sets a kind back to default when its plugin... (the full comment is in the file) |
 | `moderation.operator-name` | `Headcount` | Name shown as the punisher, where the plugin supports it. |
 | `moderation.silent` | `false` | Hide punishment broadcasts, if the plugin allows it. |
 | `moderation.included-jail` | `(section)` | The built-in jail, used by 'included' and for jail with any plugin that has none. |
@@ -454,12 +470,12 @@ What each integration does is in [integrations.md](integrations.md).
 | `moderation.commands.tempjail` | `""` |  |
 | `moderation.commands.unjail` | `""` |  |
 | `discord` | `(section)` | Discord, for the discord action. |
-| `discord.provider` | `none` | Which plugin sends Discord messages: discordsrv \| none Set discordsrv once DiscordSRV is installed and connected to a bot. |
+| `discord.provider` | `none` | Which plugin sends Discord messages: discordsrv \| none discordsrv needs DiscordSRV installed and connected to a bot. auto-switch sets it when DiscordSRV is added. |
 | `discord.default-channel` | `global` | DiscordSRV game channel for actions that don't name one. |
 | `items` | `(section)` | Custom items: item definitions written as "custom: itemsadder:ns:id", "custom: oraxen:id", "custom: nexo:id". |
-| `items.providers` | `[]` | Custom item plugins to use, out of itemsadder, oraxen and nexo. Ones that aren't installed are skipped, and [] turns custom items off. List the ones you install, like [itemsadder]. |
+| `items.providers` | `[]` | Custom item plugins to use, out of itemsadder, oraxen and nexo. Ones that aren't installed are skipped, and [] turns custom items off. List the ones you install, like [itemsadder]. auto-switch adds a plugin here when it's added to the server and takes it out when it's removed. |
 | `bedrock` | `(section)` | Bedrock players, through Geyser. They get /trade accept instead of the chat link, and every menu and the sidebar work for them. This also feeds the bedrock status. |
-| `bedrock.provider` | `none` | How Bedrock players are recognized: floodgate \| geyser \| none floodgate also knows players who have no Java account. Set it, or geyser, when Geyser is installed. |
+| `bedrock.provider` | `none` | How Bedrock players are recognized: floodgate \| geyser \| none floodgate also knows players who have no Java account. Set it, or geyser, when Geyser is installed. auto-switch picks floodgate if both are added at once. |
 | `player-state` | `(section)` | Player states: afk, vanished, god, jailed and muted, for the player-state status source (the afk and vanished statuses in statuses.yml). |
 | `player-state.provider` | `included` | Which plugin reports player states: included \| essentials \| none included:   AFK after 'afk.after' without activity, and vanished from the "vanished" flag most vanish plugins set. God mode comes from the player's invulnerable flag. Jailed and muted come from the built-in jail and mute, or from... (the full comment is in the file) |
 | `player-state.included` | `(section)` |  |

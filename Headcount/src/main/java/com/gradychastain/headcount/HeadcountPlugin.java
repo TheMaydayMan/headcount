@@ -102,6 +102,7 @@ public final class HeadcountPlugin extends JavaPlugin implements Listener {
     private Placeholders placeholders;
     private ResetManager resets;
     private HeadcountAPI api;
+    private com.gradychastain.headcount.studio.StudioServer studio;
     private final List<BukkitTask> tasks = new ArrayList<>();
     private final List<Permission> registeredPermissions = new ArrayList<>();
     private volatile boolean loaded;
@@ -158,9 +159,9 @@ public final class HeadcountPlugin extends JavaPlugin implements Listener {
         refresher = new HeadRefresher(this);
         text.setInternal(placeholders::resolve);
 
-        integrations.load();
         // Before integrations load, so a provider it switches (including /pvp) is in use from this start.
         new com.gradychastain.headcount.integration.IntegrationAutoSwitch(this).run();
+        integrations.load();
 
         var pm = getServer().getPluginManager();
         for (Listener l : List.of(this, players, deliveries, combat, actions, bossBars, denyListener, trades, guis, new GuiItemGuard(this),
@@ -180,6 +181,8 @@ public final class HeadcountPlugin extends JavaPlugin implements Listener {
         // Everything that parses statuses or actions waits one tick, until every plugin is enabled, so other plugins
         // can register status sources and action types from their own onEnable.
         getServer().getScheduler().runTask(this, this::finishLoading);
+        studio = new com.gradychastain.headcount.studio.StudioServer(this);
+        studio.start();
         getLogger().info("Enabled in " + (System.currentTimeMillis() - started) + " ms. Setup finishes on the first server tick.");
     }
 
@@ -362,12 +365,14 @@ public final class HeadcountPlugin extends JavaPlugin implements Listener {
         refresher.refreshOnline();
         registerBypassPermissions();
         startTasks();
+        if (studio != null) studio.reload();
         new com.gradychastain.headcount.command.SelfTest(this).runQuiet();
     }
 
     @Override
     public void onDisable() {
         loaded = false;
+        if (studio != null) studio.stop();
         for (BukkitTask t : tasks) t.cancel();
         tasks.clear();
         try {
@@ -441,4 +446,5 @@ public final class HeadcountPlugin extends JavaPlugin implements Listener {
     public Placeholders placeholders() { return placeholders; }
     public ResetManager resets() { return resets; }
     public HeadcountAPI api() { return api; }
+    public com.gradychastain.headcount.studio.StudioServer studio() { return studio; }
 }

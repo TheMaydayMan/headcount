@@ -2,15 +2,17 @@
 // shortcuts, live polling and the texture download).
 import { el, btn, icon, iconBtn, toast, closeDrawer, closePop, clearTip, confirmDialog, highlight, drawer, sprite, face, ICONS } from "./ui.js";
 import * as S from "./store.js";
+import { signOut } from "./login.js";
 import { loadSprites } from "./sprites.js";
 import { setupPages } from "./pages-setup.js";
 import { setupPages2 } from "./pages-setup2.js";
-import { livePages, liveAliases, rcon, rconReady, showReply } from "./pages-live.js";
+import { livePages, liveAliases, runCommand, showReply } from "./pages-live.js";
 import { helpPages, helpAliases, GLOSSARY, REF_TABS, WALK_TITLES, openWalk, openRecipe } from "./pages-help.js";
 import { filesPages, filesAliases, runChecks, diffView } from "./pages-files.js";
 
 const PAGES = [...setupPages, ...setupPages2, ...livePages, ...helpPages, ...filesPages];
-const GROUPS = ["Home", "Set up", "Live server", "Help", "Files"];
+const GROUPS = ["Home", "Game", "Server", "Live server", "Help", "Files"];
+const SETUP = new Set(["Game", "Server"]);
 /** Old addresses that still work: bookmarks and links in the docs. */
 const ALIASES = { ...liveAliases, ...helpAliases, ...filesAliases };
 const byId = Object.fromEntries(PAGES.map((p) => [p.id, p]));
@@ -49,7 +51,9 @@ function pageDirty(p) {
 let navPref = {};
 try { navPref = JSON.parse(localStorage.getItem("hc-nav") || "{}"); } catch (e) { /* private window */ }
 let autoShut = new Set();
-const FOLD_ORDER = ["Files", "Help", "Live server", "Set up"];
+/** The group of the page you're on stays open, unless you opened another one in the slide-in menu. */
+const keepHere = (cur) => !(window.innerWidth <= 820 && GROUPS.some((o) => o !== cur && navPref[o] === true));
+const FOLD_ORDER = ["Files", "Help", "Live server", "Server", "Game"];
 function drawNav(fitting) {
   navList.innerHTML = "";
   const probs = problems();
@@ -58,11 +62,15 @@ function drawNav(fitting) {
     if (g === "Live server" && !S.store.info.live) continue;
     const items = PAGES.filter((p) => p.group === g && !p.hidden);
     if (!items.length) continue;
-    const shut = g !== "Home" && (navPref[g] === false || (navPref[g] === undefined && g !== curGroup && autoShut.has(g)));
-    const marks = items.map((p) => ({ p, errs: p.id === "problems" ? probs.length : 0, dirty: p.group === "Set up" && pageDirty(p) }));
+    const shut = g !== "Home" && (navPref[g] === false || (navPref[g] === undefined && (g !== curGroup || !keepHere(curGroup)) && autoShut.has(g)));
+    const marks = items.map((p) => ({ p, errs: p.id === "problems" ? probs.length : 0, dirty: SETUP.has(p.group) && pageDirty(p) }));
     const errMark = (n) => el("span", { class: "num" + (probs.some((x) => x.level === "error") ? " bad" : "") }, n);
     const head = g === "Home" ? null : el("button", { type: "button", class: "gl" + (shut && g === curGroup ? " here" : ""), "aria-expanded": String(!shut),
-      onclick: () => { navPref[g] = shut; try { localStorage.setItem("hc-nav", JSON.stringify(navPref)); } catch (e) { /* ignore */ } drawNav(); } },
+      onclick: () => {
+        navPref[g] = shut;
+        // In the slide-in menu, opening a group lets the others fold again, so the menu fits without scrolling.
+        if (shut && window.innerWidth <= 820) for (const o of GROUPS) if (o !== g && navPref[o] === true) delete navPref[o];
+        try { localStorage.setItem("hc-nav", JSON.stringify(navPref)); } catch (e) { /* ignore */ } drawNav(); } },
       el("span", { class: "grow" }, g), shut && marks.some((m) => m.errs) ? errMark(marks.find((m) => m.errs).errs) : null,
       shut && marks.some((m) => m.dirty) ? el("span", { class: "dot", title: "Unsaved changes" }) : null, icon("down"));
     navList.append(el("div", { class: "navgroup" + (shut ? " shut" : "") }, head, marks.map(({ p, errs, dirty }) =>
@@ -99,7 +107,7 @@ function fitNav() {
   const next = new Set();
   for (const g of FOLD_ORDER) {
     if (total <= room) break;
-    if (!(g in sizes) || g === curGroup || navPref[g] !== undefined) continue;
+    if (!(g in sizes) || (g === curGroup && keepHere(curGroup)) || navPref[g] !== undefined) continue;
     next.add(g);
     total -= sizes[g];
   }
@@ -108,19 +116,19 @@ function fitNav() {
 let fitTimer = null;
 window.addEventListener("resize", () => { clearTimeout(fitTimer); fitTimer = setTimeout(() => drawNav(), 120); });
 
-// The server folder, the live and RCON state, textures, theme and quit, at the foot of the navigation.
+// The server, whether it answers, textures, theme and signing out, at the foot of the navigation.
 let texState = null;
 function drawFoot() {
   navFoot.innerHTML = "";
   const dir = S.store.dir.split(/[\\/]/).slice(-3, -2)[0] || S.store.dir;
-  const live = S.store.info.live, r = rconReady();
+  const live = S.store.info.live;
   navFoot.append(el("div", { class: "srv", title: S.store.dir }, el("span", { class: "led " + (live ? (S.store.live ? "on" : "off") : "") }), el("b", {}, dir),
-    el("span", { class: "faint" }, live ? (r ? "RCON on" : "no RCON") : "configs only")));
+    el("span", { class: "faint" }, live ? (S.store.live ? "running" : "not answering") : "no database yet")));
   const t = texState;
   if (t && t.state === "running") navFoot.append(el("div", { class: "tex", title: t.step || "" }, el("span", { class: "faint" }, "Textures"), el("span", { class: "bar" }, el("i", { style: { width: (t.progress || 2) + "%" } }))));
   else if (t && !t.ready) navFoot.append(el("div", { class: "tex" }, el("span", { class: "faint" }, t.state === "error" ? "Textures failed." : "No textures."),
     el("button", { class: "linkbtn", onclick: downloadTextures, title: t.error || "Download Minecraft " + (t.wanted || "") + " textures from Mojang" }, t.state === "error" ? "Retry" : "Download")));
-  navFoot.append(el("div", { class: "tools" }, themeBtn, iconBtn("power", "Quit Studio", quit, "sm")));
+  navFoot.append(el("div", { class: "tools" }, themeBtn, iconBtn("power", "Sign out", signOutNow, "sm")));
 }
 async function downloadTextures() {
   try { texState = await S.post("/api/textures/download", {}); } catch (e) { toast("Couldn't start the download: " + e.message, "err"); }
@@ -213,8 +221,8 @@ function paletteItems() {
   for (const [k, n] of REF_TABS) items.push({ kind: "ref", title: n, desc: "Reference", icon: ICONS.reference, run: () => go("#/reference/" + k) });
   items.push({ kind: "action", title: "Review and save", desc: "Ctrl+S", run: () => openReview() },
     { kind: "action", title: "Undo", desc: "Ctrl+Z", run: doUndo }, { kind: "action", title: "Redo", desc: "Ctrl+Shift+Z", run: doRedo });
-  if (rconReady()) items.push({ kind: "action", title: "Reload Headcount", desc: "/hca reload", run: () => rcon("hca reload", { confirm: "Headcount reads its files again. Open trades are cancelled and menus close first." }) },
-    { kind: "action", title: "Run selftest", desc: "/hca selftest", run: async () => { const r = await rcon("hca selftest", { quiet: true }); if (r !== null) showReply("Selftest", r); } });
+  items.push({ kind: "action", title: "Reload Headcount", desc: "/hca reload", run: () => runCommand("hca reload", { confirm: "Headcount reads its files again. Open trades are cancelled and menus close first." }) },
+    { kind: "action", title: "Run selftest", desc: "/hca selftest", run: async () => { const r = await runCommand("hca selftest", { quiet: true }); if (r !== null) showReply("Selftest", r); } });
   for (const o of cat.options || []) if (o.default !== "(section)") items.push({ kind: "option", title: o.path, desc: o.file + "  " + firstSentence(o.help), run: () => goToOption(o.file, o.path) });
   for (const c of cat.commands || []) items.push({ kind: "command", title: c.syntax[0], desc: firstSentence(c.does), run: () => go("#/reference/commands") });
   for (const ph of cat.placeholders || []) items.push({ kind: "placeholder", title: "%headcount_" + ph.name + "%", desc: ph.description, run: () => go("#/reference/placeholders") });
@@ -225,7 +233,7 @@ function paletteItems() {
   const plain = (v) => String(v || "").replace(/<[^>]*>/g, "");
   for (const n of Object.keys(S.get("titles.yml", "titles") || {})) items.push({ kind: "title", title: n, desc: plain(S.get("titles.yml", "titles." + n + ".display")), icon: S.get("titles.yml", "titles." + n + ".icon.material") || "name_tag", run: () => go("#/titles/" + n) });
   for (const [n, r] of Object.entries(S.get("outcomes.yml", "rules") || {})) items.push({ kind: "outcome", title: n, desc: plain(r?.display), icon: ICONS.outcome, run: () => go("#/outcomes/" + n) });
-  for (const n of Object.keys(S.get("actions.yml", "lists") || {})) items.push({ kind: "list", title: n, desc: "Hooks", icon: "repeater", run: () => go("#/hooks/list/" + n) });
+  for (const n of Object.keys(S.get("actions.yml", "lists") || {})) items.push({ kind: "list", title: n, desc: "Action lists", icon: "repeater", run: () => go("#/lists/" + n) });
   for (const [t, T] of Object.entries(S.get("shop.yml", "tiers") || {})) for (const [e, E] of Object.entries(T?.entries || {})) items.push({ kind: "shop", title: e, desc: plain(E?.display?.name), icon: E?.display?.material || "paper", run: () => go("#/shop/" + t + "/" + e) });
   for (const d of cat.docs || []) items.push({ kind: "doc", title: d.title, desc: d.name, icon: ICONS.docs, run: () => go("#/docs/" + d.name) });
   for (const p of paletteItems.players || []) items.push({ kind: "player", title: p.name, desc: p.online ? "Online" : "", player: p.uuid, run: () => go("#/live-player/" + p.uuid) });
@@ -303,13 +311,12 @@ async function saveFiles(names) {
   if (S.dirtyNames().length) setTimeout(openReview, 50);
   if (!done.length) return;
   const msg = "Saved " + done.join(", ") + ". The old version is under Backups.";
-  if (rconReady()) toast(msg, "", { label: "Reload Headcount", run: reloadServer });
-  else toast(msg);
+  toast(msg, "", { label: "Reload Headcount", run: reloadServer });
 }
 async function reloadServer() {
-  const r1 = await rcon("hca reload", { quiet: true });
+  const r1 = await runCommand("hca reload", { quiet: true });
   if (r1 === null) return;
-  const r = await rcon("hca selftest", { quiet: true });
+  const r = await runCommand("hca selftest", { quiet: true });
   if (r !== null) import("./pages-live.js").then((m) => m.showReply("Selftest after reload", r));
 }
 
@@ -344,7 +351,7 @@ document.addEventListener("keydown", (e) => {
 });
 window.addEventListener("beforeunload", (e) => { if (S.dirtyNames().length) { e.preventDefault(); e.returnValue = ""; } });
 
-// ---------------------------------------------------------------- theme, quit, heartbeat, live
+// ---------------------------------------------------------------- theme, signing out, live
 const themeBtn = el("button", { class: "iconbtn sm" });
 (function theme() {
   const order = ["auto", "light", "dark"];
@@ -359,14 +366,12 @@ const themeBtn = el("button", { class: "iconbtn sm" });
   themeBtn.addEventListener("click", () => { t = order[(order.indexOf(t) + 1) % 3]; try { localStorage.setItem("hc-theme", t); } catch (e) { /* ignore */ } apply(); });
   apply();
 })();
-async function quit() {
+async function signOutNow() {
   const dirty = S.dirtyNames().length;
-  if (!(await confirmDialog(dirty ? "Quit with unsaved changes?" : "Quit Headcount Studio?", dirty ? "They will be lost." : "Open it again with the Headcount Studio launcher.", { ok: "Quit", danger: !!dirty }))) return;
-  try { await S.post("/api/quit", {}); } catch (e) { /* it's gone */ }
-  document.body.innerHTML = "<div class='empty' style='padding-top:30vh'>Headcount Studio has stopped. You can close this tab.</div>";
+  if (!(await confirmDialog(dirty ? "Sign out with unsaved changes?" : "Sign out of Headcount Studio?", dirty ? "They will be lost." : "You'll need the password from /hca studio to sign in again.", { ok: "Sign out", danger: !!dirty }))) return;
+  await signOut();
+  location.reload();
 }
-setInterval(() => fetch("/api/ping").catch(() => {}), 15000);
-fetch("/api/ping").catch(() => {});
 async function pollLive() {
   if (!S.store.info.live) return;
   try { S.emitLive(await S.api("/api/live/summary")); } catch (e) { S.store.live = null; }

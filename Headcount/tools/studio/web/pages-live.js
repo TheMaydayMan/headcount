@@ -1,6 +1,6 @@
 // Live server pages: the running cycle and its tools, players (ranked, with each one's vault), past cycles, running
 // effects, the audit log with the head tracer, and the console. The database is only read; every change is a /hca
-// command sent over RCON, and anything that changes the server asks first.
+// command the server runs as the console, and anything that changes the server asks first.
 import { el, btn, icon, iconBtn, chest, tooltip, toast, confirmDialog, seg, select, numberCtl, durationCtl, drawer, sprite, face, emptyBox, copyText, ICONS, humanize } from "./ui.js";
 import { legacyToHtml, compileFormula, roundScore, formatDuration, parseDuration, stripMini, isObj, prettyMaterial } from "./core.js";
 import * as S from "./store.js";
@@ -19,16 +19,13 @@ function needLive(root, title) {
   root.append(pageHead(title), emptyBox("barrier", "No database in this folder yet", "The live pages read Headcount's database, and " + S.store.dir + " doesn't have one. Start the server with Headcount once, then open Studio again."));
   return true;
 }
-const rconOff = () => emptyBox("redstone_torch", "RCON is off for this server", "Studio sends these as commands over RCON. Set enable-rcon=true and an rcon.password in server.properties, restart the server, then open Studio again.");
 
-export const rconReady = () => !!S.store.info.rcon;
-/** Runs a command over RCON and returns the reply. Asks first when `confirm` says what the command changes. */
-export async function rcon(command, { quiet, confirm, danger } = {}) {
-  if (!rconReady()) { toast("RCON is off. Turn it on in server.properties, restart the server and open Studio again.", "err"); return null; }
+/** Runs a command on the server as the console and returns the reply. Asks first when `confirm` says what the command changes. */
+export async function runCommand(command, { quiet, confirm, danger } = {}) {
   const cmd = command.replace(/^\//, "");
   if (confirm && !(await confirmDialog(danger ? "This can't be undone" : "Run this on the server?", el("div", {}, el("div", { class: "cmdline", style: { marginBottom: "10px" } }, el("span", {}, "/" + cmd)), el("p", { class: "muted" }, confirm)), { ok: "Run it", danger }))) return null;
   try {
-    const r = await S.post("/api/rcon", { command: cmd });
+    const r = await S.post("/api/command", { command: cmd });
     if (!quiet) toast(el("div", { class: "mc", html: legacyToHtml(r.reply || "Done, with no reply.") }));
     return r.reply;
   } catch (e) { toast("The server didn't take it: " + e.message, "err"); return null; }
@@ -38,8 +35,7 @@ export function showReply(title, reply) {
   drawer(title, el("div", { class: "console", style: { height: "auto", minHeight: "200px" }, html: legacyToHtml(reply || "No reply.") }));
 }
 const runBtn = (label, cmd, opts = {}, cls = "") => {
-  const b = btn(label, async () => { const r = await rcon(typeof cmd === "function" ? cmd() : cmd, opts); if (r !== null && opts.show) showReply(opts.show, r); }, cls);
-  if (!rconReady()) { b.disabled = true; b.title = "Needs RCON"; }
+  const b = btn(label, async () => { const r = await runCommand(typeof cmd === "function" ? cmd() : cmd, opts); if (r !== null && opts.show) showReply(opts.show, r); }, cls);
   return b;
 };
 
@@ -158,7 +154,6 @@ async function cyclePage(root) {
   return S.on((ev) => { if (ev.type === "live" && !root.contains(document.activeElement)) draw(); });
 }
 function cycleTools() {
-  if (!rconReady()) return el("section", { class: "group" }, el("header", {}, el("h2", {}, "Change this cycle")), rconOff());
   const c = () => live()?.cycle;
   const endInp = el("input", { type: "datetime-local", style: { maxWidth: "230px" } });
   const zone = S.get("config.yml", "cycle.time-zone") ?? "UTC";
@@ -224,7 +219,7 @@ function formDialog(title, controls, command, { ok = "Run it", danger } = {}) {
   const upd = () => { line.textContent = "/" + command(); };
   const body = el("div", { style: { display: "grid", gap: "12px", justifyItems: "start" }, oninput: upd, onclick: () => setTimeout(upd, 0), onchange: upd }, controls, el("div", { class: "cmdline", style: { justifySelf: "stretch" } }, line));
   upd();
-  confirmDialog(title, body, { ok, danger }).then((yes) => { if (yes) rcon(command()); });
+  confirmDialog(title, body, { ok, danger }).then((yes) => { if (yes) runCommand(command()); });
 }
 const lab = (text, ctl) => el("label", { style: { display: "grid", gap: "4px" } }, el("span", { class: "small muted" }, text), ctl);
 
@@ -261,7 +256,6 @@ async function playerPage(root, params) {
         el("p", { class: "muted", style: { margin: 0 } }, "This can't be undone.")], () => `hca reset ${name} ${what} confirm`, { ok: "Reset", danger: true });
     }, "danger"),
   ];
-  if (!rconReady()) acts.forEach((b) => { b.disabled = true; b.title = "Needs RCON"; });
   root.append(el("div", { class: "crumbs" }, el("a", { href: "#/live-players" }, "Players")),
     el("div", { class: "playerhead" }, face(uuid, 56), el("div", { class: "grow" }, el("h1", {}, name), el("div", { class: "muted" }, me.online ? "Online now" : "Last seen " + ago(me.last_quit || me.last_join),
       me.active ? ", active this cycle" : ", not active this cycle yet", p.bedrock ? ", on Bedrock" : "")), el("div", { class: "row acts" }, acts)));
@@ -300,15 +294,15 @@ async function playerPage(root, params) {
   const effects = el("div", { class: "items" }, data.effects.map((e) => effectItem({ ...e, name, uuid })));
   const ownedTitles = el("div", { class: "items" }, data.titles.map((t) => el("div", { class: "item static" }, sprite(titlesDef[t]?.icon || "NAME_TAG", 26), el("div", { class: "main" }, el("div", { class: "t1" }, mcName(titlesDef[t]?.display || t)),
     el("div", { class: "t2" }, p.equipped_title === t ? "Wearing it" : titlesDef[t] ? "" : "Not in titles.yml any more")),
-    rconReady() ? iconBtn("close", "Take this title away", () => rcon(`hca title ${name} revoke ${t}`, { confirm: "Takes the title " + t + " from " + name + "." }), "sm") : null)),
+    iconBtn("close", "Take this title away", () => runCommand(`hca title ${name} revoke ${t}`, { confirm: "Takes the title " + t + " from " + name + "." }), "sm"))),
     data.flags.map((f) => el("div", { class: "item static" }, sprite("redstone", 26), el("div", { class: "main" }, el("div", { class: "t1" }, "Flag " + f), el("div", { class: "t2" }, "Statuses can check it")),
-      rconReady() ? iconBtn("close", "Clear this flag", () => rcon(`hca flag ${name} clear ${f}`, { confirm: "Clears the flag " + f + "." }), "sm") : null)));
+      iconBtn("close", "Clear this flag", () => runCommand(`hca flag ${name} clear ${f}`, { confirm: "Clears the flag " + f + "." }), "sm"))));
   const shopEntry = (tier, id) => S.get("shop.yml", `tiers.${tier}.entries.${id}`) || {};
   const bought = el("div", { class: "items" }, data.purchases.slice(0, 15).map((x) => { const e = shopEntry(x.tier, x.entry); return el("div", { class: "item static" }, sprite(e.display || "PAPER", 26),
     el("div", { class: "main" }, el("div", { class: "t1" }, stripMini(e.display?.name || x.entry)), el("div", { class: "t2" }, "Cycle " + x.cycle + ", " + fmt(x.ms))), el("div", { class: "end" }, plural(x.price, "point"))); }));
   root.append(el("div", { class: "grid g2" },
     el("section", { class: "group" }, el("header", {}, el("h2", {}, "Effects running")), data.effects.length ? effects : el("div", { class: "sheet pad muted" }, "None right now.")),
-    el("section", { class: "group" }, el("header", {}, el("h2", {}, "Titles and flags"), el("div", { class: "side" }, rconReady() && Object.keys(titlesDef).length ? giveTitle : null)), data.titles.length || data.flags.length ? ownedTitles : el("div", { class: "sheet pad muted" }, "No titles or flags.")),
+    el("section", { class: "group" }, el("header", {}, el("h2", {}, "Titles and flags"), el("div", { class: "side" }, Object.keys(titlesDef).length ? giveTitle : null)), data.titles.length || data.flags.length ? ownedTitles : el("div", { class: "sheet pad muted" }, "No titles or flags.")),
     el("section", { class: "group" }, el("header", {}, el("h2", {}, "Bought")), data.purchases.length ? bought : el("div", { class: "sheet pad muted" }, "Nothing from the shop yet.")),
     el("section", { class: "group" }, el("header", {}, el("h2", {}, "Past cycles")), data.results.length ? pastCycles(data.results) : el("div", { class: "sheet pad muted" }, "This is their first cycle."))));
   const more = el("div", { class: "row" }, runBtn("Their statuses now", "hca status " + name, { quiet: true, show: name + "'s statuses" }, "ghost small"), runBtn("Their placeholder values", "hca placeholders " + name, { quiet: true, show: "Placeholders for " + name }, "ghost small"));
@@ -373,7 +367,7 @@ function effectLeft(e) {
   return { CYCLE: "Until the cycle ends", DEATH: "Until they die", PERMANENT: "For good", MANUAL: "Until removed" }[e.duration_kind] || humanize(String(e.duration_kind || "").toLowerCase());
 }
 function effectItem(e, withName) {
-  const rm = rconReady() ? iconBtn("close", "End it now", () => rcon(`hca effects ${e.name} remove ${e.id.slice(0, 8)}`, { confirm: "Ends this effect now and undoes what it did." }), "sm") : null;
+  const rm = iconBtn("close", "End it now", () => runCommand(`hca effects ${e.name} remove ${e.id.slice(0, 8)}`, { confirm: "Ends this effect now and undoes what it did." }), "sm");
   return el("div", { class: "item static" }, withName ? face(e.uuid, 28) : sprite(ACTION_SPRITES[e.type] || "potion", 26),
     el("div", { class: "main" }, el("div", { class: "t1" }, withName ? [el("a", { href: "#/live-player/" + e.uuid }, e.name), ": " + (ACTION_DESC[e.type] || e.type).toLowerCase()] : ACTION_DESC[e.type] || e.type),
       el("div", { class: "t2" }, sourceText(e.source) + (e.state && e.state !== "ACTIVE" ? ", " + humanize(e.state.toLowerCase()).toLowerCase() : ""))),
@@ -439,7 +433,6 @@ async function tracer(root, id) {
 // ---------------------------------------------------------------- console
 async function consolePage(root, params) {
   root.append(pageHead("Console"));
-  if (!rconReady()) { root.append(rconOff()); return; }
   const out = el("div", { class: "console", role: "log" });
   const inp = el("input", { type: "text", placeholder: "hca cycle info", list: "cmds", spellcheck: "false", "aria-label": "Command", style: { fontFamily: "var(--mono)" } });
   const cmds = [...new Set((S.store.catalog?.commands || []).flatMap((c) => c.syntax).map((s) => s.replace(/^\//, "")))];
@@ -453,7 +446,7 @@ async function consolePage(root, params) {
     hist.push(cmd); hist = hist.slice(-100); hi = hist.length;
     try { localStorage.setItem("hc-console", JSON.stringify(hist)); } catch (e) { /* ignore */ }
     out.append(el("div", { class: "cmd" }, "> /" + cmd));
-    try { const r = await S.post("/api/rcon", { command: cmd }); out.append(el("div", { html: legacyToHtml(r.reply || "Done, with no reply.") })); }
+    try { const r = await S.post("/api/command", { command: cmd }); out.append(el("div", { html: legacyToHtml(r.reply || "Done, with no reply.") })); }
     catch (e) { out.append(el("div", { class: "err" }, e.message)); }
     out.scrollTop = out.scrollHeight;
   };

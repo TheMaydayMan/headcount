@@ -51,7 +51,8 @@ The admin command is `/hcadmin`, also available as `/hca` or `/hc admin`. `headc
 | `/hca integrations` | `headcount.admin.debug` | Shows who handles each job (included, a plugin, or none) and why, for example because a plugin is missing. |
 | `/hca selftest` | `headcount.admin.debug` | Checks the configured items, menus, messages, lists and status references. It also runs quietly on start-up and reload, and only warns about failures. |
 | `/hca run <player> <list>` | `headcount.admin.run` | Runs a named action list. |
-| `/hca hook <hook> [player]` | `headcount.admin.run` | Runs a hook (`cycle-start`, `first-join`, `first-join-cycle`, `became-active`, `join`, `warning:<id>`). |
+| `/hca hook <hook> [player]` | `headcount.admin.run` | Runs a hook (`cycle-start`, `first-join`, `first-join-cycle`, `became-active`, `join`, `hurt-pet`, `kill-pet`, `open-trapped-chest`, `warning:<id>`). |
+| `/hca studio [reset]` | `headcount.admin.studio` (op only and not part of `headcount.admin`) | Shows Headcount Studio's link and password, and how many browsers are signed in. `reset` makes a new password and signs them all out. See [studio.md](studio.md). |
 
 Players with `headcount.admin.notify` get duplicate-head alerts.
 

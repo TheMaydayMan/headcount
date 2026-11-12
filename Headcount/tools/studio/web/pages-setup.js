@@ -1,7 +1,7 @@
 // Set up pages, part 1: Overview, Cycle, Vault and heads, Scoring, Outcomes.
 import { el, btn, icon, iconBtn, field, group, subhead, mcText, miniInline, tooltip, chest, seg, drawer, closeDrawer, promptDialog, confirmDialog,
-  sprite, face, SAMPLE, ICONS, humanize, select, numberCtl, miniCtl, switchCtl } from "./ui.js";
-import { compileFormula, roundScore, parseRange, describeRange, parseDuration, formatDuration, isObj, renderMini, stripMini } from "./core.js";
+  sprite, face, SAMPLE, ICONS, humanize, select, numberCtl, miniCtl, switchCtl, rowTools, toast } from "./ui.js";
+import { compileFormula, roundScore, parseRange, describeRange, parseDuration, formatDuration, isObj, renderMini, stripMini, clone, setValue, moveEntry } from "./core.js";
 import * as S from "./store.js";
 import { actionList, conditionsCtl, rangeCtl, summarize } from "./actions.js";
 
@@ -381,7 +381,9 @@ function outcomesPage(root, params) {
       items.append(el("div", { class: "item" + (r?.enabled === false ? " off" : ""), onclick: () => edit(id) },
         el("span", { style: { width: "10px", height: "28px", borderRadius: "3px", background: PAL[i % PAL.length], flex: "none" } }),
         el("div", { class: "main" }, el("div", { class: "t1" }, mcName(r?.display || id)), el("div", { class: "t2" }, acts)),
-        el("div", { class: "end" }, describeRange(r?.score), r?.conditions ? el("div", {}, "with conditions") : null, r?.enabled === false ? el("div", {}, "Off") : null)));
+        el("div", { class: "end" }, describeRange(r?.score), r?.conditions ? el("div", {}, "with conditions") : null, r?.enabled === false ? el("div", {}, "Off") : null),
+        // Ties go to the rule listed first, so order matters.
+        rowTools(i, rules.length, { what: "rule", move: (from, to) => { S.move("outcomes.yml", "rules." + id, "rules." + rules[to][0], to < from); draw(); } })));
     });
     items.append(el("button", { class: "addrow", onclick: addRule }, icon("plus"), "New rule"));
     listBox.append(el("section", { class: "group" }, el("header", {}, el("h2", {}, "Rules")), items));
@@ -412,7 +414,15 @@ function outcomesPage(root, params) {
       el("section", { class: "group" }, el("header", {}, el("h2", {}, "What happens")), actionList("outcomes.yml", base + ".actions", { vars: "outcome" })));
     drawer(mcName(r.display || id), body, { subtitle: "For scores of " + describeRange(r.score), wide: true, onClose: draw, hash: "#/outcomes/" + id,
       footer: el("div", { class: "row", style: { width: "100%" } },
-        btn("Rename", async () => { const n = await promptDialog("Rename rule", "New ID:", id, { check: (v) => (!/^[a-z0-9][a-z0-9-]*$/i.test(v) ? "Use letters, numbers and dashes." : null) }); if (n && n !== id) { S.rename("outcomes.yml", base, n); closeDrawer(); edit(n); } }, "ghost"),
+        btn([icon("edit"), "Rename"], async () => { const n = await promptDialog("Rename rule", "New ID:", id, { check: (v) => (!/^[a-z0-9][a-z0-9-]*$/i.test(v) ? "Use letters, numbers and dashes." : null) }); if (n && n !== id) { S.rename("outcomes.yml", base, n); closeDrawer(); edit(n); } }, "ghost"),
+        btn([icon("copy"), "Duplicate"], () => {
+          let n = id.replace(/-\d+$/, "") + "-2", k = 2;
+          while (S.get("outcomes.yml", "rules." + n) !== undefined) n = id.replace(/-\d+$/, "") + "-" + ++k;
+          const to = "rules." + n;
+          S.setText("outcomes.yml", moveEntry(setValue(S.doc("outcomes.yml").text, to, clone(S.get("outcomes.yml", base))), to, base, false), null);
+          toast("Made a copy, " + n + ".");
+          draw(); edit(n);
+        }, "ghost"),
         btn([icon("trash"), "Delete"], async () => { if (await confirmDialog("Delete " + stripMini(r.display || id) + "?", null, { ok: "Delete", danger: true })) { S.remove("outcomes.yml", base); closeDrawer(); } }, "ghost danger"),
         el("span", { class: "grow" }), btn("Done", () => closeDrawer(), "primary")) });
   };
@@ -422,8 +432,8 @@ function outcomesPage(root, params) {
 
 export const setupPages = [
   { id: "overview", group: "Home", title: "Overview", icon: ICONS.home, render: overview },
-  { id: "cycle", group: "Set up", title: "Cycle", icon: ICONS.cycle, render: cyclePage, owns: ["config.yml:cycle", "config.yml:activity"] },
-  { id: "vault", group: "Set up", title: "Vault and heads", icon: ICONS.vault, render: vaultPage, owns: ["config.yml:vault", "config.yml:heads", "config.yml:duplicates", "config.yml:kills"] },
-  { id: "scoring", group: "Set up", title: "Scoring", icon: ICONS.score, render: scoringPage, owns: ["scoring.yml", "config.yml:points"] },
-  { id: "outcomes", group: "Set up", title: "Outcomes", icon: ICONS.outcome, render: outcomesPage, owns: ["outcomes.yml"] },
+  { id: "cycle", group: "Game", title: "Cycle", icon: ICONS.cycle, render: cyclePage, owns: ["config.yml:cycle", "config.yml:activity"] },
+  { id: "vault", group: "Game", title: "Vault and heads", icon: ICONS.vault, render: vaultPage, owns: ["config.yml:vault", "config.yml:heads", "config.yml:duplicates", "config.yml:kills"] },
+  { id: "scoring", group: "Game", title: "Scoring", icon: ICONS.score, render: scoringPage, owns: ["scoring.yml", "config.yml:points"] },
+  { id: "outcomes", group: "Game", title: "Outcomes", icon: ICONS.outcome, render: outcomesPage, owns: ["outcomes.yml"] },
 ];

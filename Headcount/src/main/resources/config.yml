@@ -73,6 +73,35 @@ storage:
   file: headcount.db
 
 # --------------------------------------------------------------------------------------------
+#  Headcount Studio: a web app for editing these files with in-game previews, watching the cycle live and running
+#  commands, served by the server itself. Open the link that /hca studio shows and sign in with the password it
+#  gives (it needs headcount.admin.studio, which ops have). /hca studio reset makes a new password and signs every
+#  browser out. Studio can change every config file and run any command as the console, so share the password
+#  only with people you'd give the console to.
+#  Changes here apply after /hca reload.
+# --------------------------------------------------------------------------------------------
+studio:
+  enabled: true
+  # Where Studio listens:
+  #   same   the Minecraft port. Browsers and Minecraft share it, so Studio works on hosts that give you only one
+  #          port: open http://<the address you join with> in a browser, like http://play.example.com:25565.
+  #          It doesn't work behind a proxy that only passes Minecraft traffic (TCPShield, or a BungeeCord or
+  #          Velocity backend players can't reach directly); give Studio its own port there.
+  #   <port> a port of its own, like 8765. Your host or firewall has to let it through.
+  port: same
+  # The network address to listen on when port is a number. 0.0.0.0 means all of them; 127.0.0.1 keeps Studio
+  # to this machine (for a reverse proxy on the same machine).
+  bind: 0.0.0.0
+  # The link /hca studio shows. Leave it empty to build it from the address you joined with. Set it when Studio
+  # sits behind a subdomain or reverse proxy, like https://studio.example.com
+  public-url: ""
+  # How long a browser stays signed in.
+  session-length: 7d
+  # Download Minecraft's textures, font and sounds from Mojang the first time Studio is opened, so previews look
+  # like the game. They're kept in plugins/Headcount/studio/cache/. Without them, previews use flat colours.
+  textures: true
+
+# --------------------------------------------------------------------------------------------
 #  Cycle
 # --------------------------------------------------------------------------------------------
 cycle:
@@ -442,6 +471,15 @@ hooks:
   missed-warning-grace: 5m
   # How many players <top_list> lists.
   top-count: 3
+  # Shortest time between two runs of a player hook for the same player, for the hooks that follow something the
+  # player did (hurt-pet, kill-pet, open-trapped-chest below). Every hit on a pet and every opening of a trapped
+  # chest counts, so without a wait a player could get the same message many times a second. 0 runs it every time.
+  # A hook skipped by its cooldown runs none of its actions, so give timed actions like pvp a longer duration than
+  # this. /hca hook ignores it.
+  cooldowns:
+    hurt-pet: 10s
+    kill-pet: 0s
+    open-trapped-chest: 10s
 
   cycle-start:
     global:
@@ -471,15 +509,6 @@ hooks:
             - "<gray>Unique heads: <white><unique></white> (rank <rank>)"
             - "<gray>Score: <white><score>"
             - "<gray>Points earned: <green><points_earned></green> · Points now: <gold><points>"
-  # Shortest time between two runs of a player hook for the same player, for the hooks that follow something the
-  # player did (hurt-pet, kill-pet, open-trapped-chest below). Every hit on a pet and every opening of a trapped
-  # chest counts, so without a wait a player could get the same message many times a second. 0 runs it every time.
-  # A hook skipped by its cooldown runs none of its actions, so give timed actions like pvp a longer duration than
-  # this. /hca hook ignores it.
-  cooldowns:
-    hurt-pet: 10s
-    kill-pet: 0s
-    open-trapped-chest: 10s
             - "<gray>Streak: <white><streak_text>"
             - "<gray>Shop tier unlocked: <white><tier>"
             - "<gray>Outcomes: <outcomes>"

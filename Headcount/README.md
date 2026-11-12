@@ -29,7 +29,7 @@ The included PvP gives players a `/pvp` toggle (off by default), protection for 
 
 Each job (PvP, permissions, moderation, player states, placeholders) is set to `included`, a supported plugin, or `none`. The supported plugins are PvPManager, PlaceholderAPI, Vault, LuckPerms, LiteBans, LibertyBans, AdvancedBan, EssentialsX, DiscordSRV, ItemsAdder, Oraxen, Nexo, Geyser and Floodgate. None of them are required.
 
-Headcount Studio is a local app for setting all of this up without writing YAML. It can also watch a running server and send it commands over RCON. See [tools/studio](tools/studio/README.md).
+Headcount Studio is a web app, served by the plugin, for setting all of this up without writing YAML. It also watches the game live and runs commands. `/hca studio` shows its link and password, and [docs/studio.md](docs/studio.md) has the rest.
 
 Plugins can use the API and its events, and add their own status sources and action types.
 
@@ -37,13 +37,14 @@ Plugins can use the API and its events, and add their own status sources and act
 
 1. Download the jar from the [latest release](https://github.com/TheMaydayMan/headcount/releases/latest), put it in `plugins/` on a Paper 26.3 server running Java 25, and start the server.
 2. The first cycle starts right away. Players type `/hc` to see their vault and `/hc help` for the rest.
-3. Edit `plugins/Headcount/*.yml` (every option is commented), then run `/hca reload` and `/hca selftest`. Or use Headcount Studio and skip the YAML.
+3. Edit `plugins/Headcount/*.yml` (every option is commented), then run `/hca reload` and `/hca selftest`. Or open Headcount Studio (`/hca studio`) and skip the YAML.
 
 ## Documentation
 
 | For server owners | |
 |---|---|
 | [Installation](docs/installation.md) | Requirements, installing, updating, building |
+| [Headcount Studio](docs/studio.md) | The web app the plugin serves for editing the configs and watching the game |
 | [Config reference](docs/config-reference.md) | Every option in every file, with defaults |
 | [Heads, vault, kills and trading](docs/heads.md) | How the economy works and how it's protected |
 | [Statuses](docs/statuses.md) | Status sources |
