@@ -1,6 +1,6 @@
 # Manual test checklist
 
-This checklist predates 1.1. The 1.1 features (resets, defunct heads, time zone codes, `<score>` and the live vault title, the included PvP, permissions and AFK, and the reworked integrations) aren't in it or in the bot tests. They are covered by the test night plan, [TEST-NIGHT.md](TEST-NIGHT.md), which also runs through most of what is below in a normal play session.
+This checklist predates 1.1. The 1.1 features (resets, defunct heads, time zone codes, `<score>` and the live vault title, the included PvP, permissions and AFK) aren't in it or in the bot tests. They are covered by the test night plan, [TEST-NIGHT.md](TEST-NIGHT.md), which also runs through most of what is below in a normal play session. Test night runs no plugins besides Geyser and Floodgate, so the other integrations' 1.1 provider settings are checked in [section 13](#13-other-plugins) instead.
 
 Some of it is already tested automatically:
 - `./gradlew test` runs the unit tests for the pure logic, such as expressions, durations, cycle boundaries across DST and audit rotation.
@@ -11,7 +11,7 @@ A person is still needed for anything that depends on a real client or on someth
 
 ## Setup
 
-1. Set up the server once with `TestServer/setup.sh` and build Headcount (`cd Headcount && ./gradlew build`, which copies the jar into the server). Start it with `cd TestServer && ./start.sh` (Java 25, offline mode, port 25565).
+1. Set up the server once with `TestServer/setup.sh --with-plugins`, which adds the free plugins Headcount integrates with, and build Headcount (`cd Headcount && ./gradlew build`, which copies the jar into the server). Start it with `cd TestServer && ./start.sh` (Java 25, offline mode, port 25565). Then set `placeholders.provider: placeholderapi`, `permissions.provider: luckperms` and `bedrock.provider: floodgate` in `plugins/Headcount/integrations.yml` and run `/hca reload`, since the `/papi parse`, prefix and Bedrock checks below need them.
 2. Join with two Java clients under different names, for example from two launcher profiles or instances. Offline mode accepts any name. Call them **A** and **B**. Make A op (`op A` in the console).
 3. For Bedrock: join with a Bedrock client on port 19132 (Geyser), called **C**.
 4. Headcount's included PvP starts everyone with PvP off, so the default `in-pvp` status blocks nothing until a player runs `/pvp`. If PvPManager is still in `plugins/`, it applies its own rules in real fights (PvP on for everyone, its newbie protection), which can get in the way of the tests. Delete its jar to test cleanly (see [TestServer/README.md](../TestServer/README.md)).
@@ -133,7 +133,7 @@ Set up A with a positive score and B with a negative one: put B's heads in A's v
 - [ ] The sidebar on Bedrock (C) shows the same lines.
 - [ ] `/hca title A grant champion`: it auto-equips. `/hc titles` shows it equipped; unequip and re-equip work.
 - [ ] `/papi parse A %headcount_title% %headcount_points% %headcount_unique% %headcount_time_left%` shows the right values.
-- [ ] With `titles.yml permission-prefix.enabled: true` and `/hca reload`, LuckPerms shows the title as A's prefix (`lp user A meta info`).
+- [ ] With `titles.yml permission-prefix.enabled: true` and `/hca reload`, LuckPerms shows the title as A's prefix in chat and in `lp user A meta info`. Turn it off and reload, and the prefix goes away.
 
 ## 11. Bedrock (C)
 
@@ -153,8 +153,13 @@ Set up A with a positive score and B with a negative one: put B's heads in A's v
 
 ## 13. Other plugins
 
-The test server has no Discord bot token and none of the paid plugins, so these are checked on a server that has them.
+These need the server from `setup.sh --with-plugins`. Change one provider in `integrations.yml` at a time, and put it back afterwards. The last three need a Discord bot token or a paid plugin, which the test server doesn't have.
 
-- [ ] DiscordSRV, connected to a Discord bot: a `discord` action (for example in a test list run with `/hca run A <list>`) posts its text in the configured channel.
-- [ ] ItemsAdder, Oraxen or Nexo: a shop entry or `give-item` action with `custom: itemsadder:ns:id` (or `oraxen:id`, `nexo:id`) gives the custom item.
+- [ ] PvPManager: with `pvp.provider: pvpmanager` and a restart, `/pvp` is PvPManager's, `/hca integrations` says so, and `in-pvp` follows PvPManager.
+- [ ] Vault: with `economy.provider: vault` (EssentialsX's economy, through VaultUnlocked), a `money` action changes `/balance`.
+- [ ] A moderation kind through a plugin: with `moderation.kinds: { ban: libertybans }`, a timed ban is in `/libertybans banlist` instead of the vanilla `banlist`, and it lifts on time.
+- [ ] EssentialsX and the included combat tag: `/fly` a player, then hit them. Their flight stops, and they can't fly again until the tag ends.
+- [ ] EssentialsX as the player-state provider (`player-state.provider: essentials`): `/afk`, `/god`, an Essentials jail and an Essentials mute each make a `player-state` status with that `check` (`afk`, `god`, `jailed`, `muted`) read true.
+- [ ] DiscordSRV, connected to a Discord bot, with `discord.provider: discordsrv`: a `discord` action (for example in a test list run with `/hca run A <list>`) posts its text in the configured channel.
+- [ ] ItemsAdder, Oraxen or Nexo, listed in `items.providers`: a shop entry or `give-item` action with `custom: itemsadder:ns:id` (or `oraxen:id`, `nexo:id`) gives the custom item.
 - [ ] LiteBans with `moderation.provider: litebans`: warn, mute, kick and a timed ban reach LiteBans, and a status with `source: muted` reads true while LiteBans has the player muted.

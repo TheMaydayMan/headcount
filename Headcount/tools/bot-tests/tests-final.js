@@ -55,12 +55,13 @@ const N = process.argv[2] || 'Charlie';
 
   // --- drag, offhand swap, double click in the vault ------------------------------------------------
   let w = await openWindow(c, '/hc');
+  const full = vaultIds(N).length;
   await c.clickWindow(0, 0, 1);            // two heads out to the inventory, so two vault slots are empty
   await sleep(700);
   await c.clickWindow(1, 0, 1);
   await sleep(700);
   const start = vaultIds(N).length;
-  record('vault: two heads shift-clicked out', start === 25, `vault=${start}`);
+  record('vault: two heads shift-clicked out', start === full - 2, `vault=${start}`);
   serverConsole(`give ${N} dirt 4`);
   await sleep(1000);
   w = c.currentWindow;
@@ -77,7 +78,7 @@ const N = process.argv[2] || 'Charlie';
   await sleep(900);
   const dirtAfter = await countOn(N, 'dirt');
   const groundDirt = droppedItems(c).filter((d) => d.name === 'dirt').length - groundBefore;
-  record('vault: dragging dirt across empty vault slots is refused, nothing is lost or dropped', dirtAfter === 4 && groundDirt === 0 && vaultIds(N).length === 25,
+  record('vault: dragging dirt across empty vault slots is refused, nothing is lost or dropped', dirtAfter === 4 && groundDirt === 0 && vaultIds(N).length === start,
     `dirt on player=${dirtAfter} on ground=${groundDirt} vault=${vaultIds(N).length}`);
 
   w = await openWindow(c, '/hc');
@@ -189,7 +190,7 @@ const N = process.argv[2] || 'Charlie';
   mc = c.chatLog.length;
   if (oldSlot >= 0) await c.clickWindow(oldSlot, 0, 1);
   await sleep(800);
-  record('vault: a head from the previous cycle is refused', oldSlot >= 0 && vaultIds(N).length === 26 && !vaultIds(N).includes(oldId) &&
+  record('vault: a head from the previous cycle is refused', oldSlot >= 0 && vaultIds(N).length === refilled.length - 1 && !vaultIds(N).includes(oldId) &&
     await waitChat(c, /from cycle \d+ and has expired/, mc, 1500), `slot=${oldSlot} vault=${vaultIds(N).length}`);
   c.closeWindow(c.currentWindow);
   await sleep(400);

@@ -82,7 +82,7 @@ const closeAll = async (...bots) => { for (const b of bots) if (b.currentWindow)
 `);
     fs.writeFileSync(HC + 'actions.yml', acts);
   }
-  edit('trade.yml', [['  timeout: 30s', '  timeout: 3s'], ['trade.cooldown).\n  duration: 10s', 'trade.cooldown).\n  duration: 4s']]);
+  edit('trade.yml', [['  timeout: 30s', '  timeout: 3s'], ['headcount.bypass.trade.cooldown\n  duration: 10s', 'headcount.bypass.trade.cooldown\n  duration: 4s']]);
   await reload();
   await consoleOut('hca cycle end confirm', 4000);     // a new cycle: no kill claims yet
   const a = await makeBot('Alpha');
@@ -336,7 +336,7 @@ const closeAll = async (...bots) => { for (const b of bots) if (b.currentWindow)
     `free slots before=${free} cobble on ground=${groundCob}`);
   serverConsole('minecraft:clear Alpha stone');
   serverConsole('minecraft:kill @e[type=item]');
-  edit('trade.yml', [['  timeout: 3s', '  timeout: 30s'], ['trade.cooldown).\n  duration: 4s', 'trade.cooldown).\n  duration: 10s'], ['  on-teleport: false', '  on-teleport: true']]);
+  edit('trade.yml', [['  timeout: 3s', '  timeout: 30s'], ['headcount.bypass.trade.cooldown\n  duration: 4s', 'headcount.bypass.trade.cooldown\n  duration: 10s'], ['  on-teleport: false', '  on-teleport: true']]);
   await reload();
 
   a.quit(); b.quit(); k.quit();

@@ -84,7 +84,7 @@ const isPvP = async () => /in-pvp: true/.test(await consoleOut(`hca status ${N} 
   await sleep(2000);
   record('sidebar: /hc sidebar again turns it on', await waitChat(u2, /Sidebar on/, mu, 1500) && pl('sidebar') === 1 &&
     /Unique heads/.test(JSON.stringify(Object.values(u2.teams || {}).map((t) => t.prefix && t.prefix.toString()))));
-  edit('config.yml', [['sidebar:\n', 'sidebar:\n  enabled: false\n'], ['  enabled: true\n  update-interval: 1s', '  update-interval: 1s']]);
+  edit('config.yml', [['Players toggle their own with /hc sidebar.\n  enabled: true', 'Players toggle their own with /hc sidebar.\n  enabled: false']]);
   await reload();
   mu = u2.chatLog.length;
   u2.chat('/hc sidebar');

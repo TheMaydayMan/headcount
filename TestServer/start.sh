@@ -3,7 +3,7 @@
 # Build the plugin first: (cd ../Headcount && ./gradlew build) copies the jar into plugins/.
 cd "$(dirname "$0")"
 if [ ! -f paper-26.3-246.jar ]; then
-  echo "The server isn't set up yet: run ./setup.sh first (it downloads Paper and the plugins)." >&2
+  echo "The server isn't set up yet: run ./setup.sh first (it downloads Paper)." >&2
   exit 1
 fi
 # The first Java that is 25 or newer: the JDK installed for this project, then JAVA_HOME, then the PATH.

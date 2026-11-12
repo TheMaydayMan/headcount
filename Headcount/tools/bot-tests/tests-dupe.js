@@ -11,7 +11,9 @@ const consoleOut = async (cmd, wait = 900) => { const m = logSize(); serverConso
 const isEcon = (s) => s && s.name === 'player_head' && JSON.stringify(s.components || s.nbt || '').includes('head_id');
 const N = process.argv[2] || 'Golf';
 const vaultIds = () => db(`SELECT head_id FROM vault_items v JOIN players p ON p.uuid=v.uuid WHERE p.name='${N}'`).map((r) => r[0]);
-const forged = (id, owner, cycle) => `player_head[custom_data={PublicBukkitValues:{"headcount:head_id":"${id}","headcount:head_owner":"${owner}","headcount:head_cycle":${cycle}}}]`;
+// Heads carry their cycle run's token since 1.1; a copy of a current head copies it too.
+let runToken = '';
+const forged = (id, owner, cycle) => `player_head[custom_data={PublicBukkitValues:{"headcount:head_id":"${id}","headcount:head_owner":"${owner}","headcount:head_cycle":${cycle}${runToken ? `,"headcount:head_token":"${runToken}"` : ''}}}]`;
 const forgedNbt = (id, owner, cycle) => `{id:"minecraft:player_head",count:1,components:{"minecraft:custom_data":{PublicBukkitValues:{"headcount:head_id":"${id}","headcount:head_owner":"${owner}","headcount:head_cycle":${cycle}}}}}`;
 const slotsWith = (w, id) => w.slots.map((s, i) => [s, i]).filter(([s, i]) => i >= w.inventoryStart && s && JSON.stringify(s.components || '').includes(id)).map(([, i]) => i);
 
@@ -23,6 +25,7 @@ const slotsWith = (w, id) => w.slots.map((s, i) => [s, i]).filter(([s, i]) => i 
   if (/in-pvp: true/.test(st)) { g.chat('/pvp'); await sleep(900); }
   const uuid = db(`SELECT uuid FROM players WHERE name='${N}'`)[0][0];
   const cycle = db(`SELECT id FROM cycles WHERE state='active'`)[0][0];
+  runToken = db(`SELECT token FROM cycles WHERE state='active'`)[0][0] || '';
 
   // --- a forged copy of a head that is in the vault ---------------------------------------------------
   let w = await openWindow(g, '/hc');

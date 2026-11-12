@@ -1,14 +1,16 @@
 #!/bin/bash
 # One-time setup for the bot tests (see README.md). Run it again any time to rebuild the bot server from the
 # current test server. It makes, in work/ (or $HC_BOT_DIR):
-#   botserver/   a copy of ../../../TestServer (or $HC_TEST_SERVER) on port 25566, with ViaVersion and ViaBackwards,
-#                without DiscordSRV, Geyser and Floodgate, and with the test addon
+#   plugin-jars/ the integration plugins, downloaded by TestServer/setup.sh --with-plugins (kept between runs)
+#   botserver/   the server jar and EULA of ../../../TestServer (or $HC_TEST_SERVER) on port 25566, with those
+#                plugins except DiscordSRV, Geyser and Floodgate, ViaVersion and ViaBackwards, and the test addon
 # and installs mineflayer here. Needs Node.js 20+, curl, python3, and JDK 25 (found like TestServer/start.sh).
 set -e
 HERE=$(cd "$(dirname "$0")" && pwd)
 PROJECT=$(cd "$HERE/../.." && pwd)
 S=${HC_BOT_DIR:-$HERE/work}
-TS=${HC_TEST_SERVER:-$(cd "$PROJECT/../TestServer" && pwd)}
+REPO_TS=$(cd "$PROJECT/../TestServer" && pwd)
+TS=${HC_TEST_SERVER:-$REPO_TS}
 B=$S/botserver
 
 # --- tools -----------------------------------------------------------------------------------------------
@@ -20,20 +22,23 @@ for j in "$HOME/.jdks/jdk-25.0.5+8" "$JAVA_HOME"; do
   if [ "${v:-0}" -ge 25 ]; then JDK=$j; break; fi
 done
 [ -n "$JDK" ] || { echo "JDK 25 is needed (looked in ~/.jdks/jdk-25.0.5+8 and JAVA_HOME)"; exit 1; }
-[ -f "$TS/start.sh" ] || { echo "No test server at $TS: run TestServer/setup.sh first (or set HC_TEST_SERVER)"; exit 1; }
+ls "$TS"/paper-*.jar >/dev/null 2>&1 || { echo "No test server at $TS: run TestServer/setup.sh first (or set HC_TEST_SERVER)"; exit 1; }
 for p in $(pgrep -f "paper-.*\.jar"); do
   [ "$(readlink /proc/$p/cwd)" = "$B" ] && { echo "The bot server is running; stop it first (echo stop >> $S/bot-console.in)"; exit 1; }
 done
 
 # --- the bot server --------------------------------------------------------------------------------------
+# The test server has no other plugins by default, so the ones the suites use come from the test server's setup,
+# into a folder of their own.
+echo "Downloading the integration plugins into $S/plugin-jars"
+"$REPO_TS/setup.sh" --with-plugins --plugins-dir "$S/plugin-jars"
 echo "Copying $TS to $B"
 rm -rf "$B"; mkdir -p "$B/plugins"
 cp -r "$TS"/paper-*.jar "$TS/eula.txt" "$TS/start.sh" "$B/"
 [ -d "$TS/libraries" ] && cp -r "$TS/libraries" "$B/"
-for f in "$TS"/plugins/*; do
-  n=$(basename "$f")
-  case "$n" in Headcount|DiscordSRV*|Geyser*|[Ff]loodgate*|spark|update) continue ;; esac
-  cp -r "$f" "$B/plugins/"
+for f in "$S"/plugin-jars/*.jar; do
+  case "$(basename "$f")" in DiscordSRV*|Geyser*|Floodgate*) continue ;; esac
+  cp "$f" "$B/plugins/"
 done
 echo "Downloading ViaVersion and ViaBackwards"
 curl -sSfLo "$B/plugins/ViaVersion.jar" https://cdn.modrinth.com/data/P1OZGk5p/versions/OKm4Zi14/ViaVersion-5.12.3-SNAPSHOT.jar

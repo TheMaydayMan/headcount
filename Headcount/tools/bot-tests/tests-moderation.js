@@ -1,5 +1,5 @@
 // The moderation providers other than LibertyBans (tested in tests-actions): AdvancedBan, the generic
-// command templates, and Headcount's own vanilla fallback. Each: kick, warn, mute, and a temporary ban.
+// command templates, and Headcount's own included version. Each: kick, warn, mute, and a temporary ban.
 const L = require('./lib');
 const WORK = L.S;
 const fs = require('fs');
@@ -12,8 +12,8 @@ const tryJoin = (name) => Promise.race([makeBot(name).then((x) => { x.quit(); re
   const a = await makeBot('Alpha');
   // Fresh names each run: the moderation plugins keep their own history (AdvancedBan auto-kicks on a second warning).
   const run = String(Date.now() % 100000);
-  for (const [provider, name, expect] of [['advancedban', 'MA' + run, /ban=AdvancedBan/], ['commands', 'MC' + run, /kick=commands/], ['vanilla', 'MV' + run, /ban=vanilla|ban=Vanilla|mute=Headcount|vanilla/i]]) {
-    fs.writeFileSync(HC + 'integrations.yml', backup.replace("Headcount's own mutes and jails.\n  provider: auto\n", `Headcount's own mutes and jails.\n  provider: ${provider}\n`));
+  for (const [provider, name, expect] of [['advancedban', 'MA' + run, /ban=AdvancedBan/], ['commands', 'MC' + run, /kick=commands/], ['included', 'MV' + run, /ban=included/]]) {
+    fs.writeFileSync(HC + 'integrations.yml', backup.replace(/(\nmoderation:\n(?:  #[^\n]*\n)*  provider: )\S+\n/, `$1${provider}\n`));
     if (!fs.readFileSync(HC + 'integrations.yml', 'utf8').includes(`  provider: ${provider}\n`)) throw new Error('provider edit did not apply');
     await consoleOut('hca reload', 2500);
     const integ = await consoleOut('hca integrations', 1200);
