@@ -157,7 +157,7 @@ const STATUSES = `
   };
   serverConsole(`minecraft:clear ${N}`);
   serverConsole(`hca points ${N} set 0`);
-  serverConsole(`pvp ${N} off`);
+  await L.setPvp(N, false);
   serverConsole('minecraft:time set 1000');
   serverConsole(`minecraft:tp Alpha ${N}`);
   serverConsole(`execute as Alpha at @s run minecraft:tp @s ~30 ~ ~`);
@@ -250,8 +250,8 @@ const STATUSES = `
   try { w.respawn(); } catch (e) { /* fine */ }
   await sleep(1500);
   // PvP damage: Alpha hits the player
-  serverConsole(`pvp ${N} on`);
-  serverConsole('pvp Alpha on');
+  await L.setPvp(N, true);
+  await L.setPvp('Alpha', true);
   serverConsole('difficulty easy');
   serverConsole('minecraft:give Alpha netherite_sword');
   serverConsole(`minecraft:tp Alpha ${N}`);
@@ -270,8 +270,8 @@ const STATUSES = `
   record('status t-pvpdmg: false, then true after taking a PvP hit', before === false && (await st('t-pvpdmg')) === true, String(before));
   serverConsole('difficulty peaceful');
   await consoleOut(`hca run ${N} ta-heal`);
-  serverConsole(`pvp ${N} off`);
-  serverConsole('pvp Alpha off');
+  await L.setPvp(N, false);
+  await L.setPvp('Alpha', false);
   // placeholders and joined-recently timing out
   const ph = await consoleOut(`papi parse ${N} %headcount_status_t-always% %headcount_status_t-never%`);
   record('placeholder: %headcount_status_<name>% reads each status', /true false/.test(ph), ph.trim().split('\n').pop().slice(0, 100));

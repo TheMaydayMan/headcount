@@ -6,7 +6,7 @@ const { sleep, serverConsole, makeBot, waitChat, db } = L;
   const a = await makeBot('Alpha');
   const b = await makeBot('Bravo');
   await sleep(2500);
-  for (const n of ['Alpha', 'Bravo']) { serverConsole(`pvp ${n} off`); serverConsole(`untag ${n}`); }   // PvP on or a combat tag would block the trade
+  for (const n of ['Alpha', 'Bravo']) { await L.setPvp(n, false); serverConsole(`untag ${n}`); }   // PvP on or a combat tag would block the trade
   serverConsole('minecraft:clear Alpha cobblestone');
   serverConsole('minecraft:give Alpha cobblestone 5');
   await sleep(1000);

@@ -79,8 +79,8 @@ const pts = (n) => db(`SELECT points FROM players WHERE name='${n}'`)[0][0];
   // --- kill: KillHeadDropEvent doubles the drop -----------------------------------------------------------------
   serverConsole('minecraft:tag Alpha add addon-double');
   serverConsole('minecraft:give Alpha netherite_sword');
-  serverConsole(`pvp ${N} on`);
-  serverConsole('pvp Alpha on');
+  await L.setPvp(N, true);
+  await L.setPvp('Alpha', true);
   serverConsole('difficulty easy');
   await sleep(1000);
   await a.equip(a.inventory.items().find((i) => i.name === 'netherite_sword'), 'hand');
@@ -98,8 +98,8 @@ const pts = (n) => db(`SELECT points FROM players WHERE name='${n}'`)[0][0];
   try { p.respawn(); } catch (e) { /* fine */ }
   serverConsole('difficulty peaceful');
   serverConsole('minecraft:tag Alpha remove addon-double');
-  serverConsole(`pvp ${N} off`);
-  serverConsole('pvp Alpha off');
+  await L.setPvp(N, false);
+  await L.setPvp('Alpha', false);
   serverConsole(`untag ${N}`);
   serverConsole('untag Alpha');
   await sleep(4000);

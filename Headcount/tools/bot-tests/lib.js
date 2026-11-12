@@ -21,6 +21,23 @@ function serverConsole(cmd) {
   fs.appendFileSync(CONSOLE, cmd + '\n');
 }
 
+/**
+ * Sets a player's PvP from the console and checks it took. PvPManager's console /pvp <player> on|off flips the state
+ * instead of setting it, so a player an earlier suite left in that state would end up the wrong way round.
+ */
+async function setPvp(name, on) {
+  for (let i = 0; i < 3; i++) {
+    const m = logSize();
+    serverConsole(`hca status ${name} in-pvp`);
+    await sleep(500);
+    const now = /in-pvp: true/.test(logSince(m));
+    if (now === on) return true;
+    serverConsole(`pvp ${name} ${on ? 'on' : 'off'}`);
+    await sleep(500);
+  }
+  return false;
+}
+
 function logSize() {
   return fs.statSync(LOG).size;
 }
@@ -115,4 +132,4 @@ function summary() {
   return failed.length;
 }
 
-module.exports = { S, sleep, record, serverConsole, logSize, logSince, db, waitFor, makeBot, chatSince, waitChat, openWindow, rawClick, itemName, summary, results };
+module.exports = { S, sleep, record, serverConsole, setPvp, logSize, logSince, db, waitFor, makeBot, chatSince, waitChat, openWindow, rawClick, itemName, summary, results };
