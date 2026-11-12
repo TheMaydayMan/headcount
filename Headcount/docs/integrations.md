@@ -2,7 +2,7 @@
 
 Headcount works fully with no other plugins installed. `integrations.yml` chooses who handles each job that another plugin could do. Every job has a `provider`:
 
-- `included` is Headcount's own version. It is the default wherever one exists, and `none` is the default everywhere else, so a fresh install uses no other plugin until you name one.
+- `included` is Headcount's own version. It is the default wherever one exists, and `none` is the default everywhere else. On a fresh install, [auto-switch](#auto-switch) then hands each job to an installed plugin that can do it.
 - A plugin name hands the job to that plugin, which must be installed.
 - `none` turns the job off completely, Headcount's own version included.
 
@@ -23,6 +23,34 @@ Old configs still load. `auto` picks the installed plugin and logs a warning ask
 | Bedrock players | `floodgate`, `geyser`, `none` | none | Everything still works. Bedrock players just don't get the Bedrock version of the trade request text. |
 
 A plugin that isn't on this list can still feed Headcount through a `placeholder` status. See [statuses.md](statuses.md).
+
+## Auto-switch
+
+With `auto-switch: true` (the default, at the top of `integrations.yml`), Headcount compares the plugins installed at each start with the ones installed at the last start, kept in `plugins/Headcount/detected-plugins.txt`, and changes providers to match:
+
+- A plugin that is new since the last start takes the jobs it can do. A job keeps its provider only when that provider is another plugin that is still installed, so a new plugin replaces `included`, `none`, or a plugin that has gone.
+- A plugin that was a job's provider and has been removed hands the job to another installed plugin that can do it, or back to `included`, or `none` where there is no included version. Installing it again switches it back.
+- On the first start with a new `integrations.yml` (a fresh install, or after deleting the file), every installed plugin counts as new.
+- On the first start after upgrading from 1.1.0, Headcount only notes what is installed and changes nothing.
+
+Each change is written into `integrations.yml` on the line where the setting is, keeping comments and layout, and logs one console line saying what changed, why, and how to undo it. An undone change stays undone, because the plugin is no longer new; it only switches again if the plugin is removed and added back. The switch happens before anything else is set up, so a new PvP provider gets `/pvp` on that same start. With `auto-switch: false`, nothing is changed, but the list of installed plugins is still kept up to date, so turning it back on later doesn't treat old plugins as new. It doesn't catch up on plugins removed while it was off either: those jobs keep the start-up warning until you change them.
+
+When several plugins can do a job:
+
+| Job | Takes over when added, best first | Notes |
+|---|---|---|
+| PvP | PvPManager | |
+| Placeholders | PlaceholderAPI | |
+| Money | Vault | Only when an economy plugin has registered with Vault by the time Headcount starts. |
+| Permissions | LuckPerms | Never Vault, which has no permissions of its own. A removed Vault still hands the job back. |
+| Moderation | LiteBans, LibertyBans, AdvancedBan | Never EssentialsX, which servers install for many other reasons. If EssentialsX was the provider and is removed, the job still goes back. |
+| `moderation.kinds` | - | A kind whose plugin is removed goes back to `default` (the main provider). Kinds are never set when a plugin is added. |
+| Discord | DiscordSRV | |
+| Custom items | ItemsAdder, Oraxen, Nexo | A list: added plugins join it and removed ones leave it. |
+| Bedrock | Floodgate, then Geyser | Floodgate also knows Bedrock players without a Java account. |
+| Player states | EssentialsX | |
+
+A plugin that is installed but failed to enable counts as neither new nor removed. A setting written in a form Headcount can't edit line by line, like a `{ jail: essentials }` map on one line, isn't changed; the console says what to set instead.
 
 ## Included PvP
 
@@ -50,13 +78,21 @@ The `in-pvp`, `combat-tagged` and `newbie-protected` statuses and the `pvp` acti
 
 If PvPManager is installed, it enforces its own rules even when Headcount's PvP is chosen. It starts everyone with PvP on, and its newbie protection can block hits. Remove it, or choose `pvpmanager`. Either change needs a restart.
 
+### Pet protection
+
+`pvp.pet-protection.enabled: true` (off by default) stops players from hurting another player's tamed animals (wolves, cats, parrots, horses, donkeys, llamas and the rest) unless the two players could fight: both have PvP on, neither is protected as a new player, and the owner hasn't just respawned. Hits, projectiles, fire, harmful potions and the attacker's own pets all count. Owners can always hurt their own pets, and `headcount.pvp.override` (or PvPManager's override) can hurt any. Pets of offline owners are protected, or with `offline-owners: allow`, fair game. The attacker gets a `pvp.blocked-pet.*` message (or `pvp.blocked-hit.self-*` when the attacker is the one who can't fight) through the `blocked-hit` channel.
+
+It uses whichever provider is chosen: Headcount's own PvP, or PvPManager's PvP states (its check runs alongside anything PvPManager does itself). With `provider: none` there are no PvP rules, so it does nothing. Hurting a pet doesn't put anyone in combat, with or without it.
+
+For the opposite approach, pet vengeance (PvP turned on for whoever hurts a pet), see the `hurt-pet` hook in [hooks.md](hooks.md#hooks-for-things-players-do-to-each-other).
+
 ### PvPManager
 
 With `pvp.provider: pvpmanager`, PvPManager does everything and the `included` settings are ignored. Players start with PvP on, and PvPManager only lets them run `/pvp` with `pvpmanager.command.pvp`, which is off by default. Headcount's default rules block moving heads and trading while PvP is on, so players need a way to turn it off. That's why `pvp.pvpmanager.let-players-toggle: true`, the default, makes that permission default to true. A player or group your permissions plugin explicitly denies stays denied. Set it to `false` to hand out the permission yourself, for example with `lp group default permission set pvpmanager.command.pvp true`.
 
 ## Moderation kinds
 
-`moderation.kinds` gives single kinds their own provider. For example, `provider: libertybans` with `kinds: { jail: essentials }` sends jails to EssentialsX and everything else to LibertyBans. When a plugin can't do a kind, that kind goes to `included`. LibertyBans and LiteBans have no jail, for example. LiteBans is driven through its commands (`litebans-commands`), because its API can't create punishments. The `commands` provider can drive any plugin through the templates under `moderation.commands`.
+`moderation.kinds` gives single kinds their own provider. For example, `provider: libertybans` with `kinds: { jail: essentials }` sends jails to EssentialsX and everything else to LibertyBans. A kind that is left out or set to `default` uses `provider`. When a plugin can't do a kind, that kind goes to `included`. LibertyBans and LiteBans have no jail, for example. LiteBans is driven through its commands (`litebans-commands`), because its API can't create punishments. The `commands` provider can drive any plugin through the templates under `moderation.commands`.
 
 The included jail needs `moderation.included-jail.location`. Jailed players are held within its `radius` and can only use `allowed-commands`. The included mute blocks chat and the commands in `included-mute.blocked-commands`.
 

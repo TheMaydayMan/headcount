@@ -256,6 +256,14 @@ public final class IncludedPvP implements PvPHook, Listener, TabExecutor {
     }
 
     /**
+     * A blocked-hit style message (channel and sound from messages.blocked-hit), sent whichever PvP provider is in use.
+     * Pet protection uses it with PvPManager too.
+     */
+    public void notifyBlocked(Player p, String langKey, Vars vars) {
+        notify(p, "blocked-hit", langKey, vars);
+    }
+
+    /**
      * Sends a pvp.&lt;event&gt; message through the channel set in integrations.yml (pvp.included.messages.&lt;event&gt;),
      * with its sound. Repeats of the same message to the same player are held back for a second.
      */

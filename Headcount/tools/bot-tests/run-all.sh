@@ -32,6 +32,7 @@ run tests-status2
 run tests-score
 run tests-moderation
 run tests-api
+run tests-hooks2
 # crash tests last: they kill and restart the server
 echo "== crash-offer $(date +%H:%M:%S)" >> $R/summary.txt
 rm -f $S/crash-ready

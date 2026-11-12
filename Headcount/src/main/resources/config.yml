@@ -56,7 +56,7 @@
 #  Menu titles, item names and lore, and the messages in action lists are written in these config files.
 #  Everything else Headcount says is in lang/en_US.yml.
 # ============================================================================================
-config-version: 2
+config-version: 3
 
 general:
   # Language file in plugins/Headcount/lang/, without .yml.
@@ -471,6 +471,15 @@ hooks:
             - "<gray>Unique heads: <white><unique></white> (rank <rank>)"
             - "<gray>Score: <white><score>"
             - "<gray>Points earned: <green><points_earned></green> · Points now: <gold><points>"
+  # Shortest time between two runs of a player hook for the same player, for the hooks that follow something the
+  # player did (hurt-pet, kill-pet, open-trapped-chest below). Every hit on a pet and every opening of a trapped
+  # chest counts, so without a wait a player could get the same message many times a second. 0 runs it every time.
+  # A hook skipped by its cooldown runs none of its actions, so give timed actions like pvp a longer duration than
+  # this. /hca hook ignores it.
+  cooldowns:
+    hurt-pet: 10s
+    kill-pet: 0s
+    open-trapped-chest: 10s
             - "<gray>Streak: <white><streak_text>"
             - "<gray>Shop tier unlocked: <white><tier>"
             - "<gray>Outcomes: <outcomes>"
@@ -524,3 +533,32 @@ hooks:
     became-active:
       - message: "<gray>You've played enough to count this cycle. When it ends, your vault becomes your score: <yellow>/hc score</yellow> shows it now."
     join: []
+    # The hooks below run on a player who did something to someone else. Players in creative or spectator are left
+    # out, and so is anything another plugin blocked, like a protected claim or pet-protection in integrations.yml.
+    # They also have <world> <x> <y> <z>, where it happened. hooks.cooldowns above sets how often each can run.
+    #
+    # hurt-pet: the player hurt another player's tamed animal (a wolf, cat, parrot, horse, donkey, llama...) with a
+    # hit, a projectile, TNT, a potion or their own pet. A pet's owner hurting it doesn't count.
+    # Variables: <owner> (the pet's owner) <owner_uuid> <pet> (its name, or its kind in each player's language)
+    # <pet_type> (like wolf) <damage>
+    # Pet vengeance: the attacker's PvP is turned on and locked for 10 minutes, so the owner can fight back. Each
+    # new hit after the cooldown restarts the 10 minutes.
+    #   hurt-pet:
+    #     - type: pvp
+    #       state: "on"
+    #       lock: true
+    #       duration: 10m
+    #       start-message: "<red>You hurt <owner>'s <pet>, so your PvP is on for <duration>."
+    hurt-pet: []
+    # kill-pet: the player killed another player's tamed animal. Same variables as hurt-pet, without <damage>.
+    # The killing hit also runs hurt-pet.
+    kill-pet: []
+    # open-trapped-chest: the player opened a trapped chest. Minecraft doesn't record who placed a chest, so this
+    # runs for every trapped chest, the player's own included. Use it for traps, like PvP for anyone who opens one:
+    #   open-trapped-chest:
+    #     - type: pvp
+    #       state: "on"
+    #       lock: true
+    #       duration: 5m
+    #       start-message: "<red>That chest was trapped. Your PvP is on for <duration>."
+    open-trapped-chest: []

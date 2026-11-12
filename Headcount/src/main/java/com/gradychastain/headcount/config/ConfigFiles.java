@@ -28,6 +28,7 @@ public final class ConfigFiles {
     private final JavaPlugin plugin;
     private final Map<String, Cfg> loaded = new LinkedHashMap<>();
     private final Map<String, Cfg> defaults = new LinkedHashMap<>();
+    private final Set<String> created = new java.util.HashSet<>();
 
     public ConfigFiles(JavaPlugin plugin) {
         this.plugin = plugin;
@@ -35,34 +36,50 @@ public final class ConfigFiles {
 
     public void loadAll() {
         loaded.clear();
-        for (String name : FILES) {
-            File file = new File(plugin.getDataFolder(), name);
-            if (!file.exists()) plugin.saveResource(name, false);
-            YamlConfiguration yaml = new YamlConfiguration();
-            try {
-                yaml.load(file);
-            } catch (Exception e) {
-                plugin.getLogger().severe("Could not load " + name + " (" + e.getMessage() + "); using bundled defaults for it.");
-                yaml = bundled(name);
+        created.clear();
+        for (String name : FILES) load(name, true);
+    }
+
+    /** Loads one file again, for a file Headcount itself just changed (integrations.yml auto-switch). */
+    public void reload(String name) {
+        if (FILES.contains(name)) load(name, false);
+    }
+
+    /** Whether this file didn't exist and was written from the bundled default during the last {@link #loadAll()}. */
+    public boolean created(String name) {
+        return created.contains(name);
+    }
+
+    private void load(String name, boolean checkVersion) {
+        File file = new File(plugin.getDataFolder(), name);
+        if (!file.exists()) {
+            plugin.saveResource(name, false);
+            created.add(name);
+        }
+        YamlConfiguration yaml = new YamlConfiguration();
+        try {
+            yaml.load(file);
+        } catch (Exception e) {
+            plugin.getLogger().severe("Could not load " + name + " (" + e.getMessage() + "); using bundled defaults for it.");
+            yaml = bundled(name);
+        }
+        Cfg actual = Cfg.of(yaml, "");
+        Cfg def = Cfg.of(bundled(name), "");
+        defaults.put(name, def);
+        if (MERGED.contains(name)) {
+            Cfg merged = def.merge(actual);
+            for (String atomic : ATOMIC.getOrDefault(name, Set.of())) {
+                if (actual.has(atomic)) merged = merged.with(atomic, actual.get(atomic));
             }
-            Cfg actual = Cfg.of(yaml, "");
-            Cfg def = Cfg.of(bundled(name), "");
-            defaults.put(name, def);
-            if (MERGED.contains(name)) {
-                Cfg merged = def.merge(actual);
-                for (String atomic : ATOMIC.getOrDefault(name, Set.of())) {
-                    if (actual.has(atomic)) merged = merged.with(atomic, actual.get(atomic));
-                }
-                loaded.put(name, merged);
-            } else {
-                loaded.put(name, actual);
-            }
-            int have = actual.getInt("config-version", 0);
-            int want = def.getInt("config-version", 0);
-            if (want > 0 && have < want) {
-                plugin.getLogger().warning(name + " is config-version " + have + " but this version of Headcount expects " + want
-                        + ". Missing options use their defaults. Compare it with the bundled file to see what's new.");
-            }
+            loaded.put(name, merged);
+        } else {
+            loaded.put(name, actual);
+        }
+        int have = actual.getInt("config-version", 0);
+        int want = def.getInt("config-version", 0);
+        if (checkVersion && want > 0 && have < want) {
+            plugin.getLogger().warning(name + " is config-version " + have + " but this version of Headcount expects " + want
+                    + ". Missing options use their defaults. Compare it with the bundled file to see what's new.");
         }
     }
 

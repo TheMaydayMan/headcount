@@ -30,11 +30,15 @@ import java.util.UUID;
  * Per-player hooks for offline players are stored and delivered on their next join (unless {@code offline: skip}),
  * and dropped once more than {@code expire-after-cycles} cycles have passed.
  * <p>
- * Player hooks: {@code first-join}, {@code first-join-cycle}, {@code became-active}, {@code join}.
+ * Player hooks: {@code first-join}, {@code first-join-cycle}, {@code became-active}, {@code join}, and the ones that
+ * follow something the player did ({@code hurt-pet}, {@code kill-pet}, {@code open-trapped-chest}, run by
+ * {@link PetAndChestHooks}), which can have a per-player cooldown.
  */
 public final class HookManager {
     private final HeadcountPlugin plugin;
     private final Map<String, ActionList> cache = new LinkedHashMap<>();
+    /** Last run of a cooled-down player hook, by "uuid:hook". */
+    private final Map<String, Long> lastRun = new java.util.HashMap<>();
 
     public HookManager(HeadcountPlugin plugin) {
         this.plugin = plugin;
@@ -203,14 +207,50 @@ public final class HookManager {
     // ---------------------------------------------------------------- player hooks
 
     public void runPlayerHook(Player p, String id) {
+        runPlayerHook(p, id, null, false);
+    }
+
+    /** Whether a player hook has any actions, so callers can skip building its variables. */
+    public boolean hasPlayerHook(String id) {
+        Object raw = hooks().get("player." + id);
+        return raw != null && !list("hooks.player." + id, raw).isEmpty();
+    }
+
+    /**
+     * Runs a player hook with extra variables. With {@code cooldown}, it is skipped if it ran for this player less
+     * than {@code hooks.cooldowns.<id>} ago (hooks that can fire many times a minute, like hurt-pet).
+     */
+    public void runPlayerHook(Player p, String id, Vars extra, boolean cooldown) {
         Object raw = hooks().get("player." + id);
         if (raw == null) return;
         ActionList list = list("hooks.player." + id, raw);
         if (list.isEmpty()) return;
+        if (cooldown) {
+            long wait = cooldown(id);
+            String key = p.getUniqueId() + ":" + id;
+            long now = System.currentTimeMillis();
+            Long last = lastRun.get(key);
+            if (wait > 0 && last != null && now - last < wait) return;
+            lastRun.put(key, now);
+        }
         Vars v = cycleVars(plugin.cycles().current()).put("player", p.getName());
         var d = plugin.players().get(p);
         v.put("points", d.points).put("streak", d.streak).mini("streak_text", streakText(d.streak));
+        if (extra != null) v.putAll(extra);
         plugin.actions().run(list, p.getUniqueId(), v, "hook:player." + id);
+    }
+
+    /** hooks.cooldowns.&lt;id&gt;; hooks is replaced as a whole by the owner's file, so a missing entry uses the bundled one. */
+    private long cooldown(String id) {
+        String key = "cooldowns." + id;
+        if (hooks().has(key)) return hooks().getMillis(key, 0);
+        return plugin.configs().defaults("config.yml").getSection("hooks").getMillis(key, 0);
+    }
+
+    /** Forgets a player's hook cooldowns when they leave. */
+    public void forget(java.util.UUID uuid) {
+        String prefix = uuid + ":";
+        lastRun.keySet().removeIf(k -> k.startsWith(prefix));
     }
 
     /** Admin test: run a hook now. Cycle hooks run for real (global + per-player); player hooks on one player. */
@@ -226,6 +266,19 @@ public final class HookManager {
             case "first-join", "first-join-cycle", "became-active", "join" -> {
                 if (target == null) return false;
                 runPlayerHook(target, n);
+                return true;
+            }
+            case PetAndChestHooks.HURT_PET, PetAndChestHooks.KILL_PET, PetAndChestHooks.OPEN_TRAPPED_CHEST -> {
+                // A test run on the player as if they did it where they stand, to a wolf the player owns, without the cooldown.
+                if (target == null) return false;
+                Vars v = PetAndChestHooks.locationVars(target.getLocation());
+                if (!n.equals(PetAndChestHooks.OPEN_TRAPPED_CHEST)) {
+                    v.put("owner", target.getName()).put("owner_uuid", target.getUniqueId().toString())
+                            .put("pet", net.kyori.adventure.text.Component.translatable(org.bukkit.entity.EntityType.WOLF.translationKey()))
+                            .put("pet_type", PetAndChestHooks.petType(org.bukkit.entity.EntityType.WOLF));
+                    if (n.equals(PetAndChestHooks.HURT_PET)) v.put("damage", 2);
+                }
+                runPlayerHook(target, n, v, false);
                 return true;
             }
             default -> {

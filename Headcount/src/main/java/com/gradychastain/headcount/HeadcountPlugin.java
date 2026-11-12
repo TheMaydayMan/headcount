@@ -159,10 +159,12 @@ public final class HeadcountPlugin extends JavaPlugin implements Listener {
         text.setInternal(placeholders::resolve);
 
         integrations.load();
+        // Before integrations load, so a provider it switches (including /pvp) is in use from this start.
+        new com.gradychastain.headcount.integration.IntegrationAutoSwitch(this).run();
 
         var pm = getServer().getPluginManager();
         for (Listener l : List.of(this, players, deliveries, combat, actions, bossBars, denyListener, trades, guis, new GuiItemGuard(this),
-                kills, placed, dupes, refresher)) {
+                kills, placed, dupes, refresher, new com.gradychastain.headcount.hook.PetAndChestHooks(this))) {
             pm.registerEvents(l, this);
         }
         AdminCommand admin = new AdminCommand(this);

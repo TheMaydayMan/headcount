@@ -4,7 +4,7 @@
 # This file holds Headcount's own replies, errors and help. Text you design yourself, like menus, head names, the
 # sidebar and the messages in hooks, outcomes and shop actions, lives in the other config files next to the thing it
 # belongs to. Console log lines can't be translated.
-config-version: 2
+config-version: 3
 prefix: "<dark_gray>[<gold>Headcount</gold>]</dark_gray> "
 
 time: { days: "d", hours: "h", minutes: "m", seconds: "s" }
@@ -264,6 +264,14 @@ pvp:
     self-newbie: "<red>You are protected as a new player. <gray>/pvp on to end it early."
     target-newbie: "<red><target> is protected as a new player."
     target-respawn: "<red><target> just respawned."
+  # Pet protection (integrations.yml pvp.pet-protection): a hit on another player's tamed animal was stopped because of
+  # its owner. <owner> is the owner, <pet> the pet's name or kind. When the attacker is the one who can't fight,
+  # blocked-hit.self-off and self-newbie above are used.
+  blocked-pet:
+    target-off: "<red><owner> has PvP off, so you can't hurt their <pet>."
+    target-newbie: "<red><owner> is protected as a new player, and so is their <pet>."
+    target-respawn: "<red><owner> just respawned, so you can't hurt their <pet> yet."
+    owner-offline: "<red><owner> is offline, so you can't hurt their <pet>."
   blocked-command: "<prefix><red>You can't use <command> while in combat (<seconds>s left)."
   blocked-teleport: "<prefix><red>You can't teleport while in combat (<seconds>s left)."
   blocked-flight: "<prefix><red>You can't fly while in combat."

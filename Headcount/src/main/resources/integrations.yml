@@ -9,11 +9,25 @@
 #  If the chosen plugin is missing or fails to load, Headcount logs a warning and uses 'included', or 'none'
 #  where there is no built-in version. /hca integrations shows what is in use right now.
 #  Changes apply after /hca reload, except switching /pvp between plugins, which needs a restart.
+#  With auto-switch on (below), Headcount also changes providers here itself when plugins are added or removed.
 #
 #  This file only holds settings. Player messages, like the PvP and AFK notices, are in lang/en_US.yml. How
 #  those messages reach the player (chat, action bar, title, sound) is set here.
 # ============================================================================================
-config-version: 2
+config-version: 3
+
+# Switch providers here automatically when plugins are added or removed, checked at each server start:
+#   - a plugin that wasn't installed at the last start takes the jobs it can do, unless a job already belongs to
+#     another plugin that is still installed. On the first start with a new integrations.yml, every installed
+#     plugin counts as new.
+#   - a plugin that is gone hands its jobs to another installed plugin that can do them, or back to 'included'
+#     ('none' where there is no built-in version).
+# Each change is written into this file, comments kept, with a line in the console saying what changed and how to
+# undo it. A change you undo stays undone until that plugin is removed and added again. A few plugins are never
+# picked on their own: Vault for permissions, EssentialsX for moderation, and Vault for money unless an economy
+# plugin is registered with it. The full rules are in docs/integrations.md.
+# false: providers only change when you change them.
+auto-switch: true
 
 # --------------------------------------------------------------------------------------------
 #  PvP: the PvP toggle, the combat tag and new-player protection. These feed the in-pvp, combat-tagged and
@@ -127,6 +141,22 @@ pvp:
       # Boss bar color when countdown is bossbar: pink | blue | red | green | yellow | purple | white
       countdown-bossbar-color: red
 
+  # ---- Pet protection (provider: included or pvpmanager) ----
+  # Tamed animals (wolves, cats, parrots, horses, donkeys, llamas...) share their owner's PvP: a player can only hurt
+  # someone else's pet if the two players could fight. That means the attacker's and the owner's PvP are on and
+  # neither is protected as a new player, and the owner didn't just respawn. Hits, projectiles, fire, harmful
+  # potions and the player's own pets all count. Owners can always hurt their own pets, and players with
+  # headcount.pvp.override (or PvPManager's override) can hurt any. It uses the rules of whichever provider is chosen
+  # above, and does nothing with provider: none. Hurting a pet doesn't put anyone in combat.
+  # The message goes through messages.blocked-hit above, also with PvPManager. Texts: pvp.blocked-pet in the lang
+  # file, and pvp.blocked-hit.self-* when the attacker is the one who can't fight.
+  # For pet vengeance instead (PvP on for whoever hurts a pet), see hooks.player.hurt-pet in config.yml.
+  pet-protection:
+    enabled: false
+    # Pets whose owner is offline: protect | allow
+    # An offline player can't be fought, so protect keeps their pets safe until they're back.
+    offline-owners: protect
+
   # ---- PvPManager (provider: pvpmanager) ----
   pvpmanager:
     # Let every player use PvPManager's /pvp.
@@ -157,7 +187,8 @@ placeholders:
 economy:
   # Which economy the money action uses: vault | none
   # Headcount has no money of its own, so the default content gives none out. With Vault and an economy plugin like
-  # EssentialsX or CMI installed, set vault to use the money action.
+  # EssentialsX or CMI installed, set vault to use the money action. auto-switch sets it when Vault is added and an
+  # economy plugin has registered with it by the time Headcount starts.
   provider: none
 
 # --------------------------------------------------------------------------------------------
@@ -193,7 +224,8 @@ moderation:
   # EssentialsX:
   #   kinds:
   #     jail: essentials
-  # The kinds are ban, mute, kick, warn and jail. Kinds left out use 'provider'.
+  # The kinds are ban, mute, kick, warn and jail. Kinds left out, or set to default, use 'provider'. auto-switch
+  # sets a kind back to default when its plugin is removed.
   kinds: {}
   # Name shown as the punisher, where the plugin supports it.
   operator-name: Headcount
@@ -246,7 +278,7 @@ moderation:
 # --------------------------------------------------------------------------------------------
 discord:
   # Which plugin sends Discord messages: discordsrv | none
-  # Set discordsrv once DiscordSRV is installed and connected to a bot.
+  # discordsrv needs DiscordSRV installed and connected to a bot. auto-switch sets it when DiscordSRV is added.
   provider: none
   # DiscordSRV game channel for actions that don't name one.
   default-channel: global
@@ -256,7 +288,8 @@ discord:
 # --------------------------------------------------------------------------------------------
 items:
   # Custom item plugins to use, out of itemsadder, oraxen and nexo. Ones that aren't installed are skipped, and []
-  # turns custom items off. List the ones you install, like [itemsadder].
+  # turns custom items off. List the ones you install, like [itemsadder]. auto-switch adds a plugin here when it's
+  # added to the server and takes it out when it's removed.
   providers: []
 
 # --------------------------------------------------------------------------------------------
@@ -266,6 +299,7 @@ items:
 bedrock:
   # How Bedrock players are recognized: floodgate | geyser | none
   # floodgate also knows players who have no Java account. Set it, or geyser, when Geyser is installed.
+  # auto-switch picks floodgate if both are added at once.
   provider: none
 
 # --------------------------------------------------------------------------------------------

@@ -105,7 +105,7 @@ public final class Integrations {
         return picked;
     }
 
-    private static String pluginName(String provider) {
+    static String pluginName(String provider) {
         return switch (provider) {
             case "pvpmanager" -> "PvPManager";
             case "placeholderapi" -> "PlaceholderAPI";
@@ -155,6 +155,7 @@ public final class Integrations {
         if (includedPvP == null) {
             includedPvP = new IncludedPvP(plugin);
             plugin.getServer().getPluginManager().registerEvents(includedPvP, plugin);
+            plugin.getServer().getPluginManager().registerEvents(new com.gradychastain.headcount.integration.pvp.PetProtection(plugin), plugin);
         }
         String pvpChoice = choice(cfg, "pvp.provider", "included", "pvpmanager");
         pvp = null;
@@ -199,7 +200,7 @@ public final class Integrations {
                 : "PlaceholderAPI" + (expansion != null ? plugin.lang().plain("admin.integrations.papi-expansion") : ""));
 
         // Money: vault | none
-        String ecoChoice = choice(cfg, "economy.provider", "vault", "vault");
+        String ecoChoice = choice(cfg, "economy.provider", "none", "vault");
         economy = null;
         if (ecoChoice.equals("vault")) {
             if (enabled("Vault")) economy = attempt("Vault economy", VaultEconomyHook::create);
@@ -237,7 +238,7 @@ public final class Integrations {
         loadModeration(cfg);
 
         // Discord: discordsrv | none
-        String discordChoice = choice(cfg, "discord.provider", "discordsrv", "discordsrv");
+        String discordChoice = choice(cfg, "discord.provider", "none", "discordsrv");
         discord = null;
         if (discordChoice.equals("discordsrv")) {
             if (enabled("DiscordSRV")) discord = attempt("DiscordSRV", () -> new DiscordSrvHook(plugin.getLogger()));
@@ -266,7 +267,7 @@ public final class Integrations {
         sum("custom-items", items.isEmpty() ? none("custom-items") : String.join(", ", items.stream().map(ItemHook::prefix).toList()));
 
         // Bedrock: floodgate | geyser | none
-        String bedrockChoice = choice(cfg, "bedrock.provider", "floodgate", "floodgate", "geyser");
+        String bedrockChoice = choice(cfg, "bedrock.provider", "none", "floodgate", "geyser");
         bedrock = null;
         switch (bedrockChoice) {
             case "floodgate" -> {

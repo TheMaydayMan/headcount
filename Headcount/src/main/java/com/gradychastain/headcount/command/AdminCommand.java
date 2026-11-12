@@ -661,7 +661,7 @@ public final class AdminCommand implements TabExecutor {
             case "run" -> i == 1 ? plugin.players().complete(last, true) : i == 2 ? HeadcountCommand.filter(new ArrayList<>(plugin.actions().namedLists()), last) : List.of();
             case "hook" -> {
                 if (i == 1) {
-                    List<String> hooks = new ArrayList<>(List.of("cycle-start", "first-join", "first-join-cycle", "became-active", "join"));
+                    List<String> hooks = new ArrayList<>(List.of("cycle-start", "first-join", "first-join-cycle", "became-active", "join", "hurt-pet", "kill-pet", "open-trapped-chest"));
                     for (String w : plugin.configs().main().getSection("hooks.warnings").keys()) hooks.add("warning:" + w);
                     yield HeadcountCommand.filter(hooks, last);
                 }
