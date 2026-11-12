@@ -1,6 +1,6 @@
 # Headcount test night
 
-Tonight we play a normal evening of Minecraft with Headcount running underneath. By the end, we'll have used every command, menu, config section and integration, plus Headcount Studio, and hit the edge cases too. You (the **host**) run the server and the admin side. Everyone else plays and follows the "**Everyone:**" prompts.
+Tonight we play a normal evening of Minecraft with Headcount running underneath. By the end, we'll have used every command, menu and config section, Bedrock players included, plus Headcount Studio, and hit the edge cases too. You (the **host**) run the server and the admin side. Everyone else plays and follows the "**Everyone:**" prompts.
 
 Tick boxes as you go, and write anything odd under **Notes** at the end of each part. Afterwards they're your bug list. When something looks wrong, save the console lines from `TestServer/logs/latest.log`, the output of `/hca audit <player>` and `/hca status <player>`, and a screenshot of the Studio page if Studio was involved.
 
@@ -10,7 +10,7 @@ Tick boxes as you go, and write anything odd under **Notes** at the end of each 
 
 **N** is the number of players, you included (2 to 10). Anything that depends on N is a small formula or a pick of **[2-3] / [4-6] / [7-10]**.
 
-**Host** is you, as op. **P1, P2, ...** are the other players in join order. **Bedrock** is anyone on a phone or console through Geyser (port 19132). You don't need one, but if you have one, use them wherever it says "(Bedrock if you have one)".
+**Host** is you, as op. **P1, P2, ...** are the other players in join order. **Bedrock** is anyone on a phone, console or Windows through Geyser (port 19132). Try to have at least one. Steps marked **Bedrock:** need one, and you skip them if nobody's on Bedrock.
 
 Commands that start with `/` are typed in game. Lines marked *console* go in the server terminal or in Studio's **Console** page.
 
@@ -60,11 +60,12 @@ A score is also the points it earns. So after a cycle of trading with everyone, 
 
 ## Part 0: Host prep, alone (about 45 min, before anyone joins)
 
-### 0.1 Server, RCON and Studio
+### 0.1 Server and Studio
 
-- [ ] **Take PvPManager out for tonight.** Move `TestServer/plugins/PvPManager.jar` (or `PvPManager-*.jar`) to a folder outside `plugins/`. Headcount's own PvP is the 1.1 default, and PvPManager would run its own rules on top of it. Part 4 puts it back for one optional test.
-- [ ] Rebuild if needed (`cd Headcount && ./gradlew build`), then `./start.sh`. The console shows `Ready. Cycle N ends ...` with no Headcount warnings. This start also turns RCON on.
+- [ ] **Paper, Headcount, Geyser and Floodgate, nothing else.** Run `TestServer/setup.sh --with-bedrock`, which adds Geyser and Floodgate to Paper. Everything else Headcount can hand to a plugin (PvP, permissions, moderation, AFK, placeholders) runs on its included version tonight. `plugins/` should hold only the Headcount, Geyser-Spigot and Floodgate-Spigot jars and their folders. If an earlier setup left other plugins there, `setup.sh` lists them: move them out of `plugins/` for tonight.
+- [ ] Rebuild if needed (`cd Headcount && ./gradlew build`), then `./start.sh`. The console shows `Ready. Cycle N ends ...` with no Headcount warnings, and a line saying Studio shares the Minecraft port.
 - [ ] *console* `hca selftest`: every check passes.
+- [ ] **Auto-switch:** if `plugins/Headcount/integrations.yml` didn't exist before this start, the console says it handed Bedrock to Floodgate, which it just found. If the file was already there from an earlier version, Headcount only notes which plugins are installed and changes nothing, and Bedrock stays none until 0.3.
 - [ ] *console* `hca integrations` shows the defaults, which need no other plugin:
   - PvP = included
   - placeholders = included
@@ -73,11 +74,13 @@ A score is also the points it earns. So after a cycle of trading with everyone, 
   - moderation = included
   - player states = included
   - Discord = none
-  - Bedrock = none
+  - Bedrock = Floodgate or none (see the step above)
   - custom items: none
-- [ ] **Studio:** double-click `Headcount Studio/Headcount Studio.desktop`. If it won't launch, right-click it and choose **Allow Launching**.
-  - [ ] It opens in the browser on **Overview**, which describes the setup in plain words and shows no problems.
-  - [ ] The server light at the bottom of the sidebar is on and reads **RCON on**.
+- [ ] **Studio:** *console* `hca studio` shows a link and a password. Open `http://localhost:25565` in a browser.
+  - [ ] It asks for the password. A wrong one says so, and the right one opens **Overview**, which describes the setup in plain words and shows no problems.
+  - [ ] The server light at the bottom of the sidebar is on.
+  - [ ] From a phone or another computer on the same network, `http://<this computer's address>:25565` asks for the password too. After signing in there, `hca studio` counts two browsers.
+  - [ ] Join as yourself. `/hca studio` in game shows the same password, and the link is clickable.
 - [ ] In **Console**, `list` shows the server's answer, and `hca selftest` matches the terminal.
 - [ ] The countdown on **This cycle** matches `/hca cycle info`.
 - [ ] Join as yourself. *console* `op <you>` if needed.
@@ -88,7 +91,7 @@ A score is also the points it earns. So after a cycle of trading with everyone, 
 
 ### 0.2 The resets
 
-- [ ] **Hard reset permission:** `/lp user <you> permission set headcount.admin.reset.hard false`, then `/hca reset hard`: "no permission". Unset it with `/lp user <you> permission unset headcount.admin.reset.hard`, and as op you have it again.
+- [ ] **Hard reset permission:** *console* `deop <you>`, then `/hca reset hard`: "no permission". *console* `op <you>` to get it back. (3.2 takes away just the hard reset permission.)
 - [ ] **Wrong code:** `/hca reset hard`, then type a different 4-digit number: "Wrong code ... cancelled".
 - [ ] **Expired code:**
   1. On **General**, set the confirm timeout to `5s`.
@@ -127,8 +130,7 @@ Make these changes in Studio's **Set up** pages. Save them all at once with **Re
   - [ ] **Title:** make sure it contains `<score>`, for example `"<dark_gray><owner>'s Head Vault <gray>(<unique> unique, score <score>)"`. Studio's preview shows a sample score in color. Try `<score:aqua:dark_red:yellow>` and keep whichever you like.
   - [ ] **Head lore:** the cycle number should be gold on current heads and gray on expired and defunct ones (the 1.1 defaults). The tooltip preview shows all three.
 - [ ] **Integrations**, set for tonight's tests:
-  - [ ] `placeholders.provider: placeholderapi`, so `/papi parse` and other plugins can see Headcount's placeholders.
-  - [ ] `economy.provider: vault`, `discord.provider: discordsrv` and `bedrock.provider: floodgate`, the plugins this server has. After the reload, `hca integrations` shows money = Vault, Discord = DiscordSRV and Bedrock = Floodgate.
+  - [ ] `bedrock.provider: floodgate`, if auto-switch didn't already set it. After the reload, `hca integrations` shows Bedrock = Floodgate, and everything else as in 0.1.
   - [ ] `player-state.included.afk.after: 1m`, so AFK is quick to test.
   - [ ] `moderation.included-jail.location`: pick a spot for a small jail, read its coordinates from F3, and enter `world,<x>,<y>,<z>`.
   - [ ] Look over the **PvP message previews**, which show how each PvP message will look in chat, the action bar or a title.
@@ -157,6 +159,7 @@ Make these changes in Studio's **Set up** pages. Save them all at once with **Re
   2. "You start with a shield", from the starter shield
   3. the **first-join-cycle** line (cycle number, time left, points)
 - [ ] Each new player's sidebar is already on, showing cycle, unique, score, points, streak and time left.
+- [ ] **Bedrock:** the same messages arrive in the same order, and the sidebar shows the same lines. `/hca status <them>` shows `bedrock-player` true, and it's false for Java players.
 - [ ] **Everyone:** `/hc help` lists only player commands, including `/pvp`. Ops also see `/hca help`, which lists both resets.
 - [ ] **Everyone:** `/hc` opens your vault with 18 of your own heads and 9 empty slots. The title shows 1 unique and a score colored by sign (see the table above). On Bedrock, the same chest menu works.
 - [ ] **Everyone:** `/pvp status` says PvP is **off** and that new players are protected for 10 minutes.
@@ -168,7 +171,7 @@ Make these changes in Studio's **Set up** pages. Save them all at once with **Re
   - [ ] `/hc history`: empty
   - [ ] `/hc effects`: only the starter shield
   - [ ] `/hc titles`: the menu, with locked titles
-- [ ] **Host:** `/hca placeholders P1` shows sensible values for every `%headcount_*%` placeholder. `/papi parse P1 %headcount_unique% %headcount_time_left% %headcount_title%` works too.
+- [ ] **Host:** `/hca placeholders P1` shows sensible values for every `%headcount_*%` placeholder. For a Bedrock player, `bedrock` reads true.
 - [ ] **Host:** `/hca status P1` shows every status, with `in-pvp` false and `newbie-protected` true.
 - [ ] After 5 minutes of play, each player gets the **became-active** line ("You've played enough to count this cycle"), and `/hc score` now says they're active.
 - [ ] P1's page in Studio (from **Players**) shows the same vault P1 sees in game.
@@ -193,6 +196,7 @@ Normal survival: build a small base, gather, chat. The tasks below get dropped i
 - [ ] Press Q (drop) on a vault slot. It's blocked, because `allow-drop-key` is false.
 - [ ] Double-click to collect.
 - [ ] Drag dirt over vault slots, and try to put in dirt, a vanilla head (`/give @s player_head`, ops only) or a sword. Each is refused with its own message.
+- [ ] **Bedrock:** take heads out and put them back, move one to the hotbar, and try to put in dirt. Bedrock's inventory screen sends its own kinds of clicks, and the same rules hold.
 - [ ] One player turns PvP on with `/pvp on`, and gets a message that their new-player protection has ended. They try to move a head and it's blocked ("in-pvp"), with a message. They run `/pvp off` right away and get "wait Ns" (10s cooldown). Wait it out, then turn it off.
 - [ ] While their PvP was on, **Why is it blocked?** for that player names `in-pvp` and the vault rule.
 - [ ] **Host:** `/hca vault P1` while P1 has their vault open. You both see each other's moves as they happen, and the title updates for both of you. `/hca vault P1 view` is view-only.
@@ -206,6 +210,7 @@ Pair up as trade partners.
 - [ ] Both confirm, then one changes their offer. Both confirmations clear.
 - [ ] Both confirm again for a 3-second countdown. Clicking confirm again stops it. Let it finish, and the items swap.
 - [ ] Put the heads you received in your vault. The unique count in the title goes up, and the score changes color once it turns positive.
+- [ ] **Bedrock:** make one pair a Bedrock player and a Java player, and trade both ways. The Bedrock player's offer mirrors correctly, and nothing can be taken from the Java side. The Bedrock player's head counts as a unique head in the Java player's vault, even if its skin shows as Steve or Alex.
 - [ ] Trading again within 10 seconds is refused (cooldown).
 - [ ] **Cancel cases.** Spread these across the pairs. Every one should return everything to its owner.
   - [ ] Esc
@@ -223,7 +228,6 @@ Pair up as trade partners.
 - [ ] Requests that should be refused or expire:
   - [ ] trading yourself
   - [ ] an offline name
-  - [ ] a `/vanish`ed player (the host vanishes)
   - [ ] someone already trading
   - [ ] a request left alone for 30 seconds expires, and both players are told
 - [ ] **Host:** `/hca audit P1 type:trade_complete` lists the trade with head IDs, and Studio's **Audit log** filtered to P1 shows the same lines. Trace one traded head: it was made, moved out of the vault, traded, and put in the new owner's vault.
@@ -240,10 +244,10 @@ Split into T teams and find somewhere flat. **Everyone:** `/pvp on`, except one 
 **Combat tag** (lasts 15 seconds after each hit)
 - [ ] After a hit, both players get "In combat with <name>!" in the action bar with a sound, then a live countdown. When it runs out: "no longer in combat".
 - [ ] While tagged, each of these is refused with a message and the seconds left:
-  - [ ] `/spawn`, `/home`, `/tpa <someone>`
-  - [ ] `/essentials:home` (the namespaced form)
+  - [ ] `/spawn`, `/home`, `/tpa <someone>`. No plugin here adds them, but they're in `blocked-commands`, so Headcount answers before the server can call them unknown.
+  - [ ] `/essentials:home` (a namespaced form)
   - [ ] `/pvp off`
-- [ ] **Host:** `/fly <player>` on someone, then hit them. Their flight stops, and they can't fly again until the tag ends.
+  - [ ] **Host:** `/tp <tagged player> <you>`. They stay where they are and are told why.
 - [ ] **Host:** `/pvp P1` shows P1's PvP setting and whether they're in combat. `/pvp P1 off` switches it for them.
 
 **Combat log**
@@ -254,6 +258,7 @@ Split into T teams and find somewhere flat. **Everyone:** `/pvp on`, except one 
 - [ ] A kill drops a fresh head of the victim at their body. For 15 seconds only the killer can pick it up, so let someone else try first. Then the killer picks it up, and it counts as a current head.
 - [ ] The same killer kills the same victim again. No head this time ("already took").
 - [ ] A bow kill and a knock-into-lava kill both count (use different victims).
+- [ ] **Bedrock:** a Bedrock player kills a Java player and is killed by one. The heads drop and count the same way.
 - [ ] `/kill` and falling to your death on your own drop no head.
 - [ ] *console* `gamerule keepInventory true`. A kill still drops the head, and the victim keeps their items. Set it back to false.
 - [ ] **Everyone:** `/pvp off` once your tag ends. `/hca status <player>` shows `combat-tagged` turning off when it does.
@@ -278,13 +283,12 @@ Check `/hca status <player>` while players are:
 - [ ] on fire
 - [ ] in lava
 - [ ] at low health
-- [ ] **AFK**: stand completely still for 1 minute until "You are now AFK" shows up, and `afk` reads true. Moving or chatting gives "no longer AFK". (`/afk` is EssentialsX's command and doesn't count while `player-state` is `included`.)
-- [ ] `/vanish` (EssentialsX sets the metadata Headcount reads)
+- [ ] **AFK**: stand completely still for 1 minute until "You are now AFK" shows up, and `afk` reads true. Moving or chatting gives "no longer AFK".
 - [ ] in creative
 - [ ] falling far
 - [ ] on Bedrock
 
-**Host:** `/papi parse P1 %headcount_status_in-pvp%` and `%headcount_status_afk%`.
+**Host:** `/hca placeholders P1` shows `status_in-pvp` and `status_afk` matching `/hca status P1`.
 
 ### 2.6 End of cycle 1 (with warnings)
 
@@ -348,18 +352,19 @@ Players with points from cycle 1 go shopping first, with what they earned. The h
   - [ ] Title: Legend (25; needs Collector)
 - [ ] Anything priced 10 or more asks for confirmation. Cancel works, and spam-clicking confirm buys it only once.
 - [ ] No item can be taken out of the shop, titles, history or confirmation menus, whatever you click, drag or press.
-- [ ] On Bedrock, the shop and confirmations work.
+- [ ] **Bedrock:** the shop with its confirmation, `/hc titles` and `/hc history` all work, and nothing can be taken out of them.
 - [ ] The chest grid on Studio's **Shop** page matches the in-game shop page by page, and each buyer's Studio player page lists what they bought.
 
 ### 3.2 Titles, permissions and prefixes (5 min)
 
 - [ ] **Host:** `/hca title P1 grant champion`. It equips itself, and `/hc titles` shows it equipped. Unequipping and re-equipping work.
-- [ ] **Prefixes need LuckPerms.** With `permissions.provider: included` and `permission-prefix.enabled: true` in titles.yml, no prefix appears, and the console warns that prefixes need LuckPerms or Vault. Now set `permissions.provider: luckperms` on **Integrations**, save and reload. The title shows as a prefix in chat and in `/lp user P1 meta info`. Turn `permission-prefix` off and reload, and the prefix goes away.
-- [ ] `%headcount_title%` works in `/papi parse`.
-- [ ] **Included permissions:** set `permissions.provider` back to `included` and reload. Add a list in the action builder with one `permission` action for `headcount.bypass.trade.cooldown`, duration `10m`. Then:
+- [ ] **Prefixes need LuckPerms or Vault.** Turn on `permission-prefix.enabled` in titles.yml and reload. No prefix appears, and the console warns that prefixes need LuckPerms or Vault. Turn it off again.
+- [ ] `/hca placeholders P1` shows the title.
+- [ ] **Included permissions:** add a list in the action builder with one `permission` action for `headcount.bypass.trade.cooldown`, duration `10m`. Then:
   - [ ] Run it on P2. P2 can now trade twice in a row with no cooldown.
   - [ ] P2 rejoins and still can, because the node is applied again on join.
   - [ ] Remove it from P2's effects list in Studio, and the cooldown is back.
+- [ ] **A permission taken away:** add a list with a `permission` action for `headcount.admin.reset.hard`, `value: false`, duration `5m`, and run it on yourself. `/hca reset hard` now says "no permission", even though you're op. Remove it from your effects, and the reset asks for its codes again (don't finish it).
 
 ### 3.3 Actions showcase (host, 10 min)
 
@@ -382,12 +387,11 @@ Then:
   - [ ] a `warn` (a message), and a `kick`
   - [ ] a `jail` with a 2-minute duration. They get moved to the jail location, and walking more than 8 blocks away pulls them back. `/spawn` is blocked but `/msg` works. When it ends, they go back to where they were.
   - [ ] a short timed `ban`. They show up on the vanilla ban list (`banlist`), and it lifts on its own.
-- [ ] **One kind through a plugin:** in Studio, set `moderation.kinds: { ban: libertybans }` and reload. A timed ban now goes through LibertyBans, so it's in `/libertybans banlist` instead of the vanilla `banlist`, and it still lifts on time. Remove the kind afterwards.
-- [ ] Money (EssentialsX economy): a `money` action changes `/balance`.
+- [ ] **No economy:** add a `money` action to a test list and run it. With `economy.provider: none` it's skipped, with a warning in the console.
 
 ### 3.4 Restart survival (5 min)
 
-- [ ] With timed effects running (slowness, dunce cap...), `restart`. Studio's server light goes off, then comes back once the server is up (reload the Studio tab if it doesn't).
+- [ ] With timed effects running (slowness, dunce cap...), `restart`. Studio's server light goes off, then comes back once the server is up (reload the Studio tab if it doesn't). It's still signed in.
 - [ ] Everyone rejoins. `/hc effects` still lists everything, and the effects are still applied. Milk removes a potion effect, and it comes back within a second.
 - [ ] Have someone hold a trade offer open during the restart. After they rejoin, their items come back exactly once.
 - [ ] Everyone's PvP setting survived the restart (`/pvp status`).
@@ -452,7 +456,7 @@ Back to PvP for a round. Everyone `/pvp on`.
   Undo them all and save. The diff for trade.yml should be empty.
 - [ ] `duplicates.remove-copies: true`: a creative clone is removed when the inventory closes.
 - [ ] `heads.placed.creative-break: drop`: breaking a placed economy head in creative drops it.
-- [ ] **Sidebar:** add a line with `%headcount_rank%`. It shows in Studio's mockup first, then in game within a second.
+- [ ] **Sidebar:** add a line with `%headcount_rank%`. It shows in Studio's mockup first, then in game within a second, on Bedrock too.
 - [ ] **Outcomes:** switch `mode` from `most-extreme` to `all`. The score line shows the overlaps, and `/hca cycle simulate` lists several outcomes per player. Switch it back.
 - [ ] **Shop:** drag an entry to another slot, change a price, and give an entry `stock: 1`. The shop in game changes right away.
 - [ ] **Messages:** change `vault.reset-head` or any other message you've seen tonight. The preview matches the game.
@@ -462,17 +466,24 @@ Back to PvP for a round. Everyone `/pvp on`.
   - [ ] `messages.tag-start.channel: title`: getting tagged shows a title instead.
   - [ ] `block-ender-pearls: true`: pearls are refused in combat.
   - [ ] `combat-log.actions`: add a `points` action of `-5`. The next combat logger loses 5 points (check their Studio player page).
+  - [ ] `pvp.pet-protection` on (integrations.yml): someone with PvP off tames a wolf. A player with PvP on can't hurt it, and gets told why. The owner hitting their own wolf isn't stopped.
+- [ ] **Pet and chest hooks** (config.yml `hooks.player`, examples in the comments):
+  - [ ] `hurt-pet`: paste the pet vengeance example (PvP on and locked for 10m). Hitting someone else's tamed pet turns your PvP on, and `/pvp off` is refused until it ends. Hitting it again within 10s doesn't run it twice.
+  - [ ] `open-trapped-chest`: paste the trapped chest example. Opening a trapped chest turns your PvP on for 5m. A player in creative doesn't trigger it.
+  - [ ] `kill-pet`: add a `message` with `<owner>` and `<pet>`. Killing a pet shows it with the right names.
+  - [ ] A Bedrock player triggers each of these the same way.
+
+  Empty all three again afterwards.
 - [ ] **AFK:** set `afk.announce: everyone`, and everyone sees "<name> is now AFK".
-- [ ] **Placeholders off:** set `placeholders.provider: none`. The sidebar's `%headcount_rank%` line now shows the placeholder as plain text. Set it back to `placeholderapi`.
+- [ ] **Placeholders off:** set `placeholders.provider: none`. The sidebar's `%headcount_rank%` line now shows the placeholder as plain text. Set it back to `included`.
 - [ ] **A recipe:** on **Recipes** (under Help), apply one (for example "A gift for everyone when a cycle starts"). Studio shows the diff first. Save and reload, then undo it.
 - [ ] **A conflict:** with an unsaved Studio change to config.yml, edit `config.yml` in a text editor and save it there. When you save in Studio, it warns that the file changed on disk instead of overwriting it.
 - [ ] **A mistake:** open shop.yml in **Raw files** and give one entry the same `slot` as another in its tier. The **Problems** page flags it before you save. Undo it. Studio doesn't check materials, but `/hca selftest` does: type `DIAMOND_BLOK` in an entry, save and reload, and the selftest names it. Fix it.
 - [ ] Turn on `ban-repeat-offenders` in outcomes, with a 1-minute ban and its streak condition set to `"<=-1"` for the test, so anyone negative at the end of cycle 3 gets it.
-- [ ] Bedrock check (if you have one): vault, a trade with a Java player, shop, sidebar.
-- [ ] **Optional, PvPManager:**
-  1. Put `PvPManager.jar` back and set `pvp.provider: pvpmanager`.
-  2. `restart`. `/pvp` is now PvPManager's, `/hca integrations` says so, and `in-pvp` follows PvPManager.
-  3. Take it out again, set `included`, and `restart`.
+- [ ] **Bedrock providers:**
+  1. Set `bedrock.provider: geyser` and reload. `/hca integrations` says Geyser, `bedrock-player` still reads true, and a trade request to a Bedrock player is still the typed `/trade accept` text.
+  2. Set it to `none` and reload. Bedrock players can still play and trade, but `bedrock-player` reads false and their trade requests show the Java [Accept]/[Deny] text.
+  3. Set it back to `floodgate`.
 
 ### End of cycle 3
 
@@ -492,12 +503,9 @@ Back to PvP for a round. Everyone `/pvp on`.
 - [ ] Optional crash test: someone puts items in a trade offer, then *console* `kill -9` the server process (find it with `pgrep -f paper`). Start it again with `./start.sh`, and the items come back exactly once.
 - [ ] On **Backups**, download the configs as a .zip to keep tonight's setup.
 - [ ] Final `/hca reset hard keep-heads` (3 codes) to leave a clean server for next time. The backup folder holds tonight's database and audit log.
-- [ ] Put PvPManager back in `plugins/` only if you want it for normal play (and set `pvp.provider: pvpmanager`).
 - [ ] Gather everyone's **Notes** into one bug list.
 
 ### Things this plan can't cover
 
-- DiscordSRV messages, since there's no bot token.
-- ItemsAdder, Oraxen, Nexo and LiteBans, which are paid plugins.
+- Every integration except Geyser and Floodgate: PvPManager, PlaceholderAPI, Vault, LuckPerms, EssentialsX, the moderation plugins, DiscordSRV and the custom item plugins. They're in [TESTING.md](TESTING.md#13-other-plugins).
 - Floodgate with a real Xbox sign-in, if nobody joins from Bedrock.
-- EssentialsX as the player-state provider (`/afk`, `/god`, Essentials jails). Set `player-state.provider: essentials` another time if you plan to use it.

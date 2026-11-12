@@ -9,7 +9,7 @@ Compile against the Headcount jar (it isn't published to a repository yet), and 
 ```kotlin
 // build.gradle.kts
 dependencies {
-    compileOnly(files("libs/Headcount-1.1.0.jar"))
+    compileOnly(files("libs/Headcount-1.1.1.jar"))
 }
 ```
 

@@ -1,5 +1,36 @@
 # Changelog
 
+## 1.1.1 (2026-11-12)
+
+Replace the jar and restart the server. Nothing in the database changes. `config.yml`, `integrations.yml` and `lang/en_US.yml` are now `config-version: 3`. Their new options and messages use the defaults until you add them.
+
+### Headcount Studio is part of the plugin
+- Studio is now served by the plugin, so it's there whenever the server is running. `/hca studio` shows its link and a password. `/hca studio reset` makes a new password and signs every browser out. The permission, `headcount.admin.studio`, is op-only and not part of `headcount.admin`, because Studio can edit every config file and run any command as the console.
+- By default Studio shares the Minecraft port: browsers and game clients connect to the same address, so it works on hosts that give you only one port. `studio.port` gives it a port of its own, and `studio.public-url` sets the link for a subdomain or reverse proxy. [docs/studio.md](docs/studio.md) explains it.
+- Studio runs commands as the console directly, so it no longer needs RCON. Sign-ins, saves and commands are logged to the console and the audit log, and five wrong passwords lock an address out for five minutes.
+- The Python app and the launchers in the `Headcount Studio` folder are gone.
+
+### Studio
+- Action lists can be edited where they're used. An action that runs a list opens that list in place, with every other place that runs it listed, since the change applies to all of them. A new **Action lists** page shows every list and where it's used. **Make a list from these** turns ticked actions into a new list, and renaming a list updates every place that runs it. The add-action picker lists your own lists first.
+- Every list in Studio has the same row controls: move up, move down (action cards only had up), duplicate and remove. Outcome rules, titles and shop tiers can be reordered now, shop items and statuses duplicated, and console command lists dragged into order.
+- **Set up** is split into **Game** and **Server**, so the slide-in menu fits on a phone without scrolling. Action cards no longer push drawers sideways on phones, drawer footers stay on one row, and the add-action picker keeps its search box in view.
+- Every item in the game draws properly now: 1,657 of them, built from Minecraft's own models. Stairs, fences, anvils, slabs, walls, trapdoors and other non-cube blocks used to draw as plain cubes, and shields, banners, beds, shulker boxes, chests, decorated pots, the conduit and mob heads were flat colour squares. Blocks also face the right way, as they do in the game's inventory. A Studio that already downloaded the textures downloads them again once, in the new format.
+- A new icon: a pixel player head on Studio's teal, sharp at tab size, with a matching home-screen icon.
+
+### Pets and trapped chests
+- Three new player hooks in `config.yml`: `hurt-pet` and `kill-pet` run on a player who hurts or kills someone else's tamed pet, and `open-trapped-chest` on a player who opens a trapped chest. They can run any action, like turning the player's PvP on and locking it. They're empty by default, with examples in the comments. `hooks.cooldowns` keeps them from running on every hit.
+- `pvp.pet-protection` in `integrations.yml` stops players from hurting the pets of players they couldn't fight (PvP off, new-player or respawn protection). It's off by default.
+
+### Integrations
+- Headcount remembers which plugins it found on the last start. A plugin that's new takes over the jobs it can do, a plugin that's gone hands its job back to the included version (or `none`), and each switch is one line in the console saying how to undo it. `auto-switch: false` in `integrations.yml` turns it off. On the first start after upgrading, it only notes what's installed.
+- A missing `economy`, `discord` or `bedrock` provider in an old `integrations.yml` now means `none`, like the bundled file, instead of Vault, DiscordSRV and Floodgate.
+
+### Test server and docs
+- `TestServer/setup.sh` downloads only Paper now. `--with-plugins` gets every plugin Headcount works with, and `--with-bedrock` just Geyser and Floodgate. The bot tests download their own plugins.
+- The README lists every plugin Headcount works with and what it uses each one for.
+- The test-night plan covers Geyser and Floodgate and Headcount's included versions only. The other integrations moved to TESTING.md.
+- The bot tests are up to date with 1.1 again (they still expected 1.0's 27 starting heads and old config text), and a new suite covers the pet and trapped-chest hooks. A full run is 369 checks.
+
 ## 1.1.0 (2026-11-11)
 
 Restart the server after installing it instead of using `/reload`. The database upgrades itself on the first start. Every config file is now `config-version: 2`, and the start-up warning names any files that are older. [installation.md](docs/installation.md#updating) says what to copy into existing configs.
