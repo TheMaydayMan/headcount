@@ -53,6 +53,25 @@ To run one suite: `./reset-bot.sh`, then `node tests-<name>.js`. Several take a 
 | tests-api | the API methods, an addon status source and action type, and the events, including changing and cancelling them |
 | crash-offer, crash-take | kill -9 with a trade offer open or a take-item active. Their second halves, crash-offer-rejoin and crash-take-rejoin, run after the restart and check the items come back exactly once. |
 
+## The bare server (1.1 suites)
+
+The bot server above hands every job to a plugin, so Headcount's own versions (the 1.1 defaults) never run there. A second server has no plugin but Headcount:
+
+```bash
+./setup-bare.sh    # once, after ./setup.sh: work-bare/botserver on port 25567
+./run-bare.sh      # wipes it, then runs the five suites below in order (about 10 minutes)
+```
+
+Results go to `work-bare/runs/summary.txt`, and Headcount's unexpected console warnings to `work-bare/runs/headcount-warnings.txt`. To run one suite by hand, point the scripts at it: `HC_BOT_DIR=$PWD/work-bare HC_BOT_PORT=25567 ./reset-bot.sh`, then the same variables for `node tests-bare-<name>.js`. Don't run both servers' suites at once: on a 4-core machine the timing checks (pistons, water, pickups) start to fail.
+
+| Suite | What it covers |
+|---|---|
+| tests-bare-pvp | the included PvP: toggle and cooldown, new-player and respawn protection, blocked melee, arrows and potions, the combat tag and what it blocks, combat logging and kicks, kill heads and the killer-only pickup, keepInventory, the lock, forced worlds, message channels, pearls, combat-log actions. Needs players who are still new, so it runs first. |
+| tests-bare-included | the included permissions (applied again on join, `value: false` beating op), jail (also while combat-tagged), mute, AFK, placeholders `included` and `none`, the vault title's live `<score>` and its color, and a raw-tag sweep |
+| tests-bare-studio | Headcount Studio over HTTP on the Minecraft port: sign-in, the write checks, saves, backups and the changed-on-disk refusal, commands, export, path checks, sign-out, a new password, the lockout |
+| tests-bare-reset | `/hca reset hard` and `/hca reset cycle`: permissions, wrong and expired codes, keep-heads and delete-heads, run IDs, defunct heads, deletion in containers, shulker boxes, bundles and on join, backups |
+| tests-bare-config | `cycle.time-zone` forms, missing options and providers falling back to the defaults, the 1-minute title and boss bar, a live cycle end, a new player's sidebar, and auto-switch as PlaceholderAPI is added and removed. It restarts the server, so it runs last. |
+
 ## Bedrock (bedrock/)
 
 `bedrock/bedrock-test.js` joins the main test server through Geyser with [bedrock-protocol](https://github.com/PrismarineJS/bedrock-protocol) clients (`npm install` in `bedrock/`). The test server needs Geyser and Floodgate for it, from `TestServer/setup.sh --with-bedrock`. Offline test clients can't sign in to Xbox, so for the test only, set in `TestServer/plugins/Geyser-Spigot/config.yml`: `auth-type: offline`, `validate-bedrock-login: false`, and `transport: both` with `webrtc-port: 19133` (the clients speak RakNet). Put the original file back afterwards. Run it with the server's console input file as the first argument:
@@ -60,11 +79,13 @@ To run one suite: `./reset-bot.sh`, then `node tests-<name>.js`. Several take a 
 - `node bedrock-test.js <console-file> single`: one client, through Floodgate. Set `bedrock.provider: floodgate` in integrations.yml first, since the default is `none`. It checks that Headcount sees a Bedrock player, the vault opens as a chest menu, and the sidebar arrives as a Bedrock sidebar.
 - `node bedrock-test.js <console-file> trade`: two clients, with Floodgate moved out of `plugins/` and `bedrock.provider: geyser` (offline clients all get the same Floodgate UUID). It checks Bedrock detection through Geyser and the typed `/trade accept` request text.
 
+`npm install` builds raknet-native, which ships prebuilt binaries named after the kernel's major version (`prebuilds/linux-5-x64`). On a newer kernel the install fails: use `npm install --ignore-scripts` and link the folder under the running kernel's number (`ln -s linux-5-x64 node_modules/raknet-native/prebuilds/linux-6-x64`). `HC_BEDROCK_RAKNET=jsp-raknet` picks the pure-JavaScript backend instead, but it timed out against Geyser 2.12.1.
+
 Offline clients all have XUID 0. The script gives each client its own XUID; with bedrock-protocol 3.61.0 also change `XUID: '0'` to `XUID: String(client.profile.xuid || '0')` in `node_modules/bedrock-protocol/src/handshake/login.js`, or the second client is turned away as "already logged in". Delete the test players' files in `TestServer/world/players/data/` afterwards.
 
 ## What the bots can't test
 
-The Bedrock test checks the packets, not what a real Bedrock client draws, and it can't sign in to Xbox. The bots also can't move, so the statuses that come from movement (flying, gliding, swimming, sleeping, falling) aren't covered, and there is no DiscordSRV bot token or paid plugin (ItemsAdder, Oraxen, Nexo) to test against. These are all in the manual checklist in [TESTING.md](../../TESTING.md).
+The Bedrock test checks the packets, not what a real Bedrock client draws, and it can't sign in to Xbox. The bots also can't move, so the statuses that come from movement (flying, gliding, swimming, sleeping, falling) aren't covered, nor are the combat tag's flight and elytra blocks or moving to end AFK (chat ending it is), and there is no DiscordSRV bot token or paid plugin (ItemsAdder, Oraxen, Nexo) to test against. These are all in the manual checklist in [TESTING.md](../../TESTING.md).
 
 ## Files
 
@@ -72,9 +93,10 @@ The Bedrock test checks the packets, not what a real Bedrock client draws, and i
 |---|---|
 | `setup.sh` | One-time setup (above). |
 | `run-all.sh` | The full run on a wiped server. |
+| `setup-bare.sh`, `run-bare.sh` | The bare server: set up once, then the five `tests-bare-*` suites on it. |
 | `reset-bot.sh`, `restart-bot.sh`, `kill-bot.sh` | Start from clean data, restart, crash the bot server. |
-| `lib.js` | Shared helpers: bots, console input, the server log, read-only database queries. |
-| `tests-*.js`, `crash-*.js` | The suites in the table. |
+| `lib.js` | Shared helpers: bots, console input, the server log (without its color codes), read-only database queries. Action bars are logged with the chat, marked `[actionbar]`. `HC_BOT_DIR` and `HC_BOT_PORT` pick the server. |
+| `tests-*.js`, `crash-*.js` | The suites in the tables. |
 | `test-lists.yml` | The test-only action lists `reset-bot.sh` adds to actions.yml. |
 | `addon/` | The test addon's source, its `plugin.yml`, and `printcp.gradle` (prints the compile classpath). |
 | `bedrock/` | The Bedrock test (it has its own `package.json`). |

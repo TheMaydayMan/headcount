@@ -17,7 +17,9 @@ const logSince = (o) => fs.readFileSync(LOG).slice(o).toString();
 
 function bot(name) {
   return new Promise((resolve, reject) => {
-    const c = createClient({ host: '127.0.0.1', port: 19132, username: name, offline: true, version: '1.26.60', skipPing: true });
+    const c = createClient({ host: '127.0.0.1', port: 19132, username: name, offline: true, version: '1.26.60', skipPing: true,
+      // raknet-native needs a native build; HC_BEDROCK_RAKNET=jsp-raknet uses the pure-JavaScript one instead
+      raknetBackend: process.env.HC_BEDROCK_RAKNET || 'raknet-native' });
     // offline profiles all have XUID 0 (Geyser then sees one player twice): give each its own. The offline
     // session is made inside createClient, before any listener could see it, so set it on the profile here.
     if (c.profile) c.profile.xuid = String(2535400000000000 + (name.endsWith('One') ? 1 : 2));

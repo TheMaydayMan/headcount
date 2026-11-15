@@ -23,7 +23,7 @@
 
 ## Admins
 
-The admin command is `/hcadmin`, also available as `/hca` or `/hc admin`. `headcount.admin`, which ops have by default, grants every admin permission except the hard reset.
+The admin command is `/hcadmin`, also available as `/hca` or `/hc admin`. `headcount.admin`, which ops have by default, grants every admin permission except the hard reset and Studio. Any one of the permissions below is enough to use `/hca` for that subcommand, so a moderator can be given just `headcount.admin.audit`, say.
 
 | Command | Permission | Does |
 |---|---|---|

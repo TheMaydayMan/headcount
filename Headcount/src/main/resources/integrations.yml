@@ -86,7 +86,7 @@ pvp:
       block-flight: true           # flying stops and can't start again (never affects creative or spectator)
       block-elytra: false          # can't start gliding
       block-ender-pearls: false    # can't throw ender pearls
-      block-teleport: true         # teleports by commands and plugins (/spawn, /home, /tpa...) fail
+      block-teleport: true         # teleports by commands and plugins (/spawn, /home, /tpa...) fail; Headcount's jail and teleport actions don't
       # Commands that can't be used in combat, written without the slash. Namespaced forms like essentials:home are
       # blocked too. Bypass for these and for teleports: headcount.bypass.combat-commands
       blocked-commands: [spawn, home, homes, warp, warps, tpa, tpahere, tpaccept, tpyes, back, rtp, wild, ec, enderchest, hub, lobby]
