@@ -3907,7 +3907,7 @@
   {
    "file": "integrations.yml",
    "path": "pvp.included.combat-tag.block-teleport",
-   "default": "true         # teleports by commands and plugins (/spawn, /home, /tpa...) fail",
+   "default": "true         # teleports by commands and plugins (/spawn, /home, /tpa...) fail; Headcount's jail and teleport actions don't",
    "help": ""
   },
   {
