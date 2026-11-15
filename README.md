@@ -6,7 +6,7 @@ Headcount is a Paper plugin that turns player heads into a whole server economy.
 
 Then the vaults empty, and it all starts again.
 
-**[Download Headcount 1.1.1](https://github.com/TheMaydayMan/headcount/releases/latest)** for Paper 26.3 and Java 25.
+**[Download Headcount 1.1.2](https://github.com/TheMaydayMan/headcount/releases/latest)** for Paper 26.3 and Java 25.
 
 ## How it plays
 
