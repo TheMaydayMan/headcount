@@ -5,9 +5,10 @@ import com.gradychastain.headcount.action.ActionManager;
 import com.gradychastain.headcount.action.DurationSpec;
 import com.gradychastain.headcount.api.action.ActionContext;
 import com.gradychastain.headcount.api.action.ActionHandler;
-import com.gradychastain.headcount.integration.moderation.ModerationHook;
 import com.gradychastain.headcount.integration.moderation.ModerationHook.Kind;
+import com.gradychastain.headcount.integration.moderation.ModerationHook;
 import com.gradychastain.headcount.util.Cfg;
+import com.gradychastain.headcount.util.Teleports;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
@@ -91,7 +92,7 @@ final class ModerationActions {
                     }
                     Location from = p.getLocation();
                     ctx.data().put("return", from.getWorld().getName() + "," + from.getX() + "," + from.getY() + "," + from.getZ() + "," + from.getYaw() + "," + from.getPitch());
-                    p.teleport(jailAt);
+                    Teleports.teleport(p, jailAt);
                     plugin.lang().send(p, "moderation.jailed", "reason", r);
                     return true;
                 }
@@ -105,7 +106,7 @@ final class ModerationActions {
                 Location jailAt = jailLocation(plugin);
                 if (p == null || jailAt == null) return;
                 double radius = plugin.integrations().includedJail().getDouble("radius", 8);
-                if (!p.getWorld().equals(jailAt.getWorld()) || p.getLocation().distanceSquared(jailAt) > radius * radius) p.teleport(jailAt);
+                if (!p.getWorld().equals(jailAt.getWorld()) || p.getLocation().distanceSquared(jailAt) > radius * radius) Teleports.teleport(p, jailAt);
             }
 
             @Override
@@ -124,7 +125,7 @@ final class ModerationActions {
                                 Double.parseDouble(parts[3]), Float.parseFloat(parts[4]), Float.parseFloat(parts[5]));
                     }
                     if (back == null) back = p.getWorld().getSpawnLocation();
-                    p.teleport(back);
+                    Teleports.teleport(p, back);
                     plugin.lang().send(p, "moderation.released");
                     return;
                 }

@@ -5,6 +5,7 @@ import com.gradychastain.headcount.player.PlayerData;
 import com.gradychastain.headcount.status.CombatTracker;
 import com.gradychastain.headcount.text.Vars;
 import com.gradychastain.headcount.util.Cfg;
+import com.gradychastain.headcount.util.Teleports;
 import net.kyori.adventure.bossbar.BossBar;
 import net.kyori.adventure.key.Key;
 import net.kyori.adventure.sound.Sound;
@@ -364,7 +365,8 @@ public final class IncludedPvP implements PvPHook, Listener, TabExecutor {
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
     public void onTeleport(PlayerTeleportEvent event) {
         Player p = event.getPlayer();
-        if (!tagged(p) || !cfg().getBool("combat-tag.block-teleport", true) || p.hasPermission("headcount.bypass.combat-commands")) return;
+        if (!tagged(p) || !cfg().getBool("combat-tag.block-teleport", true) || p.hasPermission("headcount.bypass.combat-commands")
+                || Teleports.isOwn(p)) return;
         var cause = event.getCause();
         if (cause == PlayerTeleportEvent.TeleportCause.COMMAND || cause == PlayerTeleportEvent.TeleportCause.PLUGIN) {
             event.setCancelled(true);
