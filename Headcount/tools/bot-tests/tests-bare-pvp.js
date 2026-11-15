@@ -164,9 +164,11 @@ const recent = (bot, mark) => bot.chatLog.slice(mark).join(' | ');
   record('kill: the same killer gets no second head this cycle, and is told', headsIn(A).length === headsBefore + 1 && await waitChat(A, /already took Bee's head/, mark, 1500), recent(A, mark).slice(0, 120));
 
   // respawn protection (5s): Bee just respawned; Ace teleports over and hits at once
+  await waitFor(() => B.health >= 20, 3000, 100);   // respawned (a tp before the respawn would be undone by it)
   await sleep(200);
   serverConsole('minecraft:tp Bee Ace');   // Ace is tagged from the kill and can't be teleported; Bee's tag ended at death
-  await sleep(600);
+  // Bee comes back as a new entity: wait until Ace sees it within reach
+  await waitFor(() => { const e = near(A, 'Bee'); return e && e.position.distanceTo(A.entity.position) < 3; }, 2500, 100);
   mark = A.chatLog.length;
   hb = B.health;
   A.attack(near(A, 'Bee'));
@@ -228,8 +230,11 @@ const recent = (bot, mark) => bot.chatLog.slice(mark).join(' | ');
   B.quit();
   await sleep(2500);
   record('combat log: everyone else is told', await waitChat(A, /Bee logged out during a fight/, mark, 2000), recent(A, mark).slice(0, 100));
-  const cobble = Object.values(A.entities).filter((e) => e.name === 'item').length;
-  record('combat log: they die where they stood and drop their items', cobble > 0, `item entities ${cobble}`);
+  // ask the server, since the drop can be out of Ace's view
+  const killed = await consoleOut('minecraft:kill @e[type=item,nbt={Item:{id:"minecraft:cobblestone"}}]', 800);
+  // Ace stands next to Bee, so the stack may already be in Ace's inventory
+  const aceCobble = A.inventory.items().some((i) => i.name === 'cobblestone');
+  record('combat log: they die where they stood and drop their items', /Killed /.test(killed) || aceCobble, `${killed.trim().split('\n').pop()} / Ace picked it up: ${aceCobble}`);
   record('combat log: Ace already has Bee\'s head this cycle, so no second kill head', db("SELECT COUNT(*) FROM heads WHERE source LIKE 'kill%'")[0][0] === hits);
   const B2 = await makeBot('Bee');
   await sleep(3000);
