@@ -149,7 +149,9 @@ const recent = (bot, mark) => bot.chatLog.slice(mark).join(' | ');
   const deathAt = near(A, 'Bee').position.clone();
   A.attack(near(A, 'Bee'));
   await sleep(800);
-  serverConsole(`minecraft:tp Ace ${deathAt.x} ${deathAt.y} ${deathAt.z}`);   // onto the drop
+  // the killer is combat-tagged now and can't be teleported, so the drop comes to them
+  serverConsole(`execute at Ace run minecraft:tp @e[type=item,distance=..12] Ace`);
+  void deathAt;
   await sleep(2000);
   const got = headsIn(A).filter((i) => text(i).includes(B.player.uuid.replace(/-/g, '').slice(0, 0)) && /Bee/.test(text(i)));
   record('kill: the killer picks up a fresh head of the victim', headsIn(A).length === headsBefore + 1 && got.length >= 1, `${headsBefore}->${headsIn(A).length}`);
@@ -191,9 +193,13 @@ const recent = (bot, mark) => bot.chatLog.slice(mark).join(' | ');
   await sleep(1000);
   const aHeads = headsIn(A).length;
   C.attack(near(C, 'Bee'));
-  await sleep(3500);
+  await sleep(800);
+  // put the drop on Ace, who isn't the killer, so the check means something
+  serverConsole('execute at Cee run minecraft:tp @e[type=item,distance=..12] Ace');
+  await sleep(2700);
   record('kill pickup: for 15s only the killer can pick the head up', headsIn(A).length === aHeads, `Ace ${aHeads}->${headsIn(A).length}`);
-  serverConsole('minecraft:tp Cee Ace');
+  // Cee is tagged from the kill and can't be teleported: bring the head to Cee instead
+  serverConsole('execute at Cee run minecraft:tp @e[type=item,distance=..12] Cee');
   await sleep(2500);
   // the head Cee's kill made, by its ID in the database
   const cUuid = db("SELECT uuid FROM players WHERE name='Cee'")[0][0];
