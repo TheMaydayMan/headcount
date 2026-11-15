@@ -14,7 +14,7 @@ Replace the jar and restart the server. Nothing in the database or the config fi
 - `/pvp status` tells a new player how long their new-player protection has left.
 
 ### Tests and docs
-- The 1.1 features have bot tests now. A second bot server runs Headcount with no other plugin, so its own PvP, permissions, moderation, AFK and placeholders are what gets tested, and five suites cover them (`tools/bot-tests/run-bare.sh`): the included PvP, the other included providers, Studio over HTTP, the resets, and config handling with auto-switch. That's 189 checks, on top of the 369 in `run-all.sh`.
+- The 1.1 features have bot tests now. A second bot server runs Headcount with no other plugin, so its own PvP, permissions, moderation, AFK and placeholders are what gets tested, and five suites cover them (`tools/bot-tests/run-bare.sh`): the included PvP, the other included providers, Studio over HTTP, the resets, and config handling with auto-switch. That's 191 checks, on top of the 369 in `run-all.sh`.
 - Unit tests check the score table in TEST-NIGHT.md against the bundled formula, and the time zone forms `cycle.time-zone` accepts.
 - The bot tests read the server console without its color codes, and see action bar messages. Before, every check that read `/hca status` failed wherever Paper colored its console.
 - The Bedrock test can use the pure-JavaScript RakNet (`HC_BEDROCK_RAKNET=jsp-raknet`), and its README says how to install raknet-native on a newer kernel.
