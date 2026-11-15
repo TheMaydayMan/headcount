@@ -247,6 +247,7 @@ public final class IncludedPvP implements PvPHook, Listener, TabExecutor {
             }
         }
         respawnUntil.values().removeIf(t -> t < System.currentTimeMillis());
+        lastNotice.values().removeIf(t -> System.currentTimeMillis() - t > 2000);
     }
 
     private void hideBar(UUID id) {
@@ -272,7 +273,11 @@ public final class IncludedPvP implements PvPHook, Listener, TabExecutor {
     }
 
     private void notify(Player p, String event, String langKey, Vars vars) {
-        String key = p.getUniqueId() + ":" + langKey;
+        // Held back only when it's the same message: /home right after /spawn still says /home is blocked. The
+        // seconds left don't make it a different message.
+        Map<String, Object> detail = new HashMap<>(vars.asMap());
+        detail.remove("seconds");
+        String key = p.getUniqueId() + ":" + langKey + ":" + detail;
         long now = System.currentTimeMillis();
         Long last = lastNotice.get(key);
         if (last != null && now - last < 1000) return;
