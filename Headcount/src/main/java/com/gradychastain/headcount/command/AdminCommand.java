@@ -52,6 +52,18 @@ public final class AdminCommand implements TabExecutor {
         return s instanceof Player p ? p.getName() + "(" + p.getUniqueId() + ")" : "console";
     }
 
+    /**
+     * Whether the sender may use /hca at all: headcount.admin, or any one of the subcommand permissions on its own
+     * (a moderator with only headcount.admin.audit, or headcount.admin.studio, which isn't part of headcount.admin).
+     * Each subcommand still checks its own permission.
+     */
+    public static boolean anyAdmin(CommandSender s) {
+        if (s.hasPermission("headcount.admin") || s.hasPermission("headcount.admin.reset.cycle") || s.hasPermission("headcount.admin.reset.hard")
+                || s.hasPermission("headcount.admin.vault.edit")) return true;
+        for (String[] sub : SUBS) if (s.hasPermission(sub[1])) return true;
+        return false;
+    }
+
     private boolean perm(CommandSender s, String node) {
         if (s.hasPermission(node)) return true;
         plugin.lang().send(s, "general.no-permission");
@@ -70,7 +82,10 @@ public final class AdminCommand implements TabExecutor {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        if (!perm(sender, "headcount.admin")) return true;
+        if (!anyAdmin(sender)) {
+            plugin.lang().send(sender, "general.no-permission");
+            return true;
+        }
         if (!plugin.isLoaded()) {
             plugin.lang().send(sender, "general.loading");
             return true;
@@ -626,7 +641,7 @@ public final class AdminCommand implements TabExecutor {
 
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
-        if (!sender.hasPermission("headcount.admin")) return List.of();
+        if (!anyAdmin(sender)) return List.of();
         if (args.length <= 1) {
             List<String> out = new ArrayList<>(List.of("help"));
             for (String[] s : SUBS) if (sender.hasPermission(s[1])) out.add(s[0]);

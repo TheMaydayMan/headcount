@@ -41,7 +41,6 @@ commands:
     description: Headcount admin commands.
     aliases: [hca]
     usage: /<command> help
-    permission: headcount.admin
 
 permissions:
   headcount.*:

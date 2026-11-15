@@ -137,7 +137,7 @@ public final class HeadcountCommand implements TabExecutor {
             plugin.lang().send(sender, "help.player." + (e[0].isEmpty() ? "vault" : e[0]), Vars.of("label", label));
         }
         if (sender.hasPermission("headcount.trade")) plugin.lang().send(sender, "help.player.trade");
-        if (sender.hasPermission("headcount.admin")) plugin.lang().send(sender, "help.admin-hint", Vars.of("label", label));
+        if (AdminCommand.anyAdmin(sender)) plugin.lang().send(sender, "help.admin-hint", Vars.of("label", label));
     }
 
     private void top(Player p, boolean last) {
@@ -180,7 +180,7 @@ public final class HeadcountCommand implements TabExecutor {
         if (args.length == 1) {
             List<String> out = new ArrayList<>();
             for (String[] e : PLAYER) if (!e[0].isEmpty() && sender.hasPermission(e[1])) out.add(e[0]);
-            if (sender.hasPermission("headcount.admin")) out.add("admin");
+            if (AdminCommand.anyAdmin(sender)) out.add("admin");
             return filter(out, args[0]);
         }
         if (args[0].equalsIgnoreCase("admin")) return admin.onTabComplete(sender, command, alias, Arrays.copyOfRange(args, 1, args.length));
