@@ -15,7 +15,7 @@ It needs Node.js 20 or newer, curl, python3, and JDK 25 (in `~/.jdks/jdk-25.0.5+
 1. Downloads the integration plugins into `work/plugin-jars` with `TestServer/setup.sh --with-plugins --plugins-dir`, which checks each one's sha256. The test server itself has none of them by default.
 2. Copies the test server's Paper jar and EULA (from the repository's [`TestServer/`](../../../TestServer/README.md), after its `setup.sh` has run, or `$HC_TEST_SERVER`) to `work/botserver`, and adds the plugins the suites use: PvPManager, PlaceholderAPI, LuckPerms, EssentialsX, VaultUnlocked, LibertyBans and AdvancedBan. DiscordSRV, Geyser and Floodgate are left out.
 3. Downloads ViaVersion and ViaBackwards 5.12.3, which let mineflayer's 26.1 clients join Paper 26.3.
-4. Writes the bot server's `server.properties`: offline, port 25566, no whitelist, a flat peaceful world without monsters or spawn protection.
+4. Writes the bot server's `server.properties`: offline, port 25566, no whitelist, a flat peaceful world without monsters or spawn protection, and flight allowed (the bots can't fall, so vanilla would kick one left in the air).
 5. Builds Headcount and the test addon (`addon/`, a small plugin built against the API that `tests-api.js` uses) into the bot server.
 6. Starts the server once so every plugin writes its config, then turns PvPManager's newbie protection off (it would block every PvP test).
 7. Runs `npm install` here (mineflayer 4.39.0).
