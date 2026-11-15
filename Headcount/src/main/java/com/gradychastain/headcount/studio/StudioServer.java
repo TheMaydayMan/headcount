@@ -621,8 +621,11 @@ public final class StudioServer {
         if (target.isFile()) {
             Path dir = data().toPath().resolve("backups").resolve("studio");
             Files.createDirectories(dir);
-            Path to = dir.resolve(name.replace('/', '_') + "." + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss")));
-            Files.copy(target.toPath(), to, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.COPY_ATTRIBUTES);
+            String base = name.replace('/', '_') + "." + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss"));
+            Path to = dir.resolve(base);
+            // Two saves in the same second: keep both backups rather than overwrite the first.
+            for (int n = 2; Files.exists(to); n++) to = dir.resolve(base + "-" + n);
+            Files.copy(target.toPath(), to, StandardCopyOption.COPY_ATTRIBUTES);
             backup = data().toPath().relativize(to).toString().replace('\\', '/');
         }
         Path tmp = target.toPath().resolveSibling(target.getName() + ".tmp");
