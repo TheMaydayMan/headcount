@@ -35,7 +35,9 @@ if "HOOK became-active" not in c:   # messages in the became-active and join hoo
     c = re.sub(r"^  min-playtime: .*$", "  min-playtime: 0", c, count=1, flags=re.M)
     open(d + "config.yml", "w").write(c)
 # the money action pays through the bot server's Vault economy, which the default (none) would skip
+import os
 i = open(d + "integrations.yml").read()
-open(d + "integrations.yml", "w").write(re.sub(r"(economy:\n(?:  #.*\n)*  provider: )none", r"\1vault", i, count=1))
+if any(f.startswith("VaultUnlocked") for f in os.listdir(d + "..")):   # the bare server (setup-bare.sh) has no Vault
+  open(d + "integrations.yml", "w").write(re.sub(r"(economy:\n(?:  #.*\n)*  provider: )none", r"\1vault", i, count=1))
 PY
 echo "hca reload" >> $S/bot-console.in; sleep 3

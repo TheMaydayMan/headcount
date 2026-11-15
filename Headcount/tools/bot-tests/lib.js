@@ -7,6 +7,7 @@ const { execFileSync } = require('child_process');
 const S = process.env.HC_BOT_DIR || require('path').join(__dirname, 'work');
 const CONSOLE = S + '/bot-console.in';
 const LOG = S + '/botserver.log';
+const PORT = Number(process.env.HC_BOT_PORT || 25566);   // setup-bare.sh's server is on 25567
 const DB = S + '/botserver/plugins/Headcount/headcount.db';
 
 const results = [];
@@ -47,7 +48,8 @@ function logSize() {
 
 function logSince(offset) {
   const buf = fs.readFileSync(LOG);
-  return buf.slice(offset).toString('utf8');
+  // Paper colors its console with ANSI codes when it thinks the terminal can show them; the checks read plain text.
+  return buf.slice(offset).toString('utf8').replace(/\x1b\[[0-9;]*m/g, '');
 }
 
 function db(sql) {
@@ -71,7 +73,7 @@ async function waitFor(pred, timeout = 5000, step = 100) {
 
 function makeBot(username) {
   return new Promise((resolve, reject) => {
-    const bot = mineflayer.createBot({ host: '127.0.0.1', port: 25566, username, version: '26.1', auth: 'offline' });
+    const bot = mineflayer.createBot({ host: '127.0.0.1', port: PORT, username, version: '26.1', auth: 'offline' });
     // ViaBackwards rejects this mineflayer version's routine movement packets; the tests don't need walking.
     const write = bot._client.write.bind(bot._client);
     bot._client.write = (name, params) => {
@@ -80,6 +82,15 @@ function makeBot(username) {
     };
     bot.chatLog = [];
     bot.on('messagestr', (m) => bot.chatLog.push(m));
+    // Paper sends action bars as their own packet, which mineflayer doesn't turn into messages. Several 1.1 messages
+    // (the included PvP's) go there, so they're logged too, marked.
+    bot._client.on('action_bar', (p) => {
+      try {
+        const t = p.text && p.text.type ? require('prismarine-nbt').simplify(p.text) : p.text;
+        const ChatMessage = require('prismarine-chat')(bot.registry);
+        bot.chatLog.push('[actionbar] ' + new ChatMessage(typeof t === 'string' ? JSON.parse(t) : t).toString());
+      } catch (e) { bot.chatLog.push('[actionbar] ' + JSON.stringify(p.text)); }
+    });
     bot.on('kicked', (r) => console.log(`[${username}] KICKED ${JSON.stringify(r).slice(0, 150)}`));
     bot.on('error', (e) => console.log(`[${username}] ERROR ${e.message}`));
     bot.once('spawn', () => { bot.physicsEnabled = false; resolve(bot); });
@@ -135,4 +146,4 @@ function summary() {
   return failed.length;
 }
 
-module.exports = { S, sleep, record, serverConsole, setPvp, logSize, logSince, db, waitFor, makeBot, chatSince, waitChat, openWindow, rawClick, itemName, summary, results };
+module.exports = { S, PORT, sleep, record, serverConsole, setPvp, logSize, logSince, db, waitFor, makeBot, chatSince, waitChat, openWindow, rawClick, itemName, summary, results };
