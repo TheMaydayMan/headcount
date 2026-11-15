@@ -5,6 +5,7 @@ import com.gradychastain.headcount.action.ActionManager;
 import com.gradychastain.headcount.api.action.ActionContext;
 import com.gradychastain.headcount.api.action.ActionHandler;
 import com.gradychastain.headcount.util.Cfg;
+import com.gradychastain.headcount.util.Teleports;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
@@ -371,7 +372,7 @@ final class BuffActions {
                         return false;
                     }
                     ctx.data().put("from", encode(p.getLocation()));
-                    p.teleport(dest);
+                    Teleports.teleport(p, dest);
                     return true;
                 }
 
@@ -380,7 +381,7 @@ final class BuffActions {
                     Player p = ctx.player();
                     if (p == null || !(ctx.data().get("from") instanceof String s)) return;
                     Location back = parseLocation(s);
-                    if (back != null) p.teleport(back);
+                    if (back != null) Teleports.teleport(p, back);
                 }
 
                 @Override public boolean revertible() { return returnBack; }
