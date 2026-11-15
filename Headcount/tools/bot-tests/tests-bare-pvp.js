@@ -34,6 +34,7 @@ const recent = (bot, mark) => bot.chatLog.slice(mark).join(' | ');
   let mark = A.chatLog.length;
   A.chat('/pvp status');
   record('/pvp status: PvP starts off', await waitChat(A, /Your PvP is off/, mark, 2000), recent(A, mark).slice(0, 100));
+  record('/pvp status: a new player is told how long their protection lasts', await waitChat(A, /protected as a new player for (9|10)m/, mark, 2000), recent(A, mark).slice(0, 160));
   record('status: a new player is newbie-protected and has PvP off', (await statusOf('Ace', 'newbie-protected')) === 'true' && (await statusOf('Ace', 'in-pvp')) === 'false');
 
   // a newbie can't be hit even by someone with PvP on, and can't hit
