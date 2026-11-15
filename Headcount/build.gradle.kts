@@ -3,7 +3,7 @@ plugins {
 }
 
 group = "com.gradychastain.headcount"
-version = "1.1.1"
+version = "1.1.2"
 description = "Head-economy cycles: collect heads, score, shop, outcomes."
 
 val paperVersion = "26.3.build.246-stable"

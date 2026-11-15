@@ -1,5 +1,25 @@
 # Changelog
 
+## 1.1.2 (2026-11-15)
+
+Replace the jar and restart the server. Nothing in the database or the config files changes. There's one new message, `pvp.status-newbie`, which uses the default until you add it to your lang file.
+
+### Fixes
+- The admin permissions work on their own. `/hca` used to check `headcount.admin` before anything else, so a player given only `headcount.admin.audit` couldn't run `/hca audit`, and `headcount.admin.studio`, which isn't part of `headcount.admin`, couldn't be given to anyone without the rest. Now any admin permission opens `/hca`, and each subcommand still checks its own.
+- Jails work on players in combat. The included PvP's combat tag blocks teleports by plugins, and that caught Headcount's own: a player jailed mid-fight got the message but stayed where they were, and a player still tagged when their jail ended stayed in the jail for good. The jail, the release and the teleport action now get through.
+- The included PvP no longer drops a message because a different one came a second before. Typing `/home` right after `/spawn` in combat was blocked without a word. Only the same message is held back now.
+- Studio keeps both backups when a file is saved twice in the same second. The second backup used to overwrite the first, so the version from before both saves was lost.
+
+### PvP
+- `/pvp status` tells a new player how long their new-player protection has left.
+
+### Tests and docs
+- The 1.1 features have bot tests now. A second bot server runs Headcount with no other plugin, so its own PvP, permissions, moderation, AFK and placeholders are what gets tested, and five suites cover them (`tools/bot-tests/run-bare.sh`): the included PvP, the other included providers, Studio over HTTP, the resets, and config handling with auto-switch. That's 189 checks, on top of the 369 in `run-all.sh`.
+- Unit tests check the score table in TEST-NIGHT.md against the bundled formula, and the time zone forms `cycle.time-zone` accepts.
+- The bot tests read the server console without its color codes, and see action bar messages. Before, every check that read `/hca status` failed wherever Paper colored its console.
+- The Bedrock test can use the pure-JavaScript RakNet (`HC_BEDROCK_RAKNET=jsp-raknet`), and its README says how to install raknet-native on a newer kernel.
+- TEST-NIGHT.md no longer says `/hca status` shows `muted`, since there's no such status by default. commands.md says Studio isn't part of `headcount.admin` either.
+
 ## 1.1.1 (2026-11-12)
 
 Replace the jar and restart the server. Nothing in the database changes. `config.yml`, `integrations.yml` and `lang/en_US.yml` are now `config-version: 3`. Their new options and messages use the defaults until you add them.
