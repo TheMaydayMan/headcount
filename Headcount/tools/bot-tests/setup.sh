@@ -49,6 +49,8 @@ enforce-secure-profile=false
 server-port=25566
 white-list=false
 spawn-protection=0
+# the bots can't fall (physics is off), so vanilla would kick one left in the air for floating
+allow-flight=true
 view-distance=4
 simulation-distance=4
 level-type=minecraft\:flat
