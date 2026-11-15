@@ -41,6 +41,8 @@ commands:
     description: Headcount admin commands.
     aliases: [hca]
     usage: /<command> help
+    # Any one of these opens /hca (Bukkit splits the list at ';'); each subcommand checks its own.
+    permission: headcount.admin;headcount.admin.cycle;headcount.admin.vault;headcount.admin.vault.edit;headcount.admin.heads;headcount.admin.points;headcount.admin.titles;headcount.admin.history;headcount.admin.effects;headcount.admin.reset;headcount.admin.reset.cycle;headcount.admin.reset.hard;headcount.admin.trade;headcount.admin.audit;headcount.admin.reload;headcount.admin.debug;headcount.admin.run;headcount.admin.studio
 
 permissions:
   headcount.*:

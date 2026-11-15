@@ -91,7 +91,7 @@ A score is also the points it earns. So after a cycle of trading with everyone, 
 
 ### 0.2 The resets
 
-- [ ] **Hard reset permission:** *console* `deop <you>`, then `/hca reset hard`: "no permission". *console* `op <you>` to get it back. (3.2 takes away just the hard reset permission.)
+- [ ] **Hard reset permission:** *console* `deop <you>`, then `/hca reset hard`: "Unknown or incomplete command", since Paper hides `/hca` from players with no admin permission. *console* `op <you>` to get it back. (3.2 takes away just the hard reset permission.)
 - [ ] **Wrong code:** `/hca reset hard`, then type a different 4-digit number: "Wrong code ... cancelled".
 - [ ] **Expired code:**
   1. On **General**, set the confirm timeout to `5s`.
