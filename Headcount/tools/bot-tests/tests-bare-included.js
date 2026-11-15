@@ -104,6 +104,37 @@ const RAW = /<\/?(?:red|green|gray|gold|yellow|white|aqua|dark_\w+|bold|italic|c
   const rel = p2.entity.position;
   record('jail: when it ends they are released back where they were', /You have been released/.test(recent(p2, mark)) && Math.abs(rel.x) < 1.5 && Math.abs(rel.z) < 1.5, `${rel}`);
 
+  // --- jail during a fight: the combat tag blocks teleports, but not Headcount's own jail and release ------------------
+  serverConsole(`pvp ${N} on`);
+  serverConsole('pvp Opal on');
+  serverConsole(`minecraft:tp Opal ${N}`);
+  await sleep(1200);
+  const opalSees = Object.values(op.entities).find((e) => e.username === N);
+  if (opalSees) op.attack(opalSees);
+  await sleep(800);
+  record('setup: both players are in combat', (await statusOf(N, 'combat-tagged')) === 'true');
+  await consoleOut(`hca run ${N} t-jail`, 1500);
+  const jat = p2.entity.position;
+  record('jail in combat: a combat-tagged player is still moved to the jail', Math.abs(jat.x - 40) < 1.5 && Math.abs(jat.z - 40) < 1.5, `${jat}`);
+  // still tagged at the release: hit again from inside the jail
+  serverConsole(`minecraft:tp Opal ${N}`);
+  await sleep(1200);
+  const before = p2.entity.position.clone();
+  const opalSees2 = Object.values(op.entities).find((e) => e.username === N);
+  if (opalSees2) op.attack(opalSees2);
+  await sleep(800);
+  const taggedAtRelease = (await statusOf(N, 'combat-tagged')) === 'true';
+  mark = p2.chatLog.length;
+  serverConsole(`hca effects ${N} remove all`);   // ends the jail now
+  await sleep(1500);
+  void before;
+  record('setup: still in combat at the release', taggedAtRelease);
+  const rat = p2.entity.position;
+  record('jail in combat: release still sends them back, tagged or not', /You have been released/.test(recent(p2, mark)) && !(Math.abs(rat.x - 40) < 1.5 && Math.abs(rat.z - 40) < 1.5), `${rat}`);
+  serverConsole(`pvp ${N} off`);
+  serverConsole('pvp Opal off');
+  await waitFor(async () => (await statusOf(N, 'combat-tagged')) === 'false', 20000, 1000);
+
   // --- mute ------------------------------------------------------------------------------------------------------
   await consoleOut(`hca run ${N} t-mute`, 1200);
   record('status: muted is true', (await statusOf(N, 'muted')) === 'true');
