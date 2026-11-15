@@ -195,9 +195,15 @@ const recent = (bot, mark) => bot.chatLog.slice(mark).join(' | ');
   record('kill pickup: for 15s only the killer can pick the head up', headsIn(A).length === aHeads, `Ace ${aHeads}->${headsIn(A).length}`);
   serverConsole('minecraft:tp Cee Ace');
   await sleep(2500);
-  record('kill pickup: the killer picks it up', headsIn(C).some((i) => /Bee/.test(text(i))), headsIn(C).map((i) => text(i).slice(0, 40)).join(' / '));
+  // the head Cee's kill made, by its ID in the database
+  const cUuid = db("SELECT uuid FROM players WHERE name='Cee'")[0][0];
+  const bUuid = db("SELECT uuid FROM players WHERE name='Bee'")[0][0];
+  const killHead = (db(`SELECT head_id FROM heads WHERE source LIKE 'kill%' AND recipient='${cUuid}' AND owner='${bUuid}'`)[0] || [null])[0];
+  const cHas = () => !!killHead && headsIn(C).some((i) => text(i).includes(killHead));
+  await waitFor(cHas, 4000, 300);
+  record('kill pickup: the killer picks it up', cHas(), `head ${killHead} / Cee holds ${headsIn(C).length} head(s)`);
   await sleep(1500);
-  record('keepInventory: the victim keeps their items, and the kill head still dropped', B.inventory.items().some((i) => i.name === 'dirt') && headsIn(C).some((i) => /Bee/.test(text(i))));
+  record('keepInventory: the victim keeps their items, and the kill head still dropped', B.inventory.items().some((i) => i.name === 'dirt') && !!killHead, `head ${killHead}`);
   serverConsole('minecraft:gamerule keep_inventory false');
 
   // --- combat log --------------------------------------------------------------------------------------------
