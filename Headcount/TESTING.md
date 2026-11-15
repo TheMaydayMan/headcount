@@ -1,11 +1,11 @@
 # Manual test checklist
 
-This checklist predates 1.1. The 1.1 features (resets, defunct heads, time zone codes, `<score>` and the live vault title, the included PvP, permissions and AFK) aren't in it or in the bot tests. They are covered by the test night plan, [TEST-NIGHT.md](TEST-NIGHT.md), which also runs through most of what is below in a normal play session. Test night runs no plugins besides Geyser and Floodgate, so the other integrations' 1.1 provider settings are checked in [section 13](#13-other-plugins) instead.
+This checklist predates 1.1. The 1.1 features (resets, defunct heads, time zone codes, `<score>` and the live vault title, the included PvP, permissions, moderation and AFK, Studio, auto-switch) aren't in it. Since 1.1.2 the bot tests cover them on a server with no other plugins (the `tests-bare-*` suites), and the test night plan, [TEST-NIGHT.md](TEST-NIGHT.md), covers them with real players, along with most of what is below. Test night runs no plugins besides Geyser and Floodgate, so the other integrations' 1.1 provider settings are checked in [section 13](#13-other-plugins) instead.
 
 Some of it is already tested automatically:
 - `./gradlew test` runs the unit tests for the pure logic, such as expressions, durations, cycle boundaries across DST and audit rotation.
 - `/hca selftest` checks every configured item, menu, message, action list and status reference.
-- The bot tests in [tools/bot-tests](tools/bot-tests/README.md) play sections 1 to 10 and 12 with bot clients, crash tests included. Run them with `tools/bot-tests/run-all.sh`.
+- The bot tests in [tools/bot-tests](tools/bot-tests/README.md) play sections 1 to 10 and 12 with bot clients, crash tests included. Run them with `tools/bot-tests/run-all.sh`. `tools/bot-tests/run-bare.sh` runs the 1.1 suites on a server with Headcount alone.
 
 A person is still needed for anything that depends on a real client or on something the test server lacks: how menus and the sidebar look, Bedrock with a real Xbox sign-in, the movement statuses (the bots can't move), DiscordSRV, LiteBans and the custom item plugins. Those are in the checklist below. Go through the whole list for a release or after big changes.
 

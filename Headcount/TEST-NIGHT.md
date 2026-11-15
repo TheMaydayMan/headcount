@@ -162,7 +162,7 @@ Make these changes in Studio's **Set up** pages. Save them all at once with **Re
 - [ ] **Bedrock:** the same messages arrive in the same order, and the sidebar shows the same lines. `/hca status <them>` shows `bedrock-player` true, and it's false for Java players.
 - [ ] **Everyone:** `/hc help` lists only player commands, including `/pvp`. Ops also see `/hca help`, which lists both resets.
 - [ ] **Everyone:** `/hc` opens your vault with 18 of your own heads and 9 empty slots. The title shows 1 unique and a score colored by sign (see the table above). On Bedrock, the same chest menu works.
-- [ ] **Everyone:** `/pvp status` says PvP is **off** and that new players are protected for 10 minutes.
+- [ ] **Everyone:** `/pvp status` says PvP is **off**, and how long your new-player protection has left (10 minutes from your first join).
 - [ ] **Everyone:** `/hc sidebar` hides the sidebar. Run it again to bring it back, and leave it on. It ticks down.
 - [ ] **Everyone:** check that each of these looks right:
   - [ ] `/hc points`
@@ -383,7 +383,7 @@ Then:
 - [ ] Studio's **Effects** page lists every running effect for everyone. Its ✕ button removes one, after asking.
 - [ ] `/hca hook first-join P1`, `/hca hook first-join-cycle P1` and `/hca hook warning:1m` replay those hooks.
 - [ ] **Moderation, included** (Headcount's own), on a willing player:
-  - [ ] `/hca run P test-mod` mutes them for 1 minute. Chat and `/msg` are blocked, and `/hca status` shows `muted`. It lifts on its own.
+  - [ ] `/hca run P test-mod` mutes them for 1 minute. Chat and `/msg` are blocked (there's no `muted` status in the bundled statuses.yml, so `/hca status` doesn't list it). It lifts on its own.
   - [ ] a `warn` (a message), and a `kick`
   - [ ] a `jail` with a 2-minute duration. They get moved to the jail location, and walking more than 8 blocks away pulls them back. `/spawn` is blocked but `/msg` works. When it ends, they go back to where they were.
   - [ ] a short timed `ban`. They show up on the vanilla ban list (`banlist`), and it lifts on its own.
