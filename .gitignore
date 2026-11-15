@@ -5,6 +5,7 @@ Headcount/build/
 # Bot tests: made by tools/bot-tests/setup.sh
 Headcount/tools/bot-tests/node_modules/
 Headcount/tools/bot-tests/work/
+Headcount/tools/bot-tests/work-bare/
 Headcount/tools/bot-tests/bedrock/node_modules/
 
 # Test server: only the files that build it are tracked. setup.sh downloads the server and plugins, and the
