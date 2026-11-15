@@ -247,6 +247,8 @@ pvp:
   toggled-on: "<prefix><red>PvP is now <bold>on</bold>. <gray>Other players with PvP on can attack you."
   toggled-off: "<prefix><green>PvP is now <bold>off</bold>. <gray>Players can't attack you, and you can't attack them."
   status: "<prefix><gray>Your PvP is <white><state></white>."
+  # Sent after status to a player still protected as new. <time> is how long the protection has left.
+  status-newbie: "<prefix><gray>You're protected as a new player for <white><time></white> more."
   other-status: "<prefix><gray><player>'s PvP is <white><state></white> (in combat: <tagged>)."
   cooldown: "<prefix><red>Wait <seconds>s before switching PvP again."
   toggle-disabled: "<prefix><red>You can't change your own PvP on this server."

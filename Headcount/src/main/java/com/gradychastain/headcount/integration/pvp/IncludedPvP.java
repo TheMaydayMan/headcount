@@ -5,6 +5,7 @@ import com.gradychastain.headcount.player.PlayerData;
 import com.gradychastain.headcount.status.CombatTracker;
 import com.gradychastain.headcount.text.Vars;
 import com.gradychastain.headcount.util.Cfg;
+import com.gradychastain.headcount.util.Formats;
 import com.gradychastain.headcount.util.Teleports;
 import net.kyori.adventure.bossbar.BossBar;
 import net.kyori.adventure.key.Key;
@@ -493,6 +494,11 @@ public final class IncludedPvP implements PvPHook, Listener, TabExecutor {
         boolean current = Boolean.TRUE.equals(pvpEnabled(p));
         if (op.equals("status")) {
             plugin.lang().send(p, "pvp.status", "state", state(current), "seconds", tagSecondsLeft(p));
+            PlayerData pd = plugin.players().get(p.getUniqueId());
+            if (Boolean.TRUE.equals(newbie(p)) && pd != null) {
+                long left = cfg().getMillis("newbie-protection.duration", 600_000) - (System.currentTimeMillis() - pd.firstJoin);
+                plugin.lang().send(p, "pvp.status-newbie", "time", Formats.duration(Math.max(0, left)));
+            }
             return true;
         }
         boolean want = op.equals("toggle") ? !current : op.equals("on");
